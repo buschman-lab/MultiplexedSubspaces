@@ -1,0 +1,1 @@
+Work on Manual Allignment Code to Enable flexible resolutions and not rely on hard coded cropping
