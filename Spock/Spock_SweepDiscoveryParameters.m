@@ -2,7 +2,7 @@ function Spock_SweepDiscoveryParameters(block)
 
 %Set path for spock to all repository (one step above cur dir)
 cd ..
-setpath(genpath(pwd));
+addpath(genpath(pwd));
 
 save_dir = '/TrainRepitoires/TrainingFit_WindowLengthSweep';
 save_file_name = sprintf('block_%d',block);
