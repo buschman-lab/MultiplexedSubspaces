@@ -1,5 +1,5 @@
 function [w, cost, loadings, power, numFactors, Xhat, Residuals, W, H] = ...
-    CollectNMFOutputs(w, h, cost, loadings, power, nanpxs, block)
+    CollectNMFOutputs(w, h, cost, loadings, power, nanpxs, block, X)
 
 %Gather in case used GPU
 cost = {gather(cost)};

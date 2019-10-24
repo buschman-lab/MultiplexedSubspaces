@@ -15,5 +15,5 @@ function FormatFittingForMovie(X,W,H,opts)
         temp = reshape(temp,[nP,nL]);
         W_smooth(:,cur_k,:) = temp;
     end  
-    MakeExampleRepitoireReconstructionVideo(X,W_smooth,H,[],[opts.save_dir sprintf('ReconstructionMovie_block%d.avi',opts.block)])
+    MakeExampleRepitoireReconstructionVideo(X,W_smooth,H,[],[opts.save_dir save_file_name '.avi'])
 end
