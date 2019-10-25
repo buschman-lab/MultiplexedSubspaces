@@ -13,6 +13,7 @@ opts.shift = 0;
 opts.showPlot = 0; 
 opts.movie_flag = 0; 
 opts.block = 1; 
+opts.RemoveEmptyWs = 1; 
 
 %Directory Navigation Options
 opts.base = 'Rodent Data/Wide Field Microscopy/VPA Experiments_Spring2018/AnalyzedData_MesomappingManuscript_5_2019';

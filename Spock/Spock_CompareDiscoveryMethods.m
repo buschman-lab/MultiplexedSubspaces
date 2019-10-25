@@ -13,11 +13,11 @@ save_file_name = sprintf('block_%d',block);
 
 %Perform seqNMF
 [seq.ExpVar_frame,seq.ExpVar_all,~,~,~,~,~,~,seq.numFactors,~,~,seq.opts] = ...
-    Discover_Motifs('block',block,'K',50,'maxiter',20);
+    Discover_Motifs('block',block,'K',50);
 
 %Perform CNMF sweep
 nmf = struct();
-for cur_k = 1:2
+for cur_k = [1:1:25,50:25:300]
     [nmf(cur_k).ExpVar_frame,nmf(cur_k).ExpVar_all,~,~,~,~,~,~,nmf(cur_k).numFactors,~,~,nmf(cur_k).opts] = ...
         Discover_Motifs(...
             'block',block,...
@@ -26,12 +26,11 @@ for cur_k = 1:2
             'lambda',0,...
             'lambdaL1H',0,...
             'lambdaOrthoH',0,...
-            'maxiter',20);
+            'RemoveEmptyWs',0);
 end
 
 %Perform PCA 
 [spca.ExpVar_all,spca.coeff,spca.score,spca.opts] = Discover_Networks_PCA('block',block);
-
 
 %Save off
 save_dir = [seq.opts.bucket seq.opts.base save_dir];
