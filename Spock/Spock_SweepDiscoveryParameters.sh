@@ -4,9 +4,9 @@
 #SBATCH -J 'Swiffer'
 #SBATCH -o out/Swiffer_output_%j.out
 #SBATCH -p all
-#SBATCH -t 720
+#SBATCH -t 900
 #SBATCH --mem-per-cpu=16G  
-#SBATCH --array=32
+#SBATCH --array=32-40
 #SBATCH --mail-type=FAIL                         # Event(s) that triggers email notification (BEGIN,END,FAIL,ALL)
 #SBATCH --mail-user=<camdenm@princeton.edu>    # Destination email address
 

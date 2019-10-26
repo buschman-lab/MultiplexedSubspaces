@@ -1,4 +1,5 @@
 function stack = PreProcess(in_fn,opts)
+warning ('off','all'); %Suppress missing tiff metadata warning
 %get stack info (faster than tiff counter)
 info = imfinfo(in_fn); 
 img_count = numel(info); 
@@ -11,8 +12,6 @@ stack = NaN(floor(opts.crop_w/opts.spatial_bin_factor),...
 %read tiff
 in_tiff = Tiff(in_fn, 'r');
 
-%Suppress missing tiff metadata warning
-warning ('off','all');
 %Loop through each image
 for cur_img_ind = 1:img_count
     in_tiff.setDirectory(cur_img_ind);   

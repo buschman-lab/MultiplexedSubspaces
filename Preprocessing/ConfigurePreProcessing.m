@@ -11,4 +11,12 @@ opts.close_disk_size = 2; %pixel size of disk used to remove salt/pepper noise o
 opts.verbose = 1; %how chatty do we want to be
 opts.mask_brain_outline = 1; %Create mask for outside of brain (manually made). 
 opts.mask_brain_outline_dir = [fileparts(which('ConfigurePreProcessing.m')) filesep 'brainoutline.mat']; 
+opts.save_uncorrected = 1; %save the uncorrected stacks? 
+opts.spatial_bin_factor = 4;
+opts.method = 'movingavg'; %'movingavg','mean','median','mode'
+opts.fps = 13; %the frame rate of each wavelength (integer)
+opts.wavelength_pattern = [1,2]; %excitation wavelength sequence used
+opts.correction_wavelength = 2; %wavelength to be used for correction
+opts.detrend = 1; %also include linear detrending 
+
 end

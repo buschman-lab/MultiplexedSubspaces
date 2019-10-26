@@ -1,6 +1,5 @@
-
-
-%select folders to process and grab the first file from each rec. 
+function Widefield_Pipeline2018; 
+%select folders to process and grab the first file from each rec.
 [file_list,folder_list] = GrabFiles('Pos0.ome.tif');
 
 %configure preprocessing options
@@ -28,10 +27,14 @@ for cur_fold = 1:numel(folder_list)
 end
 
 %% Call spock function to Loop through the files and process each recording
-%get a all the recordings in each folder
-[file_list,folder_list] = GrabFiles('.tif',0,folder_list{cur_fold});
 
-%load opts function;
+%gather recordings
+for cur_fold = 1:numel(folder_list)
+    [file_list,~] = GrabFiles('.tif',0,folder_list(cur_fold));
+    [opts_list,~] = GrabFiles('prepro_log.mat',0,folder_list(cur_fold));
+    opts_list = repmat(opts_list,1,numel(file_list)); 
+end
+
 
 stack = PreProcess(in_fn,opts);
 if numel(unique(opts.wavelength_pattern))>1 %if multiple wavelengths used

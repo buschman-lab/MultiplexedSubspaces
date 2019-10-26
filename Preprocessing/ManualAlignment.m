@@ -58,6 +58,7 @@ opts.crop_cord = [x_crop_cord,y_crop_cord];
 opts.alligned_img = alligned_img;
 opts.cropped_alligned_img = cropped_alligned_img;
 opts.angle = angle; 
+opts.crop_position =crop_position; 
 
 
 end

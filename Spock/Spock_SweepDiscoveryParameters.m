@@ -1,8 +1,9 @@
 function Spock_SweepDiscoveryParameters(block)
 
-%Set path for spock to all repository (one step above cur dir)
-cd ..
-addpath(genpath(pwd));
+%Set path for spock to all repository
+if ~ispc
+    addpath(genpath('/jukebox/buschman/Rodent Data/Wide Field Microscopy/Widefield_Imaging_Analysis/'));
+end
 
 save_dir = '/TrainRepitoires/TrainingFit_WindowLengthSweep/';
 save_file_name = sprintf('block_%d',block);
@@ -15,7 +16,7 @@ save_file_name = sprintf('block_%d',block);
 %Perform CNMF sweep
 paramsweep = [];
 COUNT = 0 ; 
-for cur_val = [1:12:65]
+for cur_val = [1:3:13,16:13:69]
     COUNT = COUNT+1;
     [paramsweep(COUNT).ExpVar_frame,paramsweep(COUNT).ExpVar_all,~,~,~,~,~,~,paramsweep(COUNT).numFactors,~,~,opts] = ...
         Discover_Motifs(...

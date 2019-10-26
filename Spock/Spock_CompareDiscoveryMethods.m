@@ -1,8 +1,9 @@
 function Spock_CompareDiscoveryMethods(block,save_dir)
 
 %Set path for spock to all repository (one step above cur dir)
-cd ..
-addpath(genpath(pwd));
+if ~ispc
+    addpath(genpath('/jukebox/buschman/Rodent Data/Wide Field Microscopy/Widefield_Imaging_Analysis/'));
+end
 
 if nargin<2
     save_dir = '/TrainRepitoires/TrainingFit_CompareDiscoveryMethods/';
