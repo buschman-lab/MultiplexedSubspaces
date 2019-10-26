@@ -10,8 +10,11 @@ text = fileread('spock_base.sh');
 
 %keep this local for right now;
 script_name = sprintf('run_%s.sh',uniqID);
-file_path = [gp.local_bucket gp.dynamic_script_path script_name];
-fid = fopen(file_path, 'wt');
+file_path = [gp.local_bucket gp.dynamic_script_path];
+if ~exist(file_path)
+    mkdir(file_path);
+end
+fid = fopen([file_path script_name], 'wt');
 
 %Add the base script
 fprintf(fid,'%s',text);
@@ -34,7 +37,7 @@ try %make sure to close the fid even if crash
     fclose(fid);
     
     %convert to unix
-    unix2dos(file_path,1)
+    unix2dos([file_path script_name],1)
 catch     
     fclose(fid);
     error('Failed generating bash script'); 

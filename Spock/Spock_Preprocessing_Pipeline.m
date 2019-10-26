@@ -23,13 +23,13 @@ fprintf('\n Saving data');
 if ~isempty(dff)
     [path, fn] = fileparts(in_fn);
     %append dff
-    fn = [path fn '_dff.mat'];
+    fn = [path filesep fn '_dff.mat'];
     save(fn,'dff','opts','-v7.3');
 end
     
 %save off the uncorrected if desired
 if opts.save_uncorrected
-    [path, fn] = fileparts(in_fn);
+    [path filesep fn] = fileparts(in_fn);
     %append dff
     fn = [path fn '_dff_uncorrected.mat'];
     save(fn,'dff_b','opts','-v7.3');
