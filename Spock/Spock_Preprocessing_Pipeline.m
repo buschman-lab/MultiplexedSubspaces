@@ -29,10 +29,10 @@ end
     
 %save off the uncorrected if desired
 if opts.save_uncorrected
-    [path filesep fn] = fileparts(in_fn);
-    %append dff
-    fn = [path fn '_dff_uncorrected.mat'];
-    save(fn,'dff_b','opts','-v7.3');
+    [path, fn] = fileparts(in_fn);
+    dff = dff_b; %need to have it still named dff. 
+    fn = [path filesep fn '_dff_uncorrected.mat'];
+    save(fn,'dff','opts','-v7.3');
 end
 
 fprintf('\n Complete');

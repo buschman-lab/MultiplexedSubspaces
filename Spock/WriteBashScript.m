@@ -16,6 +16,12 @@ if ~exist(file_path)
 end
 fid = fopen([file_path script_name], 'wt');
 
+fprintf(fid,'%s','#!/usr/bin/env bash'); %add the first line of the header
+
+%give the script a funny name
+temp = EntertainingSpockNames;
+fprintf(fid,"\n%s'%s'",'#SBATCH -J ',temp);
+
 %Add the base script
 fprintf(fid,'%s',text);
 

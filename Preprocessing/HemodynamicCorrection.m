@@ -10,15 +10,17 @@ function [dff, dff_b, dff_v] = HemodynamicCorrection(stack, opts)
     temp = stack{opts.correction_wavelength};   
     [nX,nY,nZ] = size(temp); 
     temp = reshape(temp,nX*nY,nZ);
-    
-    %400ms gaussian kernel
-    kern = gausswin(round(400/(1000/opts.fps),0));
-    
-    stack_v = NaN(size(temp));
-    for pxl = 1:(nX*nY)
-        stack_v(pxl,:) = filter(kern,1,temp(pxl,:));
-    end
-    
+     
+%     %400ms gaussian kernel
+%     kern = gausswin(round(400/(1000/opts.fps),0));
+%     
+%     stack_v = NaN(size(temp));
+%     for pxl = 1:(nX*nY)
+%         stack_v(pxl,:) = filter(kern,1,temp(pxl,:));
+%     end
+
+    stack_v = filterstack(temp,opts.fps, [0 1],'lowpass', 0, 0);
+     
     %neural signal
     stack(opts.correction_wavelength) = [];
     stack_b = reshape(stack{1},[nX*nY,size(stack{1},3)]);    

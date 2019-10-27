@@ -6,7 +6,7 @@ classdef general_params
         repo_path = 'Rodent Data\Wide Field Microscopy\Widefield_Imaging_Analysis\';
         dynamic_script_path = 'Rodent Data\Wide Field Microscopy\Widefield_Imaging_Analysis\Spock\DynamicScripts\';
         
-        dff_suffix = '_dff.mat' %the suffix used to take individual dff and ID for combining e.g. '_dff.mat' for corrected recs and '_dff_uncorrected.mat' for uncorrected recs
+        dff_suffix = '.ome_dff.mat' %the suffix used to take individual dff and ID for combining e.g. '_dff.mat' for corrected recs and '_dff_uncorrected.mat' for uncorrected recs
         
     end
 

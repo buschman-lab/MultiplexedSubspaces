@@ -16,13 +16,15 @@ save_file_name = sprintf('block_%d',block);
 %Perform CNMF sweep
 paramsweep = [];
 COUNT = 0 ; 
-for cur_val = [1:3:13,16:13:69]
+for cur_val = [1:3:13,26:13:65]
     COUNT = COUNT+1;
     [paramsweep(COUNT).ExpVar_frame,paramsweep(COUNT).ExpVar_all,~,~,~,~,~,~,paramsweep(COUNT).numFactors,~,~,opts] = ...
         Discover_Motifs(...
             'block',block,...
             'K',50,...
             'L',cur_val);
+     paramsweep(COUNT).L = cur_val; 
+     paramsweep(COUNT).K = 50; 
 end
 
 save_dir = [opts.bucket opts.base save_dir];

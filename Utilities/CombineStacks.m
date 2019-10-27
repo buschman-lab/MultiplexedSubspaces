@@ -6,7 +6,7 @@ num_files = numel(file_list);
 
 if num_files >1 %combine all the files in the folder
     %The first file has no identification number. So won't sort correctly. 
-    indx = cellfun(@isempty, regexp(file_list,['(?<=_)\d+(?=',gp.dff_suffix,')'], 'match', 'once'),'UniformOutput',0);
+    indx = cellfun(@isempty, regexp(file_list,['(?<=_)\d+(?=',gp.dff_suffix,')'],'match','once'),'UniformOutput',0);
     first_file = file_list([indx{:}]==1);
 
     %catch errors
@@ -18,18 +18,18 @@ if num_files >1 %combine all the files in the folder
     file_list([indx{:}]==1)=[];
 
     %sort the remaining files according to their recording order
-    [~, reindex] = sort( str2double( regexp( file_list, ['(?<=_)\d+(?=',gp.dff_suffix,')'], 'match', 'once' ))); %Sort by block 
+    [~, reindex] = sort(str2double(regexp(file_list, ['(?<=_)\d+(?=',gp.dff_suffix,')'], 'match', 'once' ))); %Sort by block 
     file_list = file_list(reindex);
 
     %load all the files and compile
     stack = []; %no preallocation. whoops. 
-    for cur_file = 1:num_files
+    for cur_file = 1:num_files-1
        if cur_file == 1 %load the first file
            temp = load(first_file{1});
-           stack = cat(3,stack,temp.stack);
+           stack = cat(3,stack,temp.dff);
        else
-           temp = load(file_list{1});
-           stack = cat(3,stack,temp.stack);
+           temp = load(file_list{cur_file});
+           stack = cat(3,stack,temp.dff);
        end 
     end %cur_file loop 
 

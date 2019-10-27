@@ -1,7 +1,4 @@
-#!/usr/bin/env bash
 
-#name job, output to slurm file, use partition all, run for 60 minutes and use 4GB of ram
-#SBATCH -J 'dynomite'
 #SBATCH -o out/dynomitescript_output_%j.out
 #SBATCH -p all
 #SBATCH -t 60
