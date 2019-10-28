@@ -1,4 +1,4 @@
-function [ExpVar_all,coeff,score,opts] = Discover_Networks_PCA(varargin)
+function [ExpVar_all,coeff,score,mu,opts,nanpxs] = Discover_Networks_PCA(varargin)
 
 %Set options
 opts = SetAnalysisOptions();
@@ -9,12 +9,14 @@ load([opts.bucket opts.base opts.data_file_name],'data','nanpxs');
 fprintf('\n Calculating sPCA on block %d',opts.block);
 
 %Get current data block
-X = data{opts.block};
+X = data{opts.block}';
 
 %for reproducibility
 rng('default'); 
 
 %Run PCA
+%Here pca is finding spatial modes, where pixels are variables and
+%timepoints and observations
 [coeff, score, ~, ~, ~, mu] = pca(X);
 
 %Calculate the expvariance of each additional component

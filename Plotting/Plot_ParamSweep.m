@@ -8,19 +8,19 @@ hold on;
 fp = fig_params; 
 
 %load data
-[ev_norm, param] = AnalyzeParamSweep(in_fns);
+[ev_norm, param] = AnalyzeParamSweep(in_fns,{'L'});
 
 %plot
-shadedErrorBar(param,mean(ev_norm),sem(ev_norm,1),'lineProps',{'color',fp.c_discovery,...
+shadedErrorBar(param*75,mean(ev_norm),sem(ev_norm,1),'lineProps',{'color',fp.c_discovery,...
     'linewidth',fp.dl_line_width},'patchSaturation',fp.dl_alpha);
 
 %add line showing chosen length
-line([75*13,75*13],[min(ev_norm(:)) 1],'linewidth',fp.dl_line_width,'linestyle','--',...
+line([13*75 13*75],[min(ev_norm(:)) 1],'linewidth',fp.dl_line_width,'linestyle','--',...
     'color',[0.5 0.5 0.5])
 
 %add titles and format
 xlabel('Motif Length (ms)');
-ylabel('Percent Explained Variance');
+ylabel({'Percent Explained Variance','(normalized)'});
 fp.SetTitle(gca,{'Post-Hoc Validation 1s Motif Duration'});
 
 fp.FormatAxes(gca)
