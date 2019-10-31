@@ -1,12 +1,7 @@
-function Spock_CompareResolution(block,c_flag)
+function Spock_CompareResolution(block,name)
 %Set path for spock to all repository (one step above cur dir)
 if ~ispc
     addpath(genpath('/jukebox/buschman/Rodent Data/Wide Field Microscopy/Widefield_Imaging_Analysis/'));
-end
-if c_flag ==1 
-    name = '431-10-17-2019_1dff_combined_uncorrected.mat';
-else
-    name = '431-10-17-2019_1dff_combined.mat';
 end
 
 %Set options
@@ -15,13 +10,15 @@ opts = ParseOptionalInputs(opts,{'data_file_name',sprintf('/ProcessedData_Hemo/%
 
 %Load the preprocessed data. Must be 1 x #rec cell arrays of data & nanpxs 
 stack = load([opts.bucket opts.base opts.data_file_name],'stack');
-%for reproducibility
+%so you get different starting indices
 rng('default'); 
 
-%get a random 2 minutes
-for i = 1:block; rand(1); end %so random selection is depending on block number
-start = randi(1,40000,1); 
-dff = stack.stack(:,:,start:start+13*119);
+%get a 2 minutes section
+if block ==1
+   dff = stack.stack(:,:,1:block*13*120+1);
+else
+   dff = stack.stack(:,:,block*13*120:(block+1)*13*120);
+end
 clear stack; 
 
 sb = {1,2,2};

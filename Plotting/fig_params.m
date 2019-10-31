@@ -7,6 +7,10 @@ classdef fig_params
         dl_line_width = 1.5; 
         dl_alpha = 0.5;
         
+        %violin plots
+        vp_alpha = 0.3;
+        vp_dist_w = 0.4;
+        
         %colors
         c_discovery = [0.3 0.7 1];
         
@@ -16,7 +20,7 @@ classdef fig_params
         font_weight = 'normal';
         units = 'centimeters';
         line_width = 1.5;            
-        
+        default_color = [0.5 0.5 0.5]; %for any default color plots. 
         
     end
 
@@ -53,6 +57,15 @@ classdef fig_params
             saveCurFigs(handles,filetype,name,savedir,fancyflag)
             close(handles)
         end%end function
+        
+        function col = GenDefaultColorArray(obj,array_size)
+            col = cell(1,array_size);
+            for i = 1:array_size
+                col{i} = obj.default_color;
+            end
+        end %end function
+       
+        
     end
 
 end
