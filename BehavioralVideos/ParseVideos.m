@@ -1,14 +1,16 @@
-function [data_mean, data] = ParseVideos(in_fn)
+function [data_mean, data] = ParseVideos(in_fn,bp)
 
-bp = behavioral_params; 
 %load video 
 vid = VideoReader(in_fn);
 
 %get the camera id, face vs body = 1 or 2
 camera_idx = str2num(cell2mat(regexp(in_fn,'(?<=Cam_)\d+(?=_)','match')))+1; %+1 since 0 indexed 
 
-%read the first frame
-ref_img = read(vid,1);
+%Parse: framewise for possible memory issues
+img_count = vid.Duration*round(vid.FrameRate,0); 
+
+%read the middle frame (so timing signal will already be on at this point. 
+ref_img = read(vid,floor(img_count/2));
 
 %select the rois. 
 roi = cellfun(@(x) SelectROI(ref_img,x), bp.roi_names{camera_idx},'UniformOutput',0);
@@ -16,9 +18,6 @@ roi = cellfun(@(x) SelectROI(ref_img,x), bp.roi_names{camera_idx},'UniformOutput
 %show all rois
 figure; imagesc(ref_img); 
 cellfun(@(x) rectangle('Position',x.position,'EdgeColor',x.color,'FaceColor',[x.color 0.2],'LineWidth',2),roi,'UniformOutput',0);
-
-%Parse: framewise for possible memory issues
-img_count = vid.Duration*vid.FrameRate; 
 
 %Preallocate data structure
 data = cellfun(@(x) single(NaN(x.position(4)+1,x.position(3)+1,img_count)),roi,'UniformOutput',0); %add one pixel to the dimensions for cropping
@@ -42,11 +41,6 @@ data_mean = cellfun(@(x) nanmean(x,1), data,'UniformOutput',0);
 
 
 end
-%vectorize
-%data = cellfun(@(x) reshape(x,[size(x,1)*size(x,2)],size(x,3)),data,'UniformOutput',0);
-
-%%PENDING
-%First x PCs for each roi 
 
     
 

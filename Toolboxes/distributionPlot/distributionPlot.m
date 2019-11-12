@@ -581,7 +581,7 @@ for iData = 1:nData
                 
                 if opt.histOpt == 1.1
                     % use histogram to estimate kernel
-                    [dummy,x] = myHistogram(currentData); %#ok<ASGLU>
+                    [dummy,x] = myHistogram(currentData);
                     if length(x) == 1
                         % only one value. Make fixed distribution
                         dx = 0.1;

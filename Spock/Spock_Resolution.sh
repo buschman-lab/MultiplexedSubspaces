@@ -18,4 +18,4 @@ cd "/jukebox/buschman/Rodent Data/Wide Field Microscopy/Widefield_Imaging_Analys
 
 #run a paranoid version of matlab that crashes gracefully and records why just incase.
 # in addition, xvfb-run also creates a virtual desktop so that you can plot easily
-xvfb-run -d matlab -nosplash -nodisplay -nodesktop -r "try; Spock_CompareResolution($SLURM_ARRAY_TASK_ID,'494-10-17-2019_1dff_combined_uncorrected.mat'); catch me; fprintf('Error: %s / %s\n',me.identifier,me.message); for k=1:length(me.stack), me.stack(k), end; end; exit"
+xvfb-run -d matlab -nosplash -nodisplay -nodesktop -r "try; Spock_CompareResolution($SLURM_ARRAY_TASK_ID,'432-10-17-2019_1dff_combined_uncorrected.mat'); catch me; fprintf('Error: %s / %s\n',me.identifier,me.message); for k=1:length(me.stack), me.stack(k), end; end; exit"

@@ -14,6 +14,9 @@ function [file_list, folder_list] = GrabFiles(substring, interactiveFlag, search
 % text in the file name. 
 %
 %
+% NOTE ON Wildcards. Uses regular expressions to find matches so denote
+% wildcard accordingly (e.g. \w*)
+%
 % @interactiveFlag (optional). 
 % If 1 (def) then user can select folder, subfolder, individual files or
 % any combination of the above. If 0 then the function only grab files with
@@ -97,6 +100,17 @@ file_list = unique(file_list);
 folder_list = unique(folder_list);
 cd(start);
 
+if ~isempty(file_list)
+    %Reorder by the natural order of the file names (e.g. 1,2,3 not 1,10,100)
+    [~,index]=natsortfiles(file_list);
+    file_list = file_list(index);
+end
+
+
+end
+
+
+
 
 function [in_fns,in_path,in_folder] = GrabFile(target_dir,substring)
 if isempty(target_dir) 
@@ -130,4 +144,5 @@ else
         warning(sprintf('No files with "%s" in selected directory %s',substring,target_dir));
     end
 cd(startdir);
+end
 end

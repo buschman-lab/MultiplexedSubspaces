@@ -1,0 +1,41 @@
+function AddSig(h,pval,pos,numcomp,nsoffset,show_p)
+    if nargin <3
+        pos = [1 2 1.01];
+    end
+    if nargin <4
+        numcomp = 1;
+    end
+    if nargin<5
+        nsoffset = 0.01;
+    end
+    if nargin <6
+        show_p = 0;
+    end
+    loc = pos(1)+(abs(pos(2)-pos(1))/2);
+    if show_p        
+        line([pos(1) pos(2)],[pos(3),pos(3)],'Color',[0.1 0.1 0.1],'LineWidth',2)
+        if pval<=1e-16
+            pval=1e-16;
+            exponent = floor(log10(pval));
+            str = (sprintf('p<10^{%d}',exponent));
+            text([loc loc],[pos(3)+nsoffset pos(3)+nsoffset],str,'Color',[0.1 0.1 0.1],'FontSize',14,'FontWeight','normal','HorizontalAlignment','Center');                  
+        else
+            exponent = floor(log10(pval));
+            if exponent<-3
+                str = (sprintf('p=10^{%d}',exponent));
+            else
+                str = (sprintf('p=%.2g',pval));
+            end
+            text([loc loc],[pos(3)+nsoffset pos(3)+nsoffset],str,'Color',[0.1 0.1 0.1],'FontSize',14,'FontWeight','normal','HorizontalAlignment','Center');                  
+        end
+    else        
+        line([pos(1) pos(2)],[pos(3),pos(3)],'Color',[0.1 0.1 0.1],'LineWidth',2)
+        if pval<0.0001
+            text([loc loc],[pos(3)+nsoffset pos(3)+nsoffset],'**','Color',[0.1 0.1 0.1],'FontSize',18,'FontWeight','normal','HorizontalAlignment','Center');
+        elseif pval<0.01/numcomp
+            text([loc loc],[pos(3)+nsoffset pos(3)+nsoffset],'*','Color',[0.1 0.1 0.1],'FontSize',18,'FontWeight','normal','HorizontalAlignment','Center');
+        else       
+            text([loc loc],[pos(3)+nsoffset pos(3)+nsoffset],'n.s.','Color',[0.1 0.1 0.1],'FontSize',16,'FontWeight','normal','HorizontalAlignment','Center');
+        end
+    end
+end

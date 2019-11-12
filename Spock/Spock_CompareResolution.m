@@ -31,7 +31,7 @@ for i = 1:3
     elseif i==2
         [dff_norm_lin_array, nanpxs_array] = linearizeDff({dff},'sm_kern',[],'spatialbin',2,'filtband',[0.1 4],'nSTD',2);
     elseif i==3
-        [dff_norm_lin_array, nanpxs_array] = linearizeDff({dff},'sm_kern',[1 1 0.1],'spatialbin',2,'filtband',[0.1 4],'nSTD',2);
+        [dff_norm_lin_array, nanpxs_array] = linearizeDff({dff},'sm_kern',[1],'spatialbin',2,'filtband',[0.1 4],'nSTD',2);
     end
     %linearize the data
     X = dff_norm_lin_array{1};

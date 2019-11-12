@@ -12,14 +12,19 @@ classdef fig_params
         vp_dist_w = 0.4;
         
         %colors
-        c_discovery = [0.3 0.7 1];
-        
+        c_discovery = [0.3 0.7 1]; %light blue
+        c_pca = [0.105,0.319,0.46] %dark green
+        c_nmf = [0.850,0.3723,0.00784]; %orange
+        c_sensory = [0.3 0.7 0; 0.3 0.7 1; 0.7,0.1,0] %aud,air,vis. 
+        c_visual = [0, 0, 1; 0.7,0.1,0 ];
+        c_tactile = [1, 0, 0; 0.3, 0.7, 1];
+ 
         %Global figure options
         font_size = 16;
         font_name = 'Arial';
         font_weight = 'normal';
         units = 'centimeters';
-        line_width = 1.5;            
+        line_width = 1;            
         default_color = [0.5 0.5 0.5]; %for any default color plots. 
         
     end
@@ -64,6 +69,7 @@ classdef fig_params
                 col{i} = obj.default_color;
             end
         end %end function
+       
        
         
     end

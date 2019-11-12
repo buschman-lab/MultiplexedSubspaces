@@ -36,7 +36,8 @@ for cur_rec = 1:size(dffarray,2)
 
     %Optional Smooth
     if ~isempty(opts.sm_kern)
-        dff = imgaussfilt3(dff,opts.sm_kern);
+%         dff = imgaussfilt3(dff,opts.sm_kern);
+        dff = SpatialGaussian(dff);
 %         opts.sm_kern = opts.sm_kern./sum(opts.sm_kern(:));
 % 
 %         for T = 1:size(dff, 3)    

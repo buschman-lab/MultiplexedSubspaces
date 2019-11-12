@@ -13,7 +13,7 @@ function vp = CompareViolins(data,fp,varargin)
     set(vp{1},'FaceAlpha',fp.vp_alpha);
     
     for i = 1:size(data,1)
-        line([opts.xpos(i)-0.075 opts.xpos(i)+0.075],[nanmean(data(i,:)),nanmean(data(i,:))],'Color',opts.col{i},'LineWidth',3)
+        line([opts.xpos(i)-0.075 opts.xpos(i)+0.075],[nanmedian(data(i,:)),nanmedian(data(i,:))],'Color',opts.col{i},'LineWidth',3)
     end
     xlim([0.5 size(data,1)+0.5]);
 end
