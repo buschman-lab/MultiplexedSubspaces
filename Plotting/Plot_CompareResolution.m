@@ -8,7 +8,7 @@ hold on;
 fp = fig_params; 
 
 %set the x axis labels
-labels = {}:
+labels = {};
 target = 'numFactors'; %the target parameter to plot from the structure
 
 %Outputs explained varainace and target param values 
@@ -33,26 +33,35 @@ param = param';
 %violin plot if enough points
 if size(param,2)>20
     vp = CompareViolins(param,fp);
-    shadedErrorBar(1:size(param,2),mean(param,1),sem(param,1),'lineProps',{'color',fp.c_discovery,...
-        'linewidth',fp.dl_line_width},'patchSaturation',fp.dl_alpha);
 else %otherwise bar and jitter
-    
+    boxplot(param','color','k');
+    set(findobj(gca,'type','line'),'linew',1.5)
+    set(gca,'ylim',[0 42])
+end
+[p, tbl, ~] = anova1(param',[],'off');
+AddSig(1,p,[1,3,41,41],2,2,1)
+set(gca,'Xticklabel',{'136x136','68x68p','68x68 smooth'},'xticklabelrotation',45);
+xlabel('Spatial Resolution');
+ylabel('# Discovered Motifs');
+setFigureDefaults;
+set(gca,'position',[3,5,6,6])
+title({'Number of Discovered Motifs';'is Robust to Spatial Resolution'},...
+    'FontName','Arial','FontSize',16,'FontWeight','normal','position',[2 45]);
+set(fh,'position',[680   400  450   600]);
 
 
-%add titles and format
-xlabel('Motif Length (ms)');
-ylabel({'Percent Explained Variance','(normalized)'});
-fp.SetTitle(gca,{'Post-Hoc Validation 1s Motif Duration'});
 
-fp.FormatAxes(gca)
+%%
+if savefigs
+   handles = get(groot, 'Children');
+   saveCurFigs(handles,'-svg','Within_between_expvar',savedir,1);
+   close all
+end
 
 
 
 
 end %function 
-
-
-
 
 
 
