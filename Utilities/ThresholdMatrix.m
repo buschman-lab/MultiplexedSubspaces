@@ -1,10 +1,16 @@
-function [x_thresh, x_bin, x_onset] = ThresholdMatrix(x,nux_std)
+function [x_thresh, x_bin, x_onset] = ThresholdMatrix(x,min_std,max_std)
+if nargin <3; max_std = []; end
 %x is motifs x time matrix or vector
 
 x_bin = NaN(size(x)); 
 for i = 1:size(x,1)
-   temp = x(i,:);
-   x_bin(i,:) = temp>=(nanmean(temp) + (nux_std * std(temp)));
+   temp = x(i,:);   
+   if ~isempty(max_std)
+       x_bin(i,:) = temp>=((min_std * std(temp))) & temp<=((max_std * std(temp)));
+   else
+       x_bin(i,:) = temp>=((min_std * std(temp)));
+   end
+       
 end
 
 %get the thresholded values

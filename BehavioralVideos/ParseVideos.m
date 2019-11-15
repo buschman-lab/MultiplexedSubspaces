@@ -37,7 +37,7 @@ for cur_img_ind = 1:img_count
 end
 
 %Get mean trace per roi
-data_mean = cellfun(@(x) nanmean(x,1), data,'UniformOutput',0);
+data_mean = cellfun(@(x) squeeze(nanmean(x,1:2)), data,'UniformOutput',0);
 
 
 end

@@ -96,6 +96,187 @@ end
 
 
 
+%add paths
+addpath(genpath('C:\Users\Camden\Documents\Github\MotionMapper'));
+addpath(genpath('C:\Users\Camden\Documents\Github\Widefield_Imaging_Analysis'));
+addpath(genpath('C:\Users\Camden\Documents\Github\umap'));
+
+%set filepaths
+fn_path = 'C:\Users\Camden\Desktop\Videos\Mouse9031_10_17\';
+fn_facecam = 'Cam_0_20191017-155226.avi';
+fn_dlc = 'Cam_1_20191017-155226_Mouse431_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
+fn_savebase = 'Mouse9031_10_17';
+fn_widefield = '431-10-17-2019_1Fitted_block_hemoflag0_1.mat';
+
+condapath = 'C:\ProgramData\Anaconda3\Scripts\conda.exe';
+condaenv = 'work_umap';
+
+%load behavioral analysis paramters
+bp = behavioral_params; 
+
+%% Precessing Behavioral Videos 
+%parse the facecam to get timing signal and behavioral features
+[facecam_mean, ~] = ParseVideos([fn_path, fn_facecam],bp);
+
+%save the roi image
+saveCurFigs(gcf,'-svg','Chosen ROIs',fn_path,1);
+close; 
+
+%manual theshold for timing trace
+[onset, offset] = ManualThreshold(facecam_mean{1});
+
+%Trim to match start and stop of imaging 
+facecam_mean_trim = cellfun(@(x) x(onset:offset),facecam_mean(2:3),'UniformOutput',0);
+
+%% Processing DLC Analyzed Data
+COUNT = 1;
+for a = [0,1]
+    for b = [0,1]
+        for c = [0,1]
+            for d = [0.1, 0.01]
+                for e = [50, 200]
+                    params{COUNT} = [a,b,c,d,e];
+                    COUNT = COUNT+1;
+                end
+            end
+        end
+    end
+end
+
+for cur_run = 1:numel(params)
+cd('C:\Users\Camden\Documents\Work\OneDrive\Buschman Lab\Scratch Data\New Folder')
+[~,~,raw_data] = xlsread([fn_path, fn_dlc]);
+%parse the dlc data by desired bodyparts, fitler, and reference to tail
+[projections, Perc_Filtered] = parse_dlc(raw_data,bp);
+
+%Trim to match start and stop of imaging 
+projections = projections(onset:offset,:);
+
+if bp.include_facecam %add the other behavioral traces to the dlc data   
+   projections = [facecam_mean_trim{:} projections];
+end
+
+if bp.derivative %Get the absolute derivative (this is usually not good at all)
+    projections = abs(diff(projections,1));
+end
+ 
+if bp.zscore %optional zscore
+   projections = zscore(projections,1);
+end
+
+%umap dimensionality reduction in python
+conda.init(condapath);
+conda.setenv('work_umap')
+umap_py = umap; 
+fprintf('\n dimensionality reduction with umap')
+
+umap_py.min_dist = 0.9;
+umap_py.n_neighbors = 50;
+manifold_vals = umap_py.fit(projections(14400:2:floor(size(projections,1)/2),:));
+fprintf('\n dimensionality reduction of %d timepoints and %d dimesions took %d minutes\n',...
+    size(projections,1),size(projections,2),round(toc/60,0));
+figure; 
+plot(manifold_vals(:,1),manifold_vals(:,2),'linestyle','none','marker','.');
+figure;
+plot3(1:size(manifold_vals,1),manifold_vals(:,1),manifold_vals(:,2),'linestyle','none','marker','.','markersize',2,'color','k');
+
+%% cluster the values with phenograph
+[ovr_comm, ovr_Q] = PhenographSimple(manifold_vals, 'knn', bp.pheno_knn);
+figure; plot(ovr_comm(:,1))
+
+selftransform = (sum(diff(ovr_comm(:,1))==0))/numel(ovr_comm(:,1));
+ 
+save('rundata.mat','ovr_comm','manifold_vals','params','selftransform','-v7.3')
+close all;
+
+end
+
+
+%%
+
+%% load motif H weightings (optionally scale by weightings?)
+%load motif weightings
+H = load([fn_path, fn_widefield],'H');
+H = H.H; 
+num_frames = size(H,2);
+
+%Get the average weight of each factor
+load('C:\Users\Camden\Desktop\Videos\Mouse9031_10_17\AverageDPs_1.mat')
+weights = (nanmean(W_clust_smooth,1));
+H_weight = NaN(size(H));
+for i = 1:size(H,1)
+    H_weight(i,:) = helper.reconstruct(weights(:,i,:),H(i,:));
+end
+
+%motif-triggered behavioral measures
+[h_thresh, h_bin, h_onset] = ThresholdMatrix(H_weight,3);
+
+%% Resample the low dimensional space to match the frequency of the motifs
+manifold_vals_resampled = NaN(num_frames,size(manifold_vals,2));
+for i = 1:size(manifold_vals,2)
+    temp = manifold_vals(:,i);
+    manifold_vals_resampled(:,i) = interp1(1:numel(temp), temp, linspace(1,numel(temp),num_frames),'linear');
+end
+
+%% for each motif, get the time bins around it
+
+temp = h_onset{4};
+val = 2*13;
+temp(temp<=val)=[];
+temp(temp>=(num_frames-val))=[];
+dur = 2*13;
+traj = arrayfun(@(x) manifold_vals_resampled(x-dur:x+dur,:), temp, 'UniformOutput',0);
+traj_x = cellfun(@(x) x(:,1)', traj, 'UniformOutput',0);
+traj_x = cat(1,traj_x{:});
+traj_y = cellfun(@(x) x(:,2)', traj, 'UniformOutput',0);
+traj_y = cat(1,traj_y{:});
+
+figure; hold on; 
+plot(manifold_vals(:,1),manifold_vals(:,2),'linestyle','none','marker','.');
+
+for i = 1:numel(temp)
+plot(traj_x(i,:),traj_y(i,:),'r','linewidth',2);
+pause();
+end
+
+
+
+
+
+%phenograph to cluster these trajectories per motif
+
+
+%get the number of behavioral states for each motif 
+
+
+%%%%%%% SCRATCH CODE
+
+% % % % % % %optional zscore each trace
+% % % % % % if bp.zscore 
+% % % % % %    projections = zscore(projections,1);
+% % % % % % end
+% % % % % % 
+% % % % % % %wavelet transform
+% % % % % % fprintf('\nCalculating Wavelet Transform\n');
+% % % % % % [amps,f] = findWavelets(projections,bp); 
+% % % % % % 
+% % % % % % %30 second Sliding Window DFF on the behavioral videos
+% % % % % % w = bp.fps*bp.window; 
+% % % % % % %reshape to 3d to match dff function
+% % % % % % facecam_mean_trim = cellfun(@(x) reshape(x,1,1,size(x,1)), facecam_mean_trim,'UniformOutput',0);
+% % % % % % facecam_dff = cellfun(@(x) squeeze(makeDFF(x,bp,w)), facecam_mean_trim, 'UniformOutput',0);
+
+%%
+%gscatter(manifold_vals(:,1),manifold_vals(:,2),ovr_comm(:,1));
+%make movie of the trajectory over time
+temp = 1;
+col = getColorPalet(numel(unique(ovr_comm(:,temp))));
+figure; hold on; 
+plot(manifold_vals(:,1),manifold_vals(:,2),'linestyle','none','marker','.','color',[0.8 0.8 0.8]);
+for i = 1:size(manifold_vals,1)
+    scatter(manifold_vals(i,1),manifold_vals(i,2),20,'r','.')
+    drawnow();
+end
 
 
 
