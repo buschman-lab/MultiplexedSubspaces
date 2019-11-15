@@ -19,7 +19,6 @@ spatial_nmf = cellfun(@(x) x*100, spatial_nmf,'UniformOutput',0);
 spatial_pca = cellfun(@(x) x.ExpVar_all,other_methods(2,:),'UniformOutput',0);
 spatial_pca = cellfun(@(x) x(:,num_components)*100',spatial_pca,'UniformOutput',0);
 
-
 %grouping variable
 group=[repmat({'nmf'},1,numel(spatial_nmf)),repmat({'pca'},1,numel(spatial_pca))];
 
@@ -43,7 +42,7 @@ g(1,1).axe_property('Xlim',xvals,'Ylim',yvals,'XGrid','on','YGrid','on','YTick',
 g(1,1).set_names('x','Dimensions','y','Percent Explained Variance','color','')
 
 %Create cnmf histogram on top
-g(2,1)=gramm('x',cnmf_num);
+g(2,1)=gramm('x',x,'color',y);
 g(2,1).set_layout_options('Position',[0.1 0.7 0.5 0.075],... %Set the position in the figure (as in standard 'Position' axe property)
     'legend',false,... % No need to display legend for side histograms
     'margin_height',[0.02 0.05],... %We set custom margins, values must be coordinated between the different elements so that alignment is maintained
@@ -70,7 +69,7 @@ g(3,1).set_names('x','','y','')
 g.axe_property('TickDir','in','GridColor',[0.5 0.5 0.5],'Linewidth',1.5,'FontSize',16,'FontName','Arial','FontWeight','normal');
 g.set_color_options('map','brewer_dark');
 g.draw();
-
+%%
 %reset colors and add line
 set(g(3,1).facet_axes_handles.Children,'Color',fp.c_discovery,'LineWidth',2)
 set(g(2,1).facet_axes_handles.Children,'Color',fp.c_discovery,'LineWidth',2)

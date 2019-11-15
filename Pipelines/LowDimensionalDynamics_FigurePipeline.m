@@ -13,9 +13,13 @@ end
 base = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\';
 fp = fig_params; 
 
+mouse_num = load('Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\Spock_Code_Repository\MOUSEGROUPINFO\MouseNumInfoByRec.mat');
+group = isVPA(mouse_num.mousenum); 
+
 %% Figure comparing cnmf to nmf and pca
-other_methods = CompileStats(GrabFiles('block',0,{[base 'TrainRepitoires\TrainingFit_CompareDiscoveryMethods']}),{'nmf','spca'},0,1);
-cnmf = CompileStats(GrabFiles('block',0,{[base 'TrainRepitoires\TrainingFit_Lambda4e-4_Kval28']}),{'ExpVar_all','numFactors'},0,1);
+other_methods = CompileStats(GrabFiles('block',0,{[base 'TrainRepitoires\TrainingFit_CompareDiscoveryMethods']}),{'nmf','spca'},0,group);
+cnmf = CompileStats(GrabFiles('block',0,{[base 'TrainRepitoires\TrainingFit_Lambda4e-4_Kval28']}),{'ExpVar_all','numFactors'},0,group);
+%%
 Plot_CompareDiscoveryMethods(other_methods,cnmf); 
 
 if savefigs
@@ -62,7 +66,7 @@ end
 
 %% Figure 2 D Loadings
 %organize data
-data = CompileStats(GrabFiles('block',0,{[base 'TrainRepitoires\TrainingFit_Lambda4e-4_Kval28']}),{'ExpVarLoad'},0,1);
+data = CompileStats(GrabFiles('block',0,{[base 'TrainRepitoires\TrainingFit_Lambda4e-4_Kval28']}),{'ExpVarLoad'},0,group);
 data = {data(:).ExpVarLoad};
 data = MakeCellsEqual(data);
 data = cumsum(data*100,1,'omitnan');
@@ -101,7 +105,7 @@ end
 dir_str = {'TestRepitoires\SameAnimal_Fit_Kval28_lambda1\','TestRepitoires\DifferentAnimal_Fit_Kval28_Lambda1'};
 data = [];
 for i = 1:numel(dir_str)
-    temp = CompileStats(GrabFiles('_ModFlag0_',0,{[base dir_str{i}]}),{'ExpVar_all'},0,1);
+    temp = CompileStats(GrabFiles('_ModFlag0_',0,{[base dir_str{i}]}),{'ExpVar_all'},0,group);
     if i == 2%get average of the multiple runs for different animals
         temp = nanmedian(cell2mat(cat(1,temp(:).ExpVar_all)),2);
     else        
@@ -254,7 +258,7 @@ end
 rec_str = {'_ModFlag0_','_ModFlag1_'};
 data = [];
 for i = 1:numel(rec_str)
-    temp = CompileStats(GrabFiles(rec_str{i},0,{[base 'TestRepitoires\SameAnimal_Fit_Kval28_lambda1\']}),{'ExpVar_all'},0,1);    
+    temp = CompileStats(GrabFiles(rec_str{i},0,{[base 'TestRepitoires\SameAnimal_Fit_Kval28_lambda1\']}),{'ExpVar_all'},0,group);    
     temp = cell2mat([temp(:).ExpVar_all]);
     data(i,:) = temp*100; 
 end   
