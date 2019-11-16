@@ -9,10 +9,12 @@ idx = regexp(raw_data(3,:),'likelihood','match');
 idx = cellfun(@(x) size(x,1),idx,'UniformOutput',0);
 raw_data(:,[idx{:}]==1)=[];
 
-idx = regexp(raw_data(2,:),bp.dlc_reference_part,'match');
-idx = cellfun(@(x) size(x,1),idx,'UniformOutput',0);
-reference = raw_data(4:end,[idx{:}]==1);
-reference = cell2mat(reference);
+if  ~isemtpy(bp.dlc_reference_part)
+    idx = regexp(raw_data(2,:),reference_part,'match');
+    idx = cellfun(@(x) size(x,1),idx,'UniformOutput',0);
+    reference = raw_data(4:end,[idx{:}]==1);
+    reference = cell2mat(reference);
+end
 
 %loop through parts list and get the columns for each 
 idx = cellfun(@(x) regexp(raw_data(2,:),x),bp.dlc_parts_list,'UniformOutput',0);
@@ -35,7 +37,7 @@ data = raw_data(4:end,idx==1);
 data = cell2mat(data);
 
 %optional filter 
-if bp.dlc_epsilon
+if bp.dlc_epsilon ~=0
     %filter the reference
     [reference, ~] = filter_dlc(reference,bp.dlc_epsilon);
     %filter the data

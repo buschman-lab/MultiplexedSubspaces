@@ -6,7 +6,7 @@ classdef behavioral_params
         derivative = 0;
         
         %ROI names. first cell is face movies, second is body movies. 
-        roi_names = { {'timing','noise','eye'}, {'timing'} };  
+        roi_names = { {'timing','noise','eye'}, {'body'} };  
         
         %Make behavioral dffs
         method = 'movingavg';
@@ -16,8 +16,8 @@ classdef behavioral_params
         
         %dlc parts list
         dlc_parts_list = {'nosetip','frontrightpawcenter','frontleftpawcenter',...
-            'backrightpawcenter','backleftpawcenter','tail_1'};
-        dlc_reference_part = {'tailroot'};
+            'backrightpawcenter','backleftpawcenter','tail_1','tailroot'};
+        dlc_reference_part = []; %leave empty to not reference to a body part
         dlc_epsilon = 50; 
                  
         %embedding parameters

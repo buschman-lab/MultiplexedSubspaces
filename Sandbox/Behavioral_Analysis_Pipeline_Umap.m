@@ -6,13 +6,9 @@ addpath(genpath('C:\Users\Camden\Documents\Github\umap'));
 %set filepaths
 fn_path = 'C:\Users\Camden\Desktop\Videos\Mouse9031_10_17\';
 fn_facecam = 'Cam_0_20191017-155226.avi';
-fn_bodycam = 'Cam_1_20191017-155226_Mouse431_10_17_2019.avi';
 fn_dlc = 'Cam_1_20191017-155226_Mouse431_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
 fn_savebase = 'Mouse9031_10_17';
 fn_widefield = '431-10-17-2019_1Fitted_block_hemoflag0_1.mat';
-
-%save director
-save_dir = 'C:\Users\Camden\Documents\Work\OneDrive\Buschman Lab\Scratch Data\MotifSnippets_Min3_8\';
 
 condapath = 'C:\ProgramData\Anaconda3\Scripts\conda.exe';
 condaenv = 'work_umap';
@@ -22,24 +18,6 @@ bp = behavioral_params;
 
 expvaridx = load('OrderedByExpVar_Final.mat');
 expvaridx = expvaridx.idx;
-
-%% load motif H weightings 
-%load motif weightings
-H = load([fn_path, fn_widefield],'H');
-H = H.H; 
-
-%convolve with W weightings to get to original timing
-W_clust_smooth = load('C:\Users\Camden\Desktop\Videos\Mouse9031_10_17\AverageDPs_1.mat');
-weights = (nanmean(W_clust_smooth.W_clust_smooth,1));
-H_weight = NaN(size(H));
-for i = 1:size(H,1)
-    H_weight(i,:) = helper.reconstruct(weights(:,i,:),H(i,:));
-end
-
-%Reorganize by explained variance index
-H_weight = H_weight(expvaridx,:);
-
-[h_thresh, h_bin, h_onset] = ThresholdMatrix(H_weight,bp.min_std);
 
 %% Precessing Behavioral Videos 
 %parse the facecam to get timing signal and behavioral features
@@ -55,50 +33,7 @@ close;
 %Trim to match start and stop of imaging 
 facecam_mean_trim = cellfun(@(x) x(onset:offset),facecam_mean(2:3),'UniformOutput',0);
 
-%% Make motif-triggered video snippets on a 4 minute chunk of the original video
-%choose a snippet of time around minute 3 (after start of camera)
-conversion_ratio = 13.3333/60; %convert motif time to movie time
-start_min = 3;
-stop_min = 8;
-trig_window = [-60*4:60*4];
-index = [onset+(start_min*60*60),onset+(stop_min*60*60)];
-[~, body_camera] = ParseVideos([fn_path, fn_bodycam],bp,index);
-body_camera = body_camera{1};
-%upsample h trigger times
-h_onset_upsampled = cellfun(@(x) round(x/conversion_ratio,0), h_onset, 'UniformOutput',0);
-
-%only keep times in the correct window
-h_onset_upsampled = cellfun(@(x) x(x>(index(1)+abs(min(trig_window))) & x<(index(2)-max(trig_window))), h_onset_upsampled, 'UniformOutput',0);
-
-%make motif triggered videos
-for cur_motif = 1:size(H_weight,1) 
-    fprintf('\nworking on motif %d',cur_motif);
-    snippet = arrayfun(@(x) body_camera(:,:,x+trig_window), h_onset_upsampled{cur_motif},'UniformOutput',0);
-    for cur_snippet = 1:numel(snippet)
-       fprintf('\n\tworking on snippet %d of %d',count,numel(snippet));
-       MakeGif(snippet{cur_snippet},[save_dir sprintf('Motif_%d_Event_%d',cur_motif,cur_snippet)],[60*2,60*3]) 
-    end    
-end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-%% Processing DLC Analyzed Data and do any preprocessing
+%% Processing DLC Analyzed Data
 [~,~,raw_data] = xlsread([fn_path, fn_dlc]);
 %parse the dlc data by desired bodyparts, fitler, and reference to tail
 [projections, Perc_Filtered] = parse_dlc(raw_data,bp);
@@ -110,12 +45,45 @@ if bp.include_facecam %add the other behavioral traces to the dlc data
    projections = [facecam_mean_trim{:} projections];
 end
 
-if bp.derivative %Get the absolute derivative 
+if bp.derivative %Get the absolute derivative (this is usually not good at all)
     projections = abs(diff(projections,1));
 end
  
 if bp.zscore %optional zscore
    projections = zscore(projections,1);
+end
+
+%umap dimensionality reduction in python
+conda.init(condapath);
+conda.setenv('work_umap')
+umap_py = umap; 
+fprintf('\n dimensionality reduction with umap')
+
+umap_py.min_dist = bp.umap_mind_dist;
+umap_py.n_neighbors = bp.umap_n_neighbors;
+% manifold_vals = umap_py.fit(projections(14400:2:floor(size(projections,1)/5),:));
+manifold_vals = umap_py.fit(projections);
+fprintf('\n dimensionality reduction of %d timepoints and %d dimesions took %d minutes\n',...
+    size(projections,1),size(projections,2),round(toc/60,0));
+
+figure; 
+plot(manifold_vals(:,1),manifold_vals(:,2),'linestyle','none','marker','.','markersize',1,'color',[0.5 0.5 0.5]);
+
+%save off
+save('umap_data.mat','manifold_vals', 'bp', '-v7.3')
+
+%% load motif H weightings (optionally scale by weightings?)
+%load motif weightings
+H = load([fn_path, fn_widefield],'H');
+H = H.H; 
+num_frames = size(H,2);
+
+%Get the average weight of each factor
+load('C:\Users\Camden\Desktop\Videos\Mouse9031_10_17\AverageDPs_1.mat')
+weights = (nanmean(W_clust_smooth,1));
+H_weight = NaN(size(H));
+for i = 1:size(H,1)
+    H_weight(i,:) = helper.reconstruct(weights(:,i,:),H(i,:));
 end
 
 %% Resample the low dimensional space to match the frequency of the motifs
