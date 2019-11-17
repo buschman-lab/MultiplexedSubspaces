@@ -21,8 +21,7 @@ line([13*75 13*75],[min(ev_norm(:)) 1],'linewidth',fp.dl_line_width,'linestyle',
 %add titles and format
 xlabel('Motif Length (ms)');
 ylabel({'Percent Explained Variance','(normalized)'});
-fp.SetTitle(gca,{'Post-Hoc Validation 1s Motif Duration'});
-
+fp.SetTitle(gca,{'Explained Varaince Plateues  '});
 fp.FormatAxes(gca)
 
 end

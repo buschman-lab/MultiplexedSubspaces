@@ -1,5 +1,5 @@
 function setFigureDefaults()
     set(gca,'FontSize',16,'FontName','Arial',...
         'FontWeight','normal','units','centimeters','linewidth',1.5,...
-        'YGrid','off','XGrid','off','GridColor',[0.7 0.7 0.7])
+        'YGrid','off','XGrid','off','box','off','GridColor',[0.7 0.7 0.7])
 end

@@ -28,7 +28,7 @@ if savefigs
    close all
 end
 
-%% Distribution of Events CLEAN UP THIS CODE
+%% Distribution of Events
 D = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\TrainRepitoires\TrainingFit_Lambda4e-4_Kval28';
 params = gatherHs(318,'TrainRepitoire_block',0,D);
 %Get the average number for all factors in a epoch
