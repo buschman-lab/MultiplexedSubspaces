@@ -1,11 +1,10 @@
 function [x_thresh, x_bin, x_onset] = ThresholdMatrix(x,min_std)
-if nargin <3; mandatory_pause = []; end
 %x is motifs x time matrix or vector
 
 x_bin = NaN(size(x)); 
 for i = 1:size(x,1)
    temp = x(i,:);   
-   x_bin(i,:) = temp>=((min_std * std(temp)));
+   x_bin(i,:) = temp>=((min_std * std(temp)));     
 end
 
 %get the thresholded values

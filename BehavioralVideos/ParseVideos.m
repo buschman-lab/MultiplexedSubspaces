@@ -1,4 +1,4 @@
-function [data_mean, data] = ParseVideos(in_fn,bp)
+function [data_mean, data] = ParseVideos(in_fn,bp,index)
 
 %load video 
 vid = VideoReader(in_fn);
@@ -6,8 +6,12 @@ vid = VideoReader(in_fn);
 %get the camera id, face vs body = 1 or 2
 camera_idx = str2num(cell2mat(regexp(in_fn,'(?<=Cam_)\d+(?=_)','match')))+1; %+1 since 0 indexed 
 
-%Parse: framewise for possible memory issues
-img_count = vid.Duration*round(vid.FrameRate,0); 
+%Parse: framewise but if too big or rois, will throw memory error
+if isempty(index)    
+    index = [1,vid.Duration*round(vid.FrameRate,0)]; 
+end
+
+img_count = index(2)-index(1);    
 
 %read the middle frame (so timing signal will already be on at this point. 
 ref_img = read(vid,floor(img_count/2));
@@ -22,9 +26,9 @@ cellfun(@(x) rectangle('Position',x.position,'EdgeColor',x.color,'FaceColor',[x.
 %Preallocate data structure
 data = cellfun(@(x) single(NaN(x.position(4)+1,x.position(3)+1,img_count)),roi,'UniformOutput',0); %add one pixel to the dimensions for cropping
 fprintf('\nParsing Video...')
-for cur_img_ind = 1:img_count
-    if mod(cur_img_ind,round(0.10*img_count)) ==0
-        fprintf('\t%g%% Complete\n', round(cur_img_ind./img_count*100,2));
+for cur_img_ind = index(1):index(2)
+    if mod((cur_img_ind-index(1)),round(0.10*img_count)) ==0
+        fprintf('\t%g%% Complete\n', round((cur_img_ind-index(1))./img_count*100,2));
     end
     img = read(vid,cur_img_ind);
     for cur_roi = 1:numel(roi)

@@ -11,8 +11,13 @@ classdef behavioral_params
         %dlc parts list
         dlc_parts_list = {'nosetip','frontrightpawcenter','frontleftpawcenter',...
             'backrightpawcenter','backleftpawcenter','tailroot'};
-        dlc_reference_part = [];
         dlc_epsilon = 50;                 
+        
+        %Make behavioral dffs
+        method = 'movingavg';
+        detrend = 1; 
+        fps = 60; 
+        window  = 30; %in secconds
         
         %motif trigger analysis parameters
         trig_dur = (-13*3:13*3); 
