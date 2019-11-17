@@ -35,7 +35,7 @@ function AddSig(h,pval,pos,numcomp,nsoffset,show_p,angle)
         line([pos(1) pos(2)],[pos(3),pos(3)],'Color',[0.1 0.1 0.1],'LineWidth',2)
         if pval<0.0001
             text([loc loc],[pos(3)+nsoffset pos(3)+nsoffset],'**','Color',[0.1 0.1 0.1],'FontSize',18,'FontWeight','normal','HorizontalAlignment','Center','Rotation',angle);
-        elseif pval<0.01/numcomp
+        elseif pval<0.05/numcomp
             text([loc loc],[pos(3)+nsoffset pos(3)+nsoffset],'*','Color',[0.1 0.1 0.1],'FontSize',18,'FontWeight','normal','HorizontalAlignment','Center','Rotation',angle);
         else       
             text([loc loc],[pos(3)+nsoffset pos(3)+nsoffset],'n.s.','Color',[0.1 0.1 0.1],'FontSize',16,'FontWeight','normal','HorizontalAlignment','Center','Rotation',angle);
