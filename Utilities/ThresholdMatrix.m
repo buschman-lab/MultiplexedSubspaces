@@ -4,7 +4,7 @@ function [x_thresh, x_bin, x_onset] = ThresholdMatrix(x,min_std)
 x_bin = NaN(size(x)); 
 for i = 1:size(x,1)
    temp = x(i,:);   
-   x_bin(i,:) = temp>=((min_std * std(temp)));     
+   x_bin(i,:) = temp>=(mean(temp)+(min_std * std(temp)));     
 end
 
 %get the thresholded values

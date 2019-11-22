@@ -47,7 +47,7 @@ else
     Perc_Filtered = NaN;
 end
 
-%subtract reference channel
+%perform function using reference channel
 if ~isempty(reference_part)
     data(:,1:2:end) = data(:,1:2:end)-reference(:,1);
     data(:,2:2:end) = data(:,2:2:end)-reference(:,2);
@@ -63,10 +63,10 @@ end
 
 function [data, change_idx] = filter_dlc(data,epsilon)
     change_idx = NaN(size(data));
-    temp = abs(diff(data,1));
-    for col = 1:size(temp,2)
-        for row = 2:size(temp,1)
-           if temp(row,col)>=epsilon
+    for col = 1:size(data,2)
+        for row = 2:size(data,1)
+           temp = abs(diff([data(row,col),data(row-1,col)]));
+           if temp>=epsilon
                data(row,col)=data(row-1,col); %replace pixels that move too much with the previous location
                change_idx(row,col) = 1;
            end

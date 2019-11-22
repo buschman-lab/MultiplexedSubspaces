@@ -15,7 +15,7 @@ expvaridx = load('OrderedByExpVar_Final.mat');
 expvaridx = expvaridx.idx;
 
 savefigs = 0; 
-selected_motifs = [1,3,5];
+
 %% load motif H weightings 
 H = load([fn_path, fn_widefield],'H');
 H = H.H; 
@@ -63,20 +63,30 @@ face_motion_energy = cellfun(@(x) mean(abs(diff(x,2)),1)', temp,'UniformOutput',
 
 %get the speed of the 4 limbs
 [limbs, id, ~] = parse_dlc(raw_data,{'frontrightpawcenter','frontleftpawcenter','backrightpawcenter','backleftpawcenter'},[],bp.dlc_epsilon);
-limb_speed = cellfun(@(x) [0; sum(abs(diff(limbs(:,strcmp(id,x)),1)),2)],{'frontrightpawcenter','frontleftpawcenter','backrightpawcenter','backleftpawcenter'},'UniformOutput',0);
+limb_speed = cellfun(@(x) [0; mean(abs(diff(limbs(:,strcmp(id,x)),1)),2)],{'frontrightpawcenter','frontleftpawcenter','backrightpawcenter','backleftpawcenter'},'UniformOutput',0); 
+limb_speed = [limb_speed{:}];
+limb_speed = mean(limb_speed,2);
 
 %get the distance between nose and front paws
 [frontpaws_to_nose, ~, ~] = parse_dlc(raw_data,{'frontrightpawcenter','frontleftpawcenter'},'nosetip',bp.dlc_epsilon);
-frontpaws_to_nose = sum(abs(frontpaws_to_nose),2);
+%you've subtracted out the reference. Now get euclidean distance
+frontpaws_to_nose = sqrt(sum(frontpaws_to_nose.^2,2));
 
 %get the distance from nose to tail
 [tail_to_nose, ~, ~] = parse_dlc(raw_data,{'tailroot'},'nosetip',bp.dlc_epsilon);
-tail_to_nose = sum(abs(tail_to_nose),2);
+tail_to_nose = sqrt(sum(tail_to_nose.^2,2));
 
 %combined all features
-features = cat(2,face_motion_energy{:},tail_to_nose,frontpaws_to_nose,limb_speed{:});
-labels = {'nose motion energy','whisker motion energy','tail to nose','front paws to nose','front right paw speed',...
-'front left paw speed','back right paw speed','back left paw speed'};
+% features = cat(2,face_motion_energy{:},tail_to_nose,frontpaws_to_nose,limb_speed);
+% labels = {'nose motion energy','whisker motion energy','tail to nose','front paws to nose','front right paw speed',...
+% 'front left paw speed','back right paw speed','back left paw speed'};
+% labels_abbrev = {'NME','WME','T2N','F2N','FRPS','FLPS','BRPS','BLPS'};
+features = cat(2,face_motion_energy{:},tail_to_nose,frontpaws_to_nose,limb_speed);
+labels = {'nose motion energy','whisker motion energy','tail to nose','front paws to nose','limb speed'};
+labels_abbrev = {'NME','WME','T2N','F2N','LS'};
+
+
+
 
 %Trim to match start and stop of imaging 
 features = features(onset:offset,:);
@@ -92,8 +102,187 @@ if bp.zscore %optional zscore
    features_downsampled = zscore(features_downsampled,1);
 end
 
+clear raw_data facecam_data W_clust_smooth
+%% Plot statistics about the behavioral traces
+num_features = size(features_downsampled,2);
+col = getColorPalet(num_features);
+%distributions
+figure('position',[680   101   858   877]); hold on; 
+[r,c] = numSubplot(num_features,2);
+for i = 1:num_features
+    subplot(r,c,i); hold on;
+    %plot pdf 
+    temp = features_downsampled(:,i);
+%     if i > num_features-4
+%        temp(temp<=5)=NaN;
+%     end
+    [f,xi] = ksdensity(temp); 
+    plot(xi,f,'linewidth',2,'color',col(i,:)); 
+    title(sprintf('%s',labels{i}),'FontName','Arial','FontSize',16,'FontWeight','normal')
+    setFigureDefaults;
+    if mod(i,3)==1
+        ylabel('Probability')
+    end    
+    if i > num_features-c
+        xlabel('Z-Score')
+    end
+end
+
+
+% Plot the autocorrelation of each behavioral factor
+figure('position',[680   101   858   877]); hold on; 
+[r,c] = numSubplot(num_features,2);
+for i = 1:num_features
+    subplot(r,c,i); hold on;
+    %plot pdf 
+    [xc,lags] = xcorr(features_downsampled(:,i),120*13,'coeff'); 
+    idx = [floor(numel(lags)/2):numel(lags)];
+    plot(lags(idx)/13,xc(idx),'linewidth',2,'color',col(i,:));   
+    title(sprintf('%s',labels{i}),'FontName','Arial','FontSize',16,'FontWeight','normal')
+    setFigureDefaults;    
+    ylim([min(xc) 1]);
+    xlim([0 max(lags/13)])
+    if mod(i,2)
+        ylabel('Rho')
+    end
+    if i > num_features-c
+        xlabel('time (s)')
+    else
+        set(gca,'Xtick',[])
+    end
+end
+
+% Correlation between factors
+figure; hold on; 
+rho = corr(features_downsampled);
+imagesc(rho,[0 1]);
+colorbar
+colormap magma
+set(gca,'XTick',(1:num_features),'YTick',(1:num_features),'YTickLabel',labels_abbrev,'XTickLabel',labels_abbrev,'XTickLabelRotation',45)
+xlim([0.5,num_features+0.5])
+ylim([0.5,num_features+0.5])
+axis square
+title('Correlation Between Behavioral Features','FontSize',16,'FontName','Arial','FontWeight','normal')
+setFigureDefaults; 
+
+%% Manually define states
+%define split index 
+figure('position',[680   101   858   877]); hold on; 
+[r,c] = numSubplot(num_features,2);
+split_idx = {[-0.8],[-0.5],[-1.75],[-3],[1]};
+features_binned = NaN(size(features_downsampled));
+for i = 1:num_features
+    temp = features_downsampled(:,i);
+    temp(temp<split_idx{i})=-100;
+    temp(temp>split_idx{i})=100;
+    features_binned(:,i) = temp;
+    
+    subplot(r,c,i); hold on;
+    plot(temp)
+end
+
+%% Compute the relative explained variance of each motif during each behavioral cluster
+[clusters,~,indx_clusters] = unique(features_binned,'rows');
+indx_clusters = movmode(indx_clusters,floor(13*2.5));
+temp = [];
+unique_clust = unique(indx_clusters);
+for i = 1:numel(unique_clust)
+    temp(i) = sum(indx_clusters==unique_clust(i));  
+end
+clusters = clusters(unique_clust,:);
+clusters(:,end+1) = temp;
+
+%% Calculate Motif-Triggered Snippet Clusters
+snippets_clusters = cell(1,size(H_weight,1));
+for cur_motif = 1:size(H_weight,1)    
+    %remove any motif onsets that are too close to start and end
+    temp = h_onset{cur_motif};
+    temp = temp(temp-abs(min(bp.trig_dur))>=1 & temp+abs(max(bp.trig_dur))<num_frames);
+    temp = arrayfun(@(x) indx_clusters(x+bp.trig_dur), temp, 'UniformOutput',0);       
+    snippets_clusters{cur_motif} = cat(2,temp{:});
+end
+
+%% For each motif snippet get the most frequent behavioral cluster
+temp = cellfun(@(x) (mode(x,1)), snippets_clusters,'UniformOutput',0);
+group = cellfun(@(n) ones(1,numel(temp{n}))*n, num2cell(1:size(H_weight,1)),'UniformOutput',0);
+temp = [temp{:}];
+group = [group{:}];
+
+%unique states
+unique_states = unique(temp);
+motifs = (1:14);
+data = NaN(numel(motifs),numel(unique_states));
+for i = 1:numel(motifs)
+    for j = 1:numel(unique_states)
+        data(i,j) = sum(temp==unique_states(j) & group==motifs(i));
+    end    
+end
+
+%% Look at the normalized number of triggers related to each state
+figure;
+temp = data./nansum(data,2);
+data_normcol = temp./nansum(temp,1);
+imagesc(data_normcol,[0 0.15]);
+colormap magma
+
+%% Look at the relative frame-wise explained variance of each motif for each state
+data = load([fn_path fn_widefield],'w','data_test','H');
+w = data.w(:,expvaridx,:);
+H = data.H(expvaridx,:);
+
+load_frame = NaN(size(H,1),num_frames);
+for cur_motif = 1:size(H,1)
+    fprintf('\nworking on motif %d',cur_motif);
+    WH = helper.reconstruct(w(:,cur_motif,:),H(cur_motif,:));  
+    for cur_f = 1:num_frames
+        load_frame(cur_motif,cur_f) = 1 - nanvar(data.data_test(:,cur_f)-WH(:,cur_f))./nanvar(data.data_test(:,cur_f));        
+    end   
+end %motif loop
+clear data w H WH
+
+%remove motifs that capture less than 1 percent of the variance to a given frame
+load_frame(load_frame<0.01)=NaN;
+
+%split by behavioral state
+expvar_state = arrayfun(@(x) load_frame(:,indx_clusters==x),unique_states,'UniformOutput',0); 
+expvar_state = cellfun(@(x) nansum(x./nansum(x(:)),2), expvar_state, 'UniformOutput',0);
+expvar_state = [expvar_state{:}];
+        
+figure;
+imagesc(expvar_state,[0 0.15]);
+colormap magma
+
+%%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 %% Calculate Motif-Triggered Snippets
-[h_thresh, h_bin, h_onset] = ThresholdMatrix(H_weight,1.5);
+
+
 
 snippets = cell(1,size(H_weight,1));
 for cur_motif = 1:size(H_weight,1)    
@@ -103,6 +292,37 @@ for cur_motif = 1:size(H_weight,1)
     temp = arrayfun(@(x) features_downsampled(x+bp.trig_dur,:), temp, 'UniformOutput',0);       
     snippets{cur_motif} = cat(3,temp{:});
 end
+
+alldata = cat(3,snippets{:});
+motif_triggered_data = NaN(size(alldata,3)*size(alldata,1),size(alldata,2));
+for i = 1:size(alldata,2)
+    temp = squeeze(alldata(:,i,:));
+    motif_triggered_data(:,i) = temp(:);
+end
+clear alldata;
+
+%% Plot statistics about the behavioral traces
+num_features = size(motif_triggered_data,2);
+col = getColorPalet(num_features);
+%distributions
+figure('position',[680   101   858   877]); hold on; 
+[r,c] = numSubplot(num_features,2);
+for i = 1:num_features
+    subplot(r,c,i); hold on;
+    %plot pdf 
+    [f,xi] = ksdensity(motif_triggered_data(:,i)); 
+    plot(xi,f,'linewidth',2,'color',col(i,:)); 
+    title(sprintf('%s',labels{i}),'FontName','Arial','FontSize',16,'FontWeight','normal')
+    setFigureDefaults;
+    if mod(i,3)==1
+        ylabel('Probability')
+    end    
+    if i > num_features-c
+        xlabel('Z-Score')
+    end
+end
+
+
 
 
 %% Plot average motif triggered, grouped by limb
@@ -182,41 +402,6 @@ if savefigs
 end
 
 
-%% Anova between motifs over time
-group = arrayfun(@(n) ones(1,size(snippets{n},3))*n, (1:numel(snippets)), 'UniformOutput',0);
-combined_data = cat(3,snippets{:});
-
-group = [group{:}];
-%trim to windowed time period
-combined_data = combined_data(bp.classification_idx,:,:);
-time_vec = (bp.trig_dur(bp.classification_idx)*75)/1000;
-
-win_size = 13; %actually window size is win_size+1
-start_idx = (1:7:size(combined_data,1)-win_size);
-
-pval = NaN(size(snippets{1},2),numel(start_idx));
-fstat = NaN(size(snippets{1},2),numel(start_idx));
-for time_bin = 1:numel(start_idx)
-    if mod(time_bin,round(0.10*numel(start_idx))) ==0
-        fprintf('\t%g%% Complete\n', round(time_bin./numel(start_idx)*100,2));
-    end
-    temp = squeeze(nanmean(combined_data(start_idx(time_bin):start_idx(time_bin)+win_size,:,:),1))';
-    for cur_limb = 1:size(snippets{1},2)
-        test = temp(:,cur_limb);
-        [p,tbl] = anova1(test,group,'off');
-        pval(cur_limb,time_bin) = -log10(p);
-        fstat(cur_limb,time_bin) = tbl{2,5};
-    end
-end
-
-%% plot over time
-pval_smooth=[];
-fstat_smooth=[];
-for i = 1:size(pval,1)
-    pval_smooth(i,:) = convn(pval(i,:)',ones(2,1)/2,'same');
-    fstat_smooth(i,:) = convn(fstat(i,:)',ones(2,1)/2,'same');
-end
-
 figure; hold on
 plot(time_vec(start_idx+(win_size+1)/2),nanmean(pval_smooth,1),'color',[0.5 0.5 0.5],'linewidth',2,'linestyle','--');
 plot(time_vec(start_idx+(win_size+1)/2),fstat_smooth')
@@ -234,100 +419,31 @@ plot(time_vec(start_idx+(win_size+1)/2),nanmean(fstat_smooth,1),'k','linewidth',
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-%%
-
-% % %% If you want to use spock 
-% % %use spock
-% % spock_save_dir = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\Spock_Temp_Data\';
-% % username = input(' Spock Username: ', 's');
-% % password = passcode();
-% % s_conn = ssh2_config('spock.princeton.edu',username,password);
 % % 
-% % group = arrayfun(@(n) ones(1,size(snippets{n},3))*n, (1:numel(snippets)), 'UniformOutput',0);
-% % combined_data = cat(3,snippets{:});
-% % for i = 1:size(combined_data,2)
-% %     for j = 1:size(combined_data,3)
-% %         combined_data(:,i,j) = convn(combined_data(:,i,j),ones(13,1)/5,'same');
-% %     end
-% % end
-% % group = [group{:}];
-% % %trim to windowed time period
-% % combined_data = combined_data(30:79-20,:,:);
-% % time_vec = bp.trig_dur(30:79-19);
-% % 
-% % win_size = 4;
-% % start_idx = (1:4:size(combined_data,1)-win_size);
-% % 
-% % %get a list of all the motif comparisons
-% % [p,q] = meshgrid(1:size(H_weight,1), 1:size(H_weight,1));
-% % p = tril(p-1);
-% % q = tril(q,-1);
-% % pairs = [p(p~=0) q(q~=0)];
-% % 
-% % rng('default') %for reproducibility
-% % auc = NaN(size(pairs,1),numel(start_idx));
-% % for time_bin = 1:numel(start_idx)
-% %     fprintf('\n Working on time bin %d of %d\n',time_bin, numel(start_idx));
-% %     temp = squeeze(nanmean(combined_data(start_idx(time_bin):start_idx(time_bin)+win_size,:,:),1));
-% %     for cur_pair = 1:14 %size(pairs,1)        
-% %         x = temp(:,(group==pairs(cur_pair,1)));
-% %         y = temp(:,(group==pairs(cur_pair,2)));
-% %         
-% %         %get equal samples from both
-% %         num = min(size(x,2),size(y,2));       
-% %         x = x(:,randperm(size(x,2),num));
-% %         y = y(:,randperm(size(y,2),num));        
-% %         label = cat(1,ones(num,1),2*ones(num,1))';
-% %         
-% %         savedata = cat(1,cat(2,x,y),label)';
-% %         filename = sprintf('behav_class_pair_%d_timebin_%d.mat',cur_pair,time_bin);
-% %         save([spock_save_dir filename],'savedata');
-% % 
-% %         script_name = WriteBashScript(sprintf('%d_%d',time_bin,cur_pair),'Spock_ClassifyBehavioralWaveForms',{filename},{"'%s'"});
-% %         response = ssh2_command(s_conn,...
-% %             ['cd /jukebox/buschman/Rodent\ Data/Wide\ Field\ Microscopy/Widefield_Imaging_Analysis/Spock/DynamicScripts/ ;',... %cd to directory
-% %             sprintf('sbatch %s',script_name)]); 
-% %         
-% %     end
+% % %%  Calculate Motif-Triggered-Motif Snippets
+% % snippets_motifs = cell(1,size(H_weight,1));
+% % for cur_motif = 1:size(H_weight,1)    
+% %     %remove any motif onsets that are too close to start and end
+% %     temp = h_onset{cur_motif};
+% %     temp = temp(temp-abs(min(bp.trig_dur))>=1 & temp+abs(max(bp.trig_dur))<num_frames);
+% %     temp = arrayfun(@(x) H_weight(:,x+bp.trig_dur), temp, 'UniformOutput',0);       
+% %     snippets_motifs{cur_motif} = cat(3,temp{:});
 % % end
 % % 
-% % % Close the connection
-% % ssh2_close(s_conn);
-% % 
-% % %clear personal information
-% % clear s_conn password username
-
-% % %% Make Classification Figures
-% % cd(spock_save_dir)
-% % auc = NaN(size(pairs,1),numel(start_idx));
-% % for time_bin = 1:numel(start_idx)
-% %     for cur_pair = 1:size(pairs,1)  
-% %         try
-% %         load([spock_save_dir sprintf('Processed_behav_class_pair_%d_timebin_%d.mat',cur_pair,time_bin)]);
-% %         auc(cur_pair,time_bin) = Observed.AUC;
-% %         catch
-% %             auc(cur_pair,time_bin) = NaN;
-% %         end
-% %     end
+% % %% Plot motif triggered motif snippets
+% % col = getColorPalet(size(snippets_motifs{1},2));
+% % col = num2cell(col',1);
+% % for i = 1:size(H_weight,1)
+% %     figure('position',[315   558   925   420]); hold on; 
+% %     pt = arrayfun(@(n) Plot_Snippet(squeeze(snippets_motifs{i}(n,:,:)),(bp.trig_dur*75)',col{n}), 1:size(snippets_motifs{i},1),'UniformOutput',0);
+% %     xlabel('Time (ms)');
+% %     ylabel('Weight (au)') 
+% %     legend([pt{:}],arrayfun(@(x) num2str(x),(1:size(snippets_motifs{1},2)),'UniformOutput',0),'location','eastoutside')
+% %     title(sprintf('Motif %d',i),'FontName','Arial','FontWeight','normal','Fontsize',16);
+% %     setFigureDefaults;    
+% %     set(gca,'position',[2 2 12 8]);
 % % end
-
-
-
-
+% % 
 
 
 

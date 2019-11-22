@@ -2,11 +2,11 @@
 addpath(genpath('C:\Users\macdo\Documents\GitHub\Widefield_Imaging_Analysis'));
 addpath(genpath('C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\'));
 %set filepaths
-fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse431_10_17_2019\';
-fn_facecam = 'Cam_0_20191017-155226.avi';
-fn_dlc = 'Cam_1_20191017-155226_Mouse431_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
-fn_savebase = 'Mouse9031_10_17_2019';
-fn_widefield = '431-10-17-2019_1Fitted_block_hemoflag0_1';
+fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse494_10_17_2019\';
+fn_facecam = 'Cam_0_20191017-184642.avi';
+fn_dlc = 'Cam_1_20191017-184642_Mouse494_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
+fn_savebase = 'Mouse494_10_17_2019';
+fn_widefield = '494-10-17-2019_1Fitted_block_hemoflag0_1';
 
 %load behavioral analysis paramters
 bp = behavioral_params; 
@@ -14,8 +14,8 @@ bp = behavioral_params;
 expvaridx = load('OrderedByExpVar_Final.mat');
 expvaridx = expvaridx.idx;
 
-savefigs = 0; 
-selected_motifs = [1,3,5];
+savefigs = 1; 
+cd(fn_path)
 %% load motif H weightings 
 H = load([fn_path, fn_widefield],'H');
 H = H.H; 
@@ -112,7 +112,7 @@ for i = 1:size(snippets{1},2)
     ylabel('Z-Score')
     title(labels{i},'FontName','Arial','FontWeight','normal','Fontsize',16);
     legend([pt{:}],cellfun(@(x) num2str(x),(num2cell(1:size(H_weight,1))),'UniformOutput',0),'location','eastoutside')
-    xlim([min(bp.trig_dur*75),max(bp.trig_dur*75)]);   
+    xlim([min(bp.trig_dur(bp.plotting_idx))*75,max(bp.trig_dur(bp.plotting_idx))*75])   
     setFigureDefaults;    
     set(gca,'position',[2 2 12 8]);
 end
@@ -133,6 +133,7 @@ for i = 1:size(H_weight,1)
     ylabel('Z-Score') 
     legend([pt{:}],labels,'location','eastoutside')
     title(sprintf('Motif %d',i),'FontName','Arial','FontWeight','normal','Fontsize',16);
+    xlim([min(bp.trig_dur(bp.plotting_idx))*75,max(bp.trig_dur(bp.plotting_idx))*75])
     setFigureDefaults;    
     set(gca,'position',[2 2 12 8]);
 end
@@ -161,7 +162,7 @@ for i =  1:size(H_weight,1)
             Plot_Snippet(squeeze(snippets{i}(:,8,:)),(bp.trig_dur*75)',col{8})
         end
         line([min(bp.trig_dur*75),max(bp.trig_dur*75)],[0 0],'linestyle','--','color',[0.5 0.5 0.5],'linewidth',2);
-        xlim([min(bp.trig_dur*75),max(bp.trig_dur*75)]);   
+        xlim([min(bp.trig_dur(bp.plotting_idx))*75,max(bp.trig_dur(bp.plotting_idx))*75])   
         ylist(j,:) = abs(get(gca,'ylim'));
         setFigureDefaults;   
         set(gca,'XColor','none') 
@@ -195,20 +196,6 @@ for cur_motif = 1:size(H_weight,1)
 end
 combined_data_noise = cat(3,snippets_noise{:});
 
-%% NOISE Plot the average motif triggered, grouped by motif
-col = getColorPalet(size(snippets_noise{1},2));
-col = num2cell(col',1);
-for i = 1:size(H_weight,1)
-    figure('position',[315   558   925   420]); hold on; 
-    pt = arrayfun(@(n) Plot_Snippet(squeeze(snippets_noise{i}(:,n,:)),(1:numel(bp.noise_dur(1)))*75',col{n}), 1:size(snippets_noise{i},2),'UniformOutput',0);
-    xlabel('Time (ms)');
-    ylabel('Z-Score') 
-    legend([pt{:}],labels,'location','eastoutside')
-    title(sprintf('Motif %d',i),'FontName','Arial','FontWeight','normal','Fontsize',16);
-    setFigureDefaults;    
-    set(gca,'position',[2 2 12 8]);
-end
-
 %% Classify between motifs
 group = arrayfun(@(n) ones(1,size(snippets{n},3))*n, (1:numel(snippets)), 'UniformOutput',0);
 combined_data = cat(3,snippets{:});
@@ -220,8 +207,8 @@ combined_data = combined_data(bp.classification_idx,:,:);
 combined_data_noise = combined_data_noise(bp.classification_idx,:,:);
 time_vec = bp.trig_dur(bp.classification_idx)*75;
 
-win_size = 2; %actually window size is win_size+1 use 4
-start_idx = (1:1:size(combined_data,1)-win_size);
+win_size = 3; %actually window size is win_size+1
+start_idx = (1:2:size(combined_data,1)-win_size);
 
 %get a list of all the motif comparisons
 [p,q] = meshgrid(1:size(H_weight,1), 1:size(H_weight,1));

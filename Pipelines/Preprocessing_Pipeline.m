@@ -6,7 +6,7 @@
 % in order. 
 
 %% Manual steps
-save_dir = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\ProcessedData_Hemo\'; %Final target save directory for the preprocesssed and combined files
+save_dir = 'Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\Widefield_Preprocessed\'; %Final target save directory for the preprocesssed and combined files
 if ~exist(save_dir)
     mkdir(save_dir);
 end
