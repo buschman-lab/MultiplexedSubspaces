@@ -22,7 +22,7 @@ fprintf('\n Saving data');
 %Save off corrected data if available
 if ~isempty(dff)
     [path, fn] = fileparts(in_fn);
-    %append dff
+    %save dff
     fn = [path filesep fn '_dff.mat'];
     save(fn,'dff','opts','-v7.3');
 end

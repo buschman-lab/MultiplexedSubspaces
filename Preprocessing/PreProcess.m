@@ -50,38 +50,3 @@ warning ('on','all');
 
 end %function
 
-
-% 
-% 
-% %Make DFF;
-% if opts.makeDFF
-% [dff,avgproj] = makeDFF(stack, opts);
-% %save dff
-% save(opts.DFF_fn,'dff','-V7.3');
-% end
-% 
-% %Save preprocessed data
-% save(opts.Stack_fn,'stack','-V7.3');
-% 
-% if opts.motion
-%     opts.DFF_fn = erase(opts.DFF_fn,'.mat');
-%     motion_fn = sprintf('%s_registrationinfo.mat',opts.DFF_fn);
-%     save(motion_fn,'regInfo','-V7.3');
-% end
-% 
-% fprintf('\tDone with Preprocessing %s...\n',opts.SaveFileBase);
-% % if opts.masc_mask == 1
-%     stack = zeros(size(opts.Mask,1),size(opts.Mask,2));
-% else
-%     if opts.crop
-%         stack = zeros(floor(opts.crop_position(3)),floor(opts.crop_position(4)));
-%     else
-%         stack = zeros(floor(size(ref_img,1)),floor(size(ref_img,2)));
-%     end
-% end
-% %Preallocate along the 3rd dimension
-% if opts.dsSpatial
-%     stack = SpatialBin(stack,opts.dsFactor);
-% else
-%     stack = repmat(stack, 1, 1,img_count);
-% end

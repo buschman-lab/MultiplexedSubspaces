@@ -95,6 +95,7 @@ x_query_ds = linspace(1,size(features,1),num_frames);
 
 if bp.zscore %optional zscore
    features_downsampled = zscore(features_downsampled,1);
+   features_no_smooth_downsampled = zscore(features_no_smooth_downsampled,1);
 end
 
 clear raw_data facecam_data W_clust_smooth
@@ -108,7 +109,6 @@ x = (0:1300)/13;
 for i = 1:size(data,2)
     ax(i) = subplot(size(data,2),1,i); 
     plot(x,data(:,i),'linewidth',2,'color',col(i,:))
-%     line([x(1) x(end)],[0 0],'linestyle','--','color','k','linewidth',2);
     ylabel('Z-Score')
     if i == size(data,2)
         xlabel('Time (s)');
@@ -157,7 +157,7 @@ for i = 1:num_features
     plot(xi,f,'linewidth',2,'color',col(i,:)); 
     title(sprintf('%s',labels{i}),'FontName','Arial','FontSize',16,'FontWeight','normal')
     setFigureDefaults;
-    ylabel('Probability Density')
+    ylabel('PDF')
     xlabel('Z-Score')
     yvals = get(gca,'ylim');
     line([split_idx{i},split_idx{i}],[0 max(get(gca,'ylim'))],'linestyle','--','linewidth',2,'color','k')
@@ -170,32 +170,48 @@ for i = 1:num_features
     set(gca,'position',[pos(1) pos(2) 3 3])
 end
 
-
-% Plot the autocorrelation of the unsmooth factors to confirm appropriate smoothing
-figure('position',[680   101   858   877]); hold on; 
-[r,c] = numSubplot(num_features,2);
+% Plot the autocorrelation of factors 
+figure('position',[1105 524 433 454]); hold on;
 for i = 1:num_features
-    subplot(r,c,i); hold on;
     %plot pdf 
     [xc,lags] = xcorr(features_downsampled(:,i),120*13,'coeff'); 
     idx = [ceil(numel(lags)/2)+1:numel(lags)];
     plot(lags(idx)/13,xc(idx),'linewidth',2,'color',col(i,:));   
-    title(sprintf('%s',labels{i}),'FontName','Arial','FontSize',16,'FontWeight','normal')    
+    title({'Behavioral Feature';'Autocorrelation'},'FontName','Arial','FontSize',16,'FontWeight','normal')    
     ylim([min(xc) 1]);
     xlim([0 max(lags/13)])
     ylabel('Rho')
     xlabel('time (s)')
-    set(gca,'Xtick',[])
     
     %get halflife
     tau=find(xc(idx)>=0.5*xc(idx(1)),1,'last')/13;
-    text(30,0.5,sprintf('tau = %.2g s',tau),'FontSize',16,'FontName','Arial')
-    setFigureDefaults; 
+    text(30,0.3+(i*0.1),sprintf('%s tau = %.2g s',labels_abbrev{i},tau),'FontSize',16,'FontName','Arial')
+    setFigureDefaults;       
+end
+pos = get(gca,'position');
+set(gca,'position',[3 3 6 6])
+
+% Plot the autocorrelation of the unsmooth factors to confirm appropriate smoothing
+figure('position',[1105 524 433 454]); hold on; 
+for i = 1:num_features
+    %plot pdf 
+    [xc,lags] = xcorr(features_no_smooth_downsampled(:,i),120*13,'coeff'); 
+    idx = [ceil(numel(lags)/2)+1:numel(lags)];
+    plot(lags(idx)/13,xc(idx),'linewidth',2,'color',col(i,:));   
+    title({'Behavioral Feature';'Autocorrelation (NOSMOOTH)'},'FontName','Arial','FontSize',16,'FontWeight','normal')    
+    ylim([min(xc) 1]);
+    xlim([0 max(lags/13)])
+    ylabel('Rho')
+    xlabel('time (s)')
     
-    pos = get(gca,'position');
-    set(gca,'position',[pos(1) pos(2) 6 6])
+    %get halflife
+    tau=find(xc(idx)>=0.5*xc(idx(1)),1,'last')/13;
+    text(30,0.3+(i*0.1),sprintf('%s tau = %.2g s',labels_abbrev{i},tau),'FontSize',16,'FontName','Arial')
+    setFigureDefaults;     
     
 end
+pos = get(gca,'position');
+set(gca,'position',[3 3 6 6])
 
 % Correlation between factors
 figure; hold on; 
@@ -287,6 +303,31 @@ load_frame(load_frame<0.01)=NaN;
 expvar_state = arrayfun(@(x) load_frame(:,indx_clusters==x),unique_states,'UniformOutput',0); 
 expvar_state = cellfun(@(x) nansum(x./nansum(x(:)),2), expvar_state, 'UniformOutput',0);
 expvar_state = [expvar_state{:}]*100;        
+
+%% Plot the H autocorrelation
+% Plot the autocorrelation of the unsmooth factors to confirm appropriate smoothing
+figure('position',[680   101   858   877]); hold on; 
+tau = NaN(1,size(H,1));
+for i = 1:size(H,1)
+    %plot pdf 
+    [xc,lags] = xcorr(H(i,:),20*13,'coeff'); 
+    idx = [ceil(numel(lags)/2)+1:numel(lags)];
+    plot(lags(idx)/13,xc(idx),'linewidth',2,'color',[0.5 0.5 0.5]);   
+    title({'Autocorrelation of Motif';'Temporal Weightings'},'FontName','Arial','FontSize',16,'FontWeight','normal')    
+    xlim([0 max(lags/13)])
+    ylabel('Rho')
+    xlabel('time (s)')    
+    tau(i)=find(xc(idx)>=0.5*xc(idx(1)),1,'last')/13;
+end
+
+ylim([0 1]);
+%get halflife
+text(3,0.5,sprintf('\\tau = %.2g +/- %.2gs',nanmean(tau),sem(tau,2)),'FontSize',16,'FontName','Arial')
+setFigureDefaults; 
+
+pos = get(gca,'position');
+set(gca,'position',[pos(1) pos(2) 6 6])
+
 
 %% Plot the binary state ID in vertical format
 close all; figure('position',[100 50 700, 1000]); 
