@@ -1,5 +1,5 @@
 %add paths
-addpath(genpath('C:\Users\macdo\Documents\GitHub\Widefield_Imaging_Analysis'));
+% addpath(genpath('C:\Users\macdo\Documents\GitHub\Widefield_Imaging_Analysis'));
 addpath(genpath('C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\'));
 %set filepaths
 fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse431_10_17_2019\';
@@ -65,7 +65,7 @@ frontpaws_to_nose = sqrt(sum(frontpaws_to_nose.^2,2));
 tail_to_nose = sqrt(sum(tail_to_nose.^2,2));
 
 %combined all features
-face_motion_energy{2} = -1*face_motion_energy{2}; %need to flip the whisker energy because high whisking actually blurs the camera and make low energy  
+face_motion_energy{2} = -1 * face_motion_energy{2}; %may need to flip the whisker energy if high whisking actually blurs the camera and make low energy  
 features = cat(2,face_motion_energy{:},frontpaws_to_nose,limb_speed);
 labels = {'nose motion energy','whisker motion energy','front paws to nose distance','limb speed'};
 labels_abbrev = {'NME','WME','F2N','LS'};
@@ -101,6 +101,7 @@ end
 clear raw_data facecam_data W_clust_smooth
 
 %% Plot example behavioral traces
+num_features = size(features_downsampled,2);
 col = getColorPalet(num_features);
 data = features_downsampled(42000:43300,:);
 figure('units','centimeters','position',[1 1 15 25]); hold on;
@@ -145,7 +146,6 @@ end
 
 split_idx = {-0.315,0.907,-2.484,-.14};
 
-num_features = size(features_downsampled,2);
 %distributions
 figure('position',[680   101   858   877]); hold on; 
 [r,c] = numSubplot(num_features,2);
@@ -185,7 +185,7 @@ for i = 1:num_features
     
     %get halflife
     tau=find(xc(idx)>=0.5*xc(idx(1)),1,'last')/13;
-    text(30,0.3+(i*0.1),sprintf('%s tau = %.2g s',labels_abbrev{i},tau),'FontSize',16,'FontName','Arial')
+    text(30,0.3+(i*0.1),sprintf('%s \\tau = %.2g s',labels_abbrev{i},tau),'FontSize',16,'FontName','Arial')
     setFigureDefaults;       
 end
 pos = get(gca,'position');
@@ -206,7 +206,7 @@ for i = 1:num_features
     
     %get halflife
     tau=find(xc(idx)>=0.5*xc(idx(1)),1,'last')/13;
-    text(30,0.3+(i*0.1),sprintf('%s tau = %.2g s',labels_abbrev{i},tau),'FontSize',16,'FontName','Arial')
+    text(30,0.3+(i*0.1),sprintf('%s \\tau = %.2g s',labels_abbrev{i},tau),'FontSize',16,'FontName','Arial')
     setFigureDefaults;     
     
 end
@@ -274,10 +274,28 @@ end
 clusters = clusters(unique_states,:);
 clusters(:,end+1) = temp;
 
+%reorder states by decreasing contribution
+[~, idx] = sort(temp,'descend');
+clusters = clusters(idx,:);
+
+%rename indx_clusters
+indx_clusters_temp = NaN(size(indx_clusters));
+for i = 1:numel(idx)
+    indx_clusters_temp(indx_clusters==idx(i))=i;
+end   
+indx_clusters = indx_clusters_temp;
+unique_states = unique(indx_clusters);
+
 %remove any states that occur for less than a second
 bad_states = unique_states(clusters(:,5)<=13);
+bad_indices = ismember(indx_clusters,bad_states);
 clusters(clusters(:,5)<=13,:)=[];
 unique_states(ismember(unique_states,bad_states))=[];
+features_downsampled(ismember(indx_clusters,bad_states),:)=[];
+features_binned(ismember(indx_clusters,bad_states),:)=[];
+indx_clusters(ismember(indx_clusters,bad_states))=[];
+
+
 
 warning('you are removing %d states shorter than 1 second',numel(bad_states));
 
@@ -285,32 +303,387 @@ warning('you are removing %d states shorter than 1 second',numel(bad_states));
 data = load([fn_path fn_widefield],'w','data_test','H');
 w = data.w(:,expvaridx,:);
 H = data.H(expvaridx,:);
+H(:,bad_indices)=[];
+data.data_test(:,bad_indices)=[];
 
-load_frame = NaN(size(H,1),num_frames);
+load_frame = NaN(size(H,1),size(H,2));
 for cur_motif = 1:size(H,1)
     fprintf('\nworking on motif %d',cur_motif);
     WH = helper.reconstruct(w(:,cur_motif,:),H(cur_motif,:));  
-    for cur_f = 1:num_frames
+    for cur_f = 1:size(H,2)
         load_frame(cur_motif,cur_f) = 1 - nanvar(data.data_test(:,cur_f)-WH(:,cur_f))./nanvar(data.data_test(:,cur_f));        
     end   
 end %motif loop
-clear data w H WH
+clear data WH
 
 %remove motifs that capture less than 1 percent of the variance to a given frame
 load_frame(load_frame<0.01)=NaN;
 
 %split by behavioral state
 expvar_state = arrayfun(@(x) load_frame(:,indx_clusters==x),unique_states,'UniformOutput',0); 
-expvar_state = cellfun(@(x) nansum(x./nansum(x(:)),2), expvar_state, 'UniformOutput',0);
-expvar_state = [expvar_state{:}]*100;        
+
+expvar_state = cellfun(@(x) nanmean(x./nansum(x,1),2), expvar_state, 'UniformOutput',0);
+expvar_state = [expvar_state{:}]; 
+
+
+%% shuffle the order of each behavioral state
+
+%break each motif state into a set of consecutive indices
+frame_indices = arrayfun(@(x) find(indx_clusters==x),unique_states,'UniformOutput',0); 
+consecutive_frames = cellfun(@(x) find(diff([false;[1;diff(x)]==1;false])~=0), frame_indices,'UniformOutput',0);
+consecutive_frames = cellfun(@(x) reshape(x', 2,[])', consecutive_frames,'UniformOutput',0);
+
+%break into cell array of cells with the different consecutive indices
+cluster_groups = {};
+shuffled_labels = {};
+for j = 1:numel(frame_indices)
+   x = frame_indices{j};
+   y = consecutive_frames{j};
+   for i = 1:size(y,1)
+       if i == 1
+           cluster_groups{j,i} = x(1:y(i,2)-1);
+       elseif i == size(y,1)
+           cluster_groups{j,i} = x(y(i-1,2):end);
+       else
+           cluster_groups{j,i} = x(y(i-1,2):y(i,2)-1);
+       end
+       shuffled_labels{j,i} = ones(1,numel(cluster_groups{j,i}))*unique_states(j);
+   end
+end
+shuffled_labels = shuffled_labels(:);
+
+%%
+rng('default')
+
+basal_variance = var(features_downsampled,[],1);
+%get the variance of behavioral factor during a state
+features_variance = NaN(numel(unique_states),size(features_downsampled,2));
+for i = 1:numel(unique_states)
+    features_variance(i,:) = var(features_downsampled(indx_clusters==unique_states(i),:),[],1)./basal_variance;
+end
+
+features_variance_shuf = NaN(numel(unique_states),size(features_downsampled,2),1000);
+for num_shuf = 1:5000    
+   temp = cat(2,shuffled_labels{randperm(numel(shuffled_labels))});   
+   for i = 1:numel(unique_states)
+      features_variance_shuf(i,:,num_shuf) = var(features_downsampled(temp==unique_states(i),:),[],1)./basal_variance;
+   end      
+end
+
+%Add correct to the shuffled data set
+features_variance_shuf = cat(3,features_variance_shuf,features_variance);
+pval_store=NaN(num_features,numel(unique_states));
+pval_bin = NaN(num_features,1);
+for cur_feature = 1:num_features
+    figure('position',[215 116 1259 862]); hold on; 
+    [r,c] = numSubplot(size(features_variance,1),1);
+    for cur_state = 1:size(features_variance,1)
+       subplot(r,c,cur_state); 
+       histogram(features_variance_shuf(cur_state,cur_feature,:),'numBins',100);
+       line([features_variance(cur_state,cur_feature),features_variance(cur_state,cur_feature)],...
+           get(gca,'ylim'),'linestyle','--','color','r','linewidth',2);
+       
+       %get one tailed pvalues
+       if features_variance(cur_state,cur_feature)<=nanmean(features_variance_shuf(cur_state,cur_feature,:))
+          pval = sum(features_variance_shuf(cur_state,cur_feature,:)<=features_variance(cur_state,cur_feature));          
+       else
+          pval = sum(features_variance_shuf(cur_state,cur_feature,:)>=features_variance(cur_state,cur_feature));
+       end
+       pval = pval/numel(features_variance_shuf(cur_state,cur_feature,:));
+       pval_store(cur_feature,cur_state) = pval;
+       title(sprintf('%s State %d. \nPval %.2g',labels_abbrev{cur_feature},cur_state,pval),'FontSize',16,'FontWeight','normal');
+       xlim([get(gca,'xlim') + [-1,1]])
+       setFigureDefaults;
+       pos = get(gca,'position');
+       set(gca,'position',[pos(1) pos(2) 2.5 2.5])
+       
+    end
+    pval_bin(cur_feature) = 1 - binocdf(sum(pval_store(cur_feature,:)<0.05),numel(pval_store(cur_feature,:)),0.05);
+end
+
+figure('position',[680   420   560   558]); hold on; 
+imagesc(floor(log10(pval_store)),[-4 -1]);
+cmap = magma(4);
+cmap = (cmap(1:4,:));
+colormap(cmap);
+c=colorbar;
+ylabel(c,'log_{10}(\itp-value)','FontName','Arial','FontWeight','normal','Fontsize',16,'Interpreter','tex');
+title({'Behavioral Features Are Differentially';'Engaged Across Behavioral States'},'FontSize',16,'Fontweight','normal','FontName','Arial')
+ylim([0.5,size(pval_store,1)+0.5]);
+xlim([0.5,size(pval_store,2)+0.5]);
+xlabel('Behavioral State')
+set(gca,'YTick',(1:size(pval_store,1)),'YTickLabels',labels_abbrev)
+for i = 1:numel(pval_bin)
+   text(numel(unique_states)+1,i,sprintf('%.2g',pval_bin(i)),'FontSize',16,'FontName','Arial','FontWeight','normal')
+end
+text(numel(unique_states)+2.5, -3,{'Binomial';'Probability'},'Rotation',90,'HorizontalAlignment','Center',...
+    'FontSize',16,'FontWeight','normal','FontName','Arial')
+setFigureDefaults;
+set(gca,'position',[3 4 6 2],'box','on');
+set(c,'units','centimeters','position',[11.5 4 0.5 2]);
+for x_grid = 0.5:1:size(features_variance,1)+0.5
+    line([x_grid,x_grid],[0.5,size(features_variance,2)+0.5],'linewidth',1.5,'color','k')    
+end
+for y_grid = 0.5:1:size(features_variance,2)+0.5
+    line([0.5,size(features_variance,1)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','k')    
+end 
+set(c,'YTick',linspace(-4,-1,5),'YTickLabel',{'','-4','-3','-2','-1'})
+
+% plot the relative increase or decrease of the motif's activity
+figure('position',[680   420   560   558]); hold on; 
+imagesc(log(features_variance'),[-3 3]);
+colormap(redgreencmap)
+c=colorbar;
+ylabel(c,{'Change in Variance';'Relative to Baseline (log)'},'FontName','Arial','FontWeight','normal','Fontsize',16,'Interpreter','tex');
+title({'Behavioral Features Are Differentially';'Engaged Across Behavioral States'},'FontSize',16,'Fontweight','normal','FontName','Arial')
+ylim([0.5,size(pval_store,1)+0.5]);
+xlim([0.5,size(pval_store,2)+0.5]);
+xlabel('Behavioral State')
+set(gca,'YTick',(1:size(pval_store,1)),'YTickLabels',labels_abbrev)
+setFigureDefaults;
+set(gca,'position',[3 4 6 2],'box','on');
+set(c,'units','centimeters','position',[10 4 0.5 2]);
+for x_grid = 0.5:1:size(features_variance,1)+0.5
+    line([x_grid,x_grid],[0.5,size(features_variance,2)+0.5],'linewidth',1.5,'color','k')    
+end
+for y_grid = 0.5:1:size(features_variance,2)+0.5
+    line([0.5,size(features_variance,1)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','k')    
+end
+
+if savefigs
+    handles = get(groot, 'Children');
+    saveCurFigs(handles,'-svg','Permutation_Test_BehavioralFeatures',fn_path,1);
+    close all;
+end
+
+
+%% Do the same thing with your H weightings
+rng('default')
+data = load([fn_path fn_widefield],'w','data_test','H');
+w = data.w(:,expvaridx,:);
+H = data.H(expvaridx,:);
+H(:,bad_indices)=[];
+
+H_weight = NaN(size(H))';
+for cur_motif = 1:size(H,1)
+    H_weight(:,cur_motif) = helper.reconstruct(nanmean(w(:,cur_motif,:),1),H(cur_motif,:)); 
+end %motif loop
+clear data H w
+
+basal_variance = var(H_weight,[],1);
+
+%get the variance of behavioral factor during a state
+H_variance = NaN(numel(unique_states),size(H_weight,2));
+for i = 1:numel(unique_states)
+    H_variance(i,:) = var(H_weight(indx_clusters==unique_states(i),:),[],1)./basal_variance;
+end
+
+H_variance_shuf = NaN(numel(unique_states),size(H_weight,2),1000);
+for num_shuf = 1:5000    
+   temp = cat(2,shuffled_labels{randperm(numel(shuffled_labels))});   
+   for i = 1:numel(unique_states)
+      H_variance_shuf(i,:,num_shuf) = var(H_weight(temp==unique_states(i),:),[],1)./basal_variance;
+   end      
+end
+%Add correct to the shuffled data set
+H_variance_shuf = cat(3,H_variance_shuf,H_variance);
+pval_store=NaN(size(H_variance,2),size(H_variance,1));
+pval_bin = NaN(size(H_variance,2),1);
+for cur_motif = 1:size(H_variance,2)
+    figure('position',[215 116 1259 862]); hold on; 
+    [r,c] = numSubplot(size(H_variance,1),1);
+    for cur_state = 1:size(H_variance,1)
+       subplot(r,c,cur_state); 
+       histogram(H_variance_shuf(cur_state,cur_motif,:),'numBins',100);
+       line([H_variance(cur_state,cur_motif),H_variance(cur_state,cur_motif)],...
+           get(gca,'ylim'),'linestyle','--','color','r','linewidth',2);
+       
+       %get one tailed pvalues
+       if H_variance(cur_state,cur_motif)<=nanmean(H_variance_shuf(cur_state,cur_motif,:))
+          pval = sum(H_variance_shuf(cur_state,cur_motif,:)<=H_variance(cur_state,cur_motif));          
+       else
+          pval = sum(H_variance_shuf(cur_state,cur_motif,:)>=H_variance(cur_state,cur_motif));
+       end
+       pval = pval/numel(H_variance_shuf(cur_state,cur_motif,:));
+       pval_store(cur_motif,cur_state) = pval;
+       title(sprintf('Motif %d State %d. \nPval %.2g',cur_motif,cur_state,pval),'FontSize',16,'FontWeight','normal');
+%        xlim([get(gca,'xlim') *1.5])
+       setFigureDefaults;
+       pos = get(gca,'position');
+       set(gca,'position',[pos(1) pos(2) 2.5 2.5])
+    end   
+    
+    pval_bin(cur_motif) = 1 - binocdf(sum(pval_store(cur_motif,:)<0.05),numel(pval_store(cur_motif,:)),0.05);
+end
+
+figure('position',[680   420   560   558]); hold on; 
+imagesc(floor(log10(pval_store)),[-4 -1]);
+cmap = magma(4);
+cmap = (cmap(1:4,:));
+% cmap(1,:) = [1,1,1];
+colormap(cmap);
+c=colorbar;
+ylabel(c,'log_{10}(\itp-value)','FontName','Arial','FontWeight','normal','Fontsize',16,'Interpreter','tex');
+title({'Basis Motifs are Differentially';'Engaged Across Behavioral States'},'FontSize',16,'Fontweight','normal','FontName','Arial')
+ylim([0.5,size(pval_store,1)+0.5]);
+xlim([0.5,size(pval_store,2)+0.5]);
+xlabel('Behavioral State')
+ylabel('Basis Motif')
+for i = 1:numel(pval_bin)
+   text(numel(unique_states)+1,i,sprintf('%.2g',pval_bin(i)),'FontSize',16,'FontName','Arial','FontWeight','normal')
+end
+text(numel(unique_states)+2.5, -3,{'Binomial';'Probability'},'Rotation',90,'HorizontalAlignment','Center',...
+    'FontSize',16,'FontWeight','normal','FontName','Arial')
+setFigureDefaults;
+set(gca,'position',[3 4 6 6],'box','on');
+set(c,'units','centimeters','position',[11.5 4 0.5 6]);
+for x_grid = 0.5:1:size(H_variance,2)+0.5
+    line([x_grid,x_grid],[0.5,size(H_variance,2)+0.5],'linewidth',1.5,'color','k')    
+end
+for y_grid = 0.5:1:size(H_variance,2)+0.5
+    line([0.5,size(H_variance,2)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','k')    
+end 
+set(c,'YTick',linspace(-4,-1,5),'YTickLabel',{'','-4','-3','-2','-1'})
+
+% plot the relative increase or decrease of the motif's activity
+figure('position',[680   420   560   558]); hold on; 
+imagesc(log(H_variance'),[-1 1]);
+colormap(redgreencmap)
+c=colorbar;
+ylabel(c,{'Change in Variance';'Relative to Baseline (log)'},'FontName','Arial','FontWeight','normal','Fontsize',16,'Interpreter','tex');
+title({'Motif are Differentially';'Engaged Across Behavioral States'},'FontSize',16,'Fontweight','normal','FontName','Arial')
+ylim([0.5,size(pval_store,1)+0.5]);
+xlim([0.5,size(pval_store,2)+0.5]);
+xlabel('Behavioral State')
+ylabel('Basis Motif')
+setFigureDefaults;
+set(gca,'position',[3 4 6 6],'box','on');
+set(c,'units','centimeters','position',[10 4 0.5 6]);
+for x_grid = 0.5:1:size(H_variance,2)+0.5
+    line([x_grid,x_grid],[0.5,size(H_variance,2)+0.5],'linewidth',1.5,'color','k')    
+end
+for y_grid = 0.5:1:size(H_variance,2)+0.5
+    line([0.5,size(H_variance,2)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','k')    
+end 
+
+
+if savefigs
+    handles = get(groot, 'Children');
+    saveCurFigs(handles,'-svg','Permutation_Test_H_variance',fn_path,1);
+    close all;
+end
+
+%% Do the same thing with your H occurnaces
+[~, h_bin, ~] = ThresholdMatrix(H_weight,1);
+basal_rate = sum(h_bin,1)./size(h_bin,1);
+
+%get the variance of behavioral factor during a state
+H_variance = NaN(numel(unique_states),size(H_weight,2));
+for i = 1:numel(unique_states)
+    H_variance(i,:) = sum(h_bin(indx_clusters==unique_states(i),:),1)/sum(indx_clusters==unique_states(i));
+    H_variance(i,:) = H_variance(i,:)./basal_rate;
+end
+
+H_variance_shuf = NaN(numel(unique_states),size(H_weight,2),1000);
+for num_shuf = 1:5000    
+   temp = cat(2,shuffled_labels{randperm(numel(shuffled_labels))});   
+   for i = 1:numel(unique_states)
+        H_variance_shuf(i,:,num_shuf) = sum(h_bin(temp==unique_states(i),:),1)/sum(temp==unique_states(i));
+        H_variance_shuf(i,:,num_shuf) = H_variance_shuf(i,:,num_shuf)./basal_rate;
+   end      
+end
+%Add correct to the shuffled data set
+H_variance_shuf = cat(3,H_variance_shuf,H_variance);
+
+for cur_motif = 1:size(H_variance,2)
+    figure('position',[215 116 1259 862]); hold on; 
+    [r,c] = numSubplot(size(H_variance,1),1);
+    for cur_state = 1:size(H_variance,1)
+       subplot(r,c,cur_state); 
+       histogram(H_variance_shuf(cur_state,cur_motif,:),'numBins',100);
+       line([H_variance(cur_state,cur_motif),H_variance(cur_state,cur_motif)],...
+           get(gca,'ylim'),'linestyle','--','color','r','linewidth',2);
+       
+       %get one tailed pvalues
+       if H_variance(cur_state,cur_motif)<=nanmean(H_variance_shuf(cur_state,cur_motif,:))
+          pval = sum(H_variance_shuf(cur_state,cur_motif,:)<=H_variance(cur_state,cur_motif));          
+       else
+          pval = sum(H_variance_shuf(cur_state,cur_motif,:)>=H_variance(cur_state,cur_motif));
+       end
+       pval = pval/numel(H_variance_shuf(cur_state,cur_motif,:));
+       pval_store(cur_motif,cur_state) = pval;
+       title(sprintf('Motif %d State %d. \nPval %.2g',cur_motif,cur_state,pval),'FontSize',16,'FontWeight','normal');
+%        xlim([get(gca,'xlim') *1.5])
+       setFigureDefaults;
+       pos = get(gca,'position');
+       set(gca,'position',[pos(1) pos(2) 2.5 2.5])
+    end   
+end
+
+
+figure('position',[680   420   560   558]); hold on; 
+imagesc(floor(log10(pval_store)),[-4 -1]);
+cmap = magma(4);
+cmap = (cmap(1:4,:));
+% cmap(1,:) = [1,1,1];
+colormap(cmap);
+c=colorbar;
+ylabel(c,'log_{10}(\itp-value)','FontName','Arial','FontWeight','normal','Fontsize',16,'Interpreter','tex');
+title({'Basis Motifs are Differentially';'Engaged Across Behavioral States'},'FontSize',16,'Fontweight','normal','FontName','Arial')
+ylim([0.5,size(pval_store,1)+0.5]);
+xlim([0.5,size(pval_store,2)+0.5]);
+xlabel('Behavioral State')
+ylabel('Basis Motif')
+for i = 1:numel(pval_bin)
+   text(numel(unique_states)+1,i,sprintf('%.2g',pval_bin(i)),'FontSize',16,'FontName','Arial','FontWeight','normal')
+end
+text(numel(unique_states)+2.5, -3,{'Binomial';'Probability'},'Rotation',90,'HorizontalAlignment','Center',...
+    'FontSize',16,'FontWeight','normal','FontName','Arial')
+setFigureDefaults;
+set(gca,'position',[3 4 6 6],'box','on');
+set(c,'units','centimeters','position',[11.5 4 0.5 6]);
+for x_grid = 0.5:1:size(H_variance,2)+0.5
+    line([x_grid,x_grid],[0.5,size(H_variance,2)+0.5],'linewidth',1.5,'color','k')    
+end
+for y_grid = 0.5:1:size(H_variance,2)+0.5
+    line([0.5,size(H_variance,2)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','k')    
+end 
+set(c,'YTick',linspace(-4,-1,5),'YTickLabel',{'','-4','-3','-2','-1'})
+
+% plot the relative increase or decrease of the motif's activity
+figure('position',[680   420   560   558]); hold on; 
+imagesc(log(H_variance'),[-0.5 0.5]);
+colormap(redgreencmap)
+c=colorbar;
+ylabel(c,{'Fold Change in Variance';'Relative to Baseline'},'FontName','Arial','FontWeight','normal','Fontsize',16,'Interpreter','tex');
+title({'Motif are Differentially';'Engaged Across Behavioral States'},'FontSize',16,'Fontweight','normal','FontName','Arial')
+ylim([0.5,size(pval_store,1)+0.5]);
+xlim([0.5,size(pval_store,2)+0.5]);
+xlabel('Behavioral State')
+ylabel('Basis Motif')
+setFigureDefaults;
+set(gca,'position',[3 4 6 6],'box','on');
+set(c,'units','centimeters','position',[10 4 0.5 6]);
+for x_grid = 0.5:1:size(H_variance,2)+0.5
+    line([x_grid,x_grid],[0.5,size(H_variance,2)+0.5],'linewidth',1.5,'color','k')    
+end
+for y_grid = 0.5:1:size(H_variance,2)+0.5
+    line([0.5,size(H_variance,2)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','k')    
+end 
+
+if savefigs
+    handles = get(groot, 'Children');
+    saveCurFigs(handles,'-svg','Permutation_Test_H_occurance',fn_path,1);
+    close all;
+end
 
 %% Plot the H autocorrelation
-% Plot the autocorrelation of the unsmooth factors to confirm appropriate smoothing
 figure('position',[680   101   858   877]); hold on; 
-tau = NaN(1,size(H,1));
-for i = 1:size(H,1)
-    %plot pdf 
-    [xc,lags] = xcorr(H(i,:),20*13,'coeff'); 
+H_weight_zscore = zscore(H_weight',0,2);
+tau = NaN(1,size(H_weight_zscore,1));
+for i = 1:size(H_weight_zscore,1)
+    %plot pdf     
+    [xc,lags] = xcorr(H_weight_zscore(i,:),20*13,'coeff'); 
     idx = [ceil(numel(lags)/2)+1:numel(lags)];
     plot(lags(idx)/13,xc(idx),'linewidth',2,'color',[0.5 0.5 0.5]);   
     title({'Autocorrelation of Motif';'Temporal Weightings'},'FontName','Arial','FontSize',16,'FontWeight','normal')    
@@ -320,7 +693,7 @@ for i = 1:size(H,1)
     tau(i)=find(xc(idx)>=0.5*xc(idx(1)),1,'last')/13;
 end
 
-ylim([0 1]);
+% ylim([-0.5 1]);
 %get halflife
 text(3,0.5,sprintf('\\tau = %.2g +/- %.2gs',nanmean(tau),sem(tau,2)),'FontSize',16,'FontName','Arial')
 setFigureDefaults; 
@@ -328,21 +701,31 @@ setFigureDefaults;
 pos = get(gca,'position');
 set(gca,'position',[pos(1) pos(2) 6 6])
 
+if savefigs
+    handles = get(groot, 'Children');
+    saveCurFigs(handles,'-svg','H_autocorrelation',fn_path,1);
+    close all;
+end
 
 %% Plot the binary state ID in vertical format
-close all; figure('position',[100 50 700, 1000]); 
+close all; figure('position',[100 50 700, 900]); 
 imagesc(clusters(:,1:(end-1)),[0 1.25]); 
 colormap magma
 ylabel('Behavioral State')
-setFigureDefaults
+
 set(gca,'XTick',(1:numel(labels)),'XTickLabel',labels,'XTickLabelRotation',90,'TickLength',[0,0],'YTick',(1:1:size(clusters,1)))
 for x_grid = 0.5:1:numel(labels)+0.5
     line([x_grid,x_grid],[0.5,size(clusters,1)+0.5],'linewidth',1.5,'color','w')    
 end
 for y_grid = 0.5:1:size(clusters,1)+0.5
     line([0.5,numel(labels)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','w')    
-end    
-set(gca,'position',[4 6 3.75 12],'box','on')
+end  
+for i = 1:numel(unique_states)
+   text(5,i,sprintf('%.2g%%',sum(indx_clusters==unique_states(i))/numel(indx_clusters)*100),'FontName','Arial','FontSize',16,'FontWeight','normal');
+end
+text(5.5,15.5,{'Contribution'},'horizontalalignment','center','FontName','Arial','FontSize',16,'FontWeight','normal','Rotation',90)
+setFigureDefaults
+set(gca,'position',[4 8 3.75 12],'box','on')
 
 %%
 if savefigs
@@ -368,7 +751,7 @@ for y_grid =0.5:1:numel(labels)+0.5
 end  
 
 subplot(2,1,2)
-imagesc(expvar_state,[0 15]); 
+imagesc(expvar_state,[0 1]); 
 colormap magma
 xlabel('Behavioral State')
 set(gca,'YTick',(1:numel(expvaridx)),'YTickLabel',arrayfun(@(x) num2str(x),(1:numel(expvaridx)),'UniformOutput',0),...
@@ -382,7 +765,7 @@ set(gca,'position',[8 3 15 8.5],'box','on')
 
 %% Just the explained variance
 figure; hold on;
-imagesc(expvar_state,[0 15]); 
+imagesc(expvar_state,[0 1]); 
 colormap magma
 xlabel('Behavioral State')
 set(gca,'YTick',(1:numel(expvaridx)),'YTickLabel',arrayfun(@(x) num2str(x),(1:numel(expvaridx)),'UniformOutput',0),...
@@ -432,117 +815,11 @@ set(gca,'TickLength',[0,0])
 title('Ethogram of Behavioral States','FontName','Arial','Fontsize',16,'FontWeight','normal')
 setFigureDefaults
 set(gca,'position',[8 3 15 5])    
-
+%%
 if savefigs
     handles = get(groot, 'Children');
     saveCurFigs(handles,'-svg','Ethogram',fn_path,1);
     close all;
-end
-
-%% Calculate the explained variance of the behavioral by replacing the traces during each state with the average of that state
-features_reconstructed = NaN(size(features_downsampled));
-behav_state_loadings = NaN(1,numel(unique_states));
-for i = 1:numel(unique_states)
-    temp =  NaN(size(features_downsampled));
-    temp(indx_clusters==unique_states(i),:) = repmat(nanmean(features_downsampled(indx_clusters==unique_states(i),:),1),sum(indx_clusters==unique_states(i)),1); 
-    features_reconstructed(indx_clusters==unique_states(i),:) = repmat(nanmean(features_downsampled(indx_clusters==unique_states(i),:),1),sum(indx_clusters==unique_states(i)),1);    
-    
-    temp(isnan(temp))=0;
-    behav_state_loadings(i) = 1 - nanvar(features_downsampled(:)-temp(:))./nanvar(features_downsampled(:));
-end
-
-%zero out any nans since otherwise they won't be factored into the expvar
-features_reconstructed(isnan(features_reconstructed))=0;
-behav_state_expvar = 1 - nanvar(features_downsampled(:)-features_reconstructed(:))./nanvar(features_downsampled(:));
-behav_state_loadings = behav_state_loadings/(sum(behav_state_loadings));
-figure('position',[680   458   560   520]); hold on;
-bar(behav_state_loadings*100,'facecolor',[0.5 0.5 0.5])
-for i = 1:numel(behav_state_loadings)
-    text(i,behav_state_loadings(i)*100+0.5,sprintf('%.2g%%',behav_state_loadings(i)*100),'Rotation',90,'FontSize',14,'FontName','Arial','Fontweight','normal')
-end
-xlim([0.5,numel(unique_states)+0.5])
-ylabel({'Relative Percent';'Explained Variance'})
-title({'Behavioral State';'Contributions'},'FontName','Arial','FontSize',16,'FontWeight','normal')
-xlabel('Behavioral State')
-setFigureDefaults;
-set(gca,'position',[3 3 6 8.5])
-
-%shuffle time-state correlation
-rng('default')
-behav_state_expvar_shuffled = NaN(1,1000);
-for cur_shuf = 1:1000
-    features_reconstructed_shuffled = NaN(size(features_downsampled));
-    indx_clusters_shuffled = indx_clusters(randperm(numel(indx_clusters)));
-    for i = 1:numel(unique_states) %shuffled the labels so applying mean state to incorrect indices
-        features_reconstructed_shuffled(indx_clusters==unique_states(i),:) = repmat(nanmean(features_downsampled(indx_clusters_shuffled==unique_states(i),:),1),sum(indx_clusters==unique_states(i)),1);    
-    end
-    features_reconstructed_shuffled(isnan(features_reconstructed_shuffled))=0;
-    behav_state_expvar_shuffled(cur_shuf) = 1 - nanvar(features_downsampled(:)-features_reconstructed_shuffled(:))./nanvar(features_downsampled(:));
-end
-%right tailed pvalue 
-pval = sum([behav_state_expvar_shuffled,behav_state_expvar]>=behav_state_expvar)/numel([behav_state_expvar_shuffled,behav_state_expvar]);
-
-figure; hold on;
-histogram([behav_state_expvar_shuffled,behav_state_expvar],'numbins',100,'edgecolor','none','facecolor',[0.5 0.5 0.5])
-line([behav_state_expvar,behav_state_expvar],[0 max(get(gca,'ylim'))],'linestyle','--','color',[0.75 0 0],'linewidth',2)
-title({'Permutation Test with Average';'Clusters from Shuffled Indices'},'Fontweight','normal','FontSize',16,'FontName','Arial');
-xlabel('Percent Explained Variance');
-ylabel('Shuffle Counts');
-setFigureDefaults;
-set(gca,'position',[2 2 5 5])
-
-%shuffle time-state correlation
-rng('default')
-behav_state_expvar_shuffled = NaN(1,1000);
-for cur_shuf = 1:1000
-    features_reconstructed_shuffled = NaN(size(features_downsampled));
-    indx_clusters_shuffled = indx_clusters(randperm(numel(indx_clusters)));
-    for i = 1:numel(unique_states) %shuffled the labels so applying mean state to incorrect indices
-        features_reconstructed_shuffled(indx_clusters_shuffled==unique_states(i),:) = repmat(nanmean(features_downsampled(indx_clusters==unique_states(i),:),1),sum(indx_clusters==unique_states(i)),1);    
-    end
-    features_reconstructed_shuffled(isnan(features_reconstructed_shuffled))=0;
-    behav_state_expvar_shuffled(cur_shuf) = 1 - nanvar(features_downsampled(:)-features_reconstructed_shuffled(:))./nanvar(features_downsampled(:));
-end
-%right tailed pvalue 
-pval = sum([behav_state_expvar_shuffled,behav_state_expvar]>=behav_state_expvar)/numel([behav_state_expvar_shuffled,behav_state_expvar]);
-
-figure; hold on;
-histogram([behav_state_expvar_shuffled,behav_state_expvar],'numbins',100,'edgecolor','none','facecolor',[0.5 0.5 0.5])
-line([behav_state_expvar,behav_state_expvar],[0 max(get(gca,'ylim'))],'linestyle','--','color',[0.75 0 0],'linewidth',2)
-title({'Permutation Test with Average';'Clusters Applied to Shuffled Indices'},'Fontweight','normal','FontSize',16,'FontName','Arial');
-xlabel('Percent Explained Variance');
-ylabel('Shuffle Counts');
-setFigureDefaults;
-set(gca,'position',[2 2 5 5])
-
-%shuffle labels
-rng('default')
-behav_state_expvar_shuffled = NaN(1,1000);
-for cur_shuf = 1:1000
-    features_reconstructed_shuffled = NaN(size(features_downsampled));
-    unique_states_shuffled = unique_states(randperm(numel(unique_states)));
-    for i = 1:numel(unique_states) %shuffled the labels so applying mean state to incorrect indices
-        features_reconstructed_shuffled(indx_clusters==unique_states(i),:) = repmat(nanmean(features_downsampled(indx_clusters==unique_states_shuffled(i),:),1),sum(indx_clusters==unique_states(i)),1);    
-    end
-    features_reconstructed_shuffled(isnan(features_reconstructed_shuffled))=0;
-    behav_state_expvar_shuffled(cur_shuf) = 1 - nanvar(features_downsampled(:)-features_reconstructed_shuffled(:))./nanvar(features_downsampled(:));
-end
-%right tailed pvalue 
-pval = sum([behav_state_expvar_shuffled,behav_state_expvar]>=behav_state_expvar)/numel([behav_state_expvar_shuffled,behav_state_expvar]);
-figure; hold on;
-histogram([behav_state_expvar_shuffled,behav_state_expvar],'numbins',100,'edgecolor','none','facecolor',[0.5 0.5 0.5])
-line([behav_state_expvar,behav_state_expvar],[0 max(get(gca,'ylim'))],'linestyle','--','color',[0.75 0 0],'linewidth',2)
-title({'Permutation Test Shuffled';'Cluster Labels'},'Fontweight','normal','FontSize',16,'FontName','Arial');
-xlabel('Percent Explained Variance');
-ylabel('Shuffle Counts');
-setFigureDefaults;
-set(gca,'position',[2 2 5 5])
-
-if savefigs
-    handles = get(groot, 'Children');
-    saveCurFigs(handles,'-svg','Explained Variance Figures',fn_path,1);
-    close all;
-    save([fn_path 'BehavioralStateStats'],'clusters','pval','behav_state_loadings','behav_state_expvar');
 end
 
 %% Now get the movie frames in the origin film that correspond to each cluster and save off those snippets
@@ -648,12 +925,115 @@ end
 handles = get(groot, 'Children');
 saveCurFigs(handles,'-svg',sprintf('FaceCamSnippet%d',cur_snip),savedir,1);
 close all
-%%
 
 
 
 
 
+% % % features_reconstructed = NaN(size(features_downsampled));
+% % % behav_state_loadings = NaN(1,numel(unique_states));
+% % % for i = 1:numel(unique_states)
+% % %     temp =  NaN(size(features_downsampled));
+% % %     temp(indx_clusters==unique_states(i),:) = repmat(nanmean(features_downsampled(indx_clusters==unique_states(i),:),1),sum(indx_clusters==unique_states(i)),1); 
+% % %     features_reconstructed(indx_clusters==unique_states(i),:) = repmat(nanmean(features_downsampled(indx_clusters==unique_states(i),:),1),sum(indx_clusters==unique_states(i)),1);    
+% % %     
+% % %     temp(isnan(temp))=0;
+% % %     behav_state_loadings(i) = 1 - nanvar(features_downsampled(:)-temp(:))./nanvar(features_downsampled(:));
+% % % end
+% % % 
+% % % %zero out any nans since otherwise they won't be factored into the expvar
+% % % features_reconstructed(isnan(features_reconstructed))=0;
+% % % behav_state_expvar = 1 - nanvar(features_downsampled(:)-features_reconstructed(:))./nanvar(features_downsampled(:));
+% % % behav_state_loadings = behav_state_loadings/(sum(behav_state_loadings));
+% % % figure('position',[680   458   560   520]); hold on;
+% % % bar(behav_state_loadings*100,'facecolor',[0.5 0.5 0.5])
+% % % for i = 1:numel(behav_state_loadings)
+% % %     text(i,behav_state_loadings(i)*100+0.5,sprintf('%.2g%%',behav_state_loadings(i)*100),'Rotation',90,'FontSize',14,'FontName','Arial','Fontweight','normal')
+% % % end
+% % % xlim([0.5,numel(unique_states)+0.5])
+% % % ylabel({'Relative Percent';'Explained Variance'})
+% % % title({'Behavioral State';'Contributions'},'FontName','Arial','FontSize',16,'FontWeight','normal')
+% % % xlabel('Behavioral State')
+% % % setFigureDefaults;
+% % % set(gca,'position',[3 3 6 8.5])
+% % % 
+% % % %shuffle time-state correlation
+% % % rng('default')
+% % % behav_state_expvar_shuffled = NaN(1,1000);
+% % % for cur_shuf = 1:1000
+% % %     features_reconstructed_shuffled = NaN(size(features_downsampled));
+% % %     indx_clusters_shuffled = indx_clusters(randperm(numel(indx_clusters)));
+% % %     for i = 1:numel(unique_states) %shuffled the labels so applying mean state to incorrect indices
+% % %         features_reconstructed_shuffled(indx_clusters==unique_states(i),:) = repmat(nanmean(features_downsampled(indx_clusters_shuffled==unique_states(i),:),1),sum(indx_clusters==unique_states(i)),1);    
+% % %     end
+% % %     features_reconstructed_shuffled(isnan(features_reconstructed_shuffled))=0;
+% % %     behav_state_expvar_shuffled(cur_shuf) = 1 - nanvar(features_downsampled(:)-features_reconstructed_shuffled(:))./nanvar(features_downsampled(:));
+% % % end
+% % % %right tailed pvalue 
+% % % pval = sum([behav_state_expvar_shuffled,behav_state_expvar]>=behav_state_expvar)/numel([behav_state_expvar_shuffled,behav_state_expvar]);
+% % % 
+% % % figure; hold on;
+% % % histogram([behav_state_expvar_shuffled,behav_state_expvar],'numbins',100,'edgecolor','none','facecolor',[0.5 0.5 0.5])
+% % % line([behav_state_expvar,behav_state_expvar],[0 max(get(gca,'ylim'))],'linestyle','--','color',[0.75 0 0],'linewidth',2)
+% % % title({'Permutation Test with Average';'Clusters from Shuffled Indices'},'Fontweight','normal','FontSize',16,'FontName','Arial');
+% % % xlabel('Percent Explained Variance');
+% % % ylabel('Shuffle Counts');
+% % % setFigureDefaults;
+% % % set(gca,'position',[2 2 5 5])
+% % % 
+% % % %shuffle time-state correlation
+% % % rng('default')
+% % % behav_state_expvar_shuffled = NaN(1,1000);
+% % % for cur_shuf = 1:1000
+% % %     features_reconstructed_shuffled = NaN(size(features_downsampled));
+% % %     indx_clusters_shuffled = indx_clusters(randperm(numel(indx_clusters)));
+% % %     for i = 1:numel(unique_states) %shuffled the labels so applying mean state to incorrect indices
+% % %         features_reconstructed_shuffled(indx_clusters_shuffled==unique_states(i),:) = repmat(nanmean(features_downsampled(indx_clusters==unique_states(i),:),1),sum(indx_clusters==unique_states(i)),1);    
+% % %     end
+% % %     features_reconstructed_shuffled(isnan(features_reconstructed_shuffled))=0;
+% % %     behav_state_expvar_shuffled(cur_shuf) = 1 - nanvar(features_downsampled(:)-features_reconstructed_shuffled(:))./nanvar(features_downsampled(:));
+% % % end
+% % % %right tailed pvalue 
+% % % pval = sum([behav_state_expvar_shuffled,behav_state_expvar]>=behav_state_expvar)/numel([behav_state_expvar_shuffled,behav_state_expvar]);
+% % % 
+% % % figure; hold on;
+% % % histogram([behav_state_expvar_shuffled,behav_state_expvar],'numbins',100,'edgecolor','none','facecolor',[0.5 0.5 0.5])
+% % % line([behav_state_expvar,behav_state_expvar],[0 max(get(gca,'ylim'))],'linestyle','--','color',[0.75 0 0],'linewidth',2)
+% % % title({'Permutation Test with Average';'Clusters Applied to Shuffled Indices'},'Fontweight','normal','FontSize',16,'FontName','Arial');
+% % % xlabel('Percent Explained Variance');
+% % % ylabel('Shuffle Counts');
+% % % setFigureDefaults;
+% % % set(gca,'position',[2 2 5 5])
+% % % 
+% % % %shuffle labels
+% % % rng('default')
+% % % behav_state_expvar_shuffled = NaN(1,1000);
+% % % for cur_shuf = 1:1000
+% % %     features_reconstructed_shuffled = NaN(size(features_downsampled));
+% % %     unique_states_shuffled = unique_states(randperm(numel(unique_states)));
+% % %     for i = 1:numel(unique_states) %shuffled the labels so applying mean state to incorrect indices
+% % %         features_reconstructed_shuffled(indx_clusters==unique_states(i),:) = repmat(nanmean(features_downsampled(indx_clusters==unique_states_shuffled(i),:),1),sum(indx_clusters==unique_states(i)),1);    
+% % %     end
+% % %     features_reconstructed_shuffled(isnan(features_reconstructed_shuffled))=0;
+% % %     behav_state_expvar_shuffled(cur_shuf) = 1 - nanvar(features_downsampled(:)-features_reconstructed_shuffled(:))./nanvar(features_downsampled(:));
+% % % end
+% % % %right tailed pvalue 
+% % % pval = sum([behav_state_expvar_shuffled,behav_state_expvar]>=behav_state_expvar)/numel([behav_state_expvar_shuffled,behav_state_expvar]);
+% % % figure; hold on;
+% % % histogram([behav_state_expvar_shuffled,behav_state_expvar],'numbins',100,'edgecolor','none','facecolor',[0.5 0.5 0.5])
+% % % line([behav_state_expvar,behav_state_expvar],[0 max(get(gca,'ylim'))],'linestyle','--','color',[0.75 0 0],'linewidth',2)
+% % % title({'Permutation Test Shuffled';'Cluster Labels'},'Fontweight','normal','FontSize',16,'FontName','Arial');
+% % % xlabel('Percent Explained Variance');
+% % % ylabel('Shuffle Counts');
+% % % setFigureDefaults;
+% % % set(gca,'position',[2 2 5 5])
+% % % 
+% % % if savefigs
+% % %     handles = get(groot, 'Children');
+% % %     saveCurFigs(handles,'-svg','Explained Variance Figures',fn_path,1);
+% % %     close all;
+% % %     save([fn_path 'BehavioralStateStats'],'clusters','pval','behav_state_loadings','behav_state_expvar');
+% % % end
 
 
 
