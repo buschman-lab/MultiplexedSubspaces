@@ -2,12 +2,12 @@
 % addpath(genpath('C:\Users\macdo\Documents\GitHub\Widefield_Imaging_Analysis'));
 addpath(genpath('C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\'));
 %set filepaths
-fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse431_10_17_2019\';
-fn_facecam = 'Cam_0_20191017-155226.avi';
-fn_bodycam = 'Cam_1_20191017-155226_Mouse431_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000_labeled.mp4';
-fn_dlc = 'Cam_1_20191017-155226_Mouse431_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
-fn_savebase = 'Mouse9031_10_17_2019';
-fn_widefield = '431-10-17-2019_1Fitted_block_hemoflag0_1';
+fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse494_10_17_2019\';
+fn_facecam = 'Cam_0_20191017-184642.avi';
+fn_bodycam = 'Cam_1_20191017-184642_Mouse494_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000_labeled.mp4';
+fn_dlc = 'Cam_1_20191017-184642_Mouse494_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
+fn_savebase = 'Mouse494_10_17_2019';
+fn_widefield = '494-10-17-2019_1Fitted_block_hemoflag0_1';
 
 %load behavioral analysis paramters
 bp = behavioral_params; 
@@ -129,6 +129,10 @@ if savefigs
     close all;
 end
 %% Plot statistics about the behavioral traces
+% split_idx = {0,1,-2.125,.25}; %mouse 432 10_17_2019
+% split_idx = {-0.315,0.907,-2.484,-.14}; %mouse 431;
+split_idx = {-0.834,.98,-1,.52}; %mouse 494 10_17_2019
+
 figure('position',[680   101   858   877]); hold on; 
 [n,c] = numSubplot(size(features_downsampled,2),2);
 x = linspace(0,60,size(features_downsampled,1));
@@ -143,8 +147,6 @@ for i = 1:size(features_downsampled,2)
     pos = get(gca,'position');
     set(gca,'position',[pos(1) pos(2) 6 6])
 end
-
-split_idx = {-0.315,0.907,-2.484,-.14};
 
 %distributions
 figure('position',[680   101   858   877]); hold on; 
@@ -286,10 +288,10 @@ end
 indx_clusters = indx_clusters_temp;
 unique_states = unique(indx_clusters);
 
-%remove any states that occur for less than a second
-bad_states = unique_states(clusters(:,5)<=13);
+%remove any states that occur for less 0.1% of activity
+bad_states = unique_states(clusters(:,5)<=ceil(0.1/100*numel(indx_clusters)));
 bad_indices = ismember(indx_clusters,bad_states);
-clusters(clusters(:,5)<=13,:)=[];
+clusters(clusters(:,5)<=ceil(0.1/100*numel(indx_clusters)),:)=[];
 unique_states(ismember(unique_states,bad_states))=[];
 features_downsampled(ismember(indx_clusters,bad_states),:)=[];
 features_binned(ismember(indx_clusters,bad_states),:)=[];
@@ -297,7 +299,7 @@ indx_clusters(ismember(indx_clusters,bad_states))=[];
 
 
 
-warning('you are removing %d states shorter than 1 second',numel(bad_states));
+warning('you are removing %d states that contrinubte <0.1% of activity',numel(bad_states));
 
 %% Look at the relative frame-wise explained variance of each motif for each state
 data = load([fn_path fn_widefield],'w','data_test','H');
@@ -355,18 +357,18 @@ shuffled_labels = shuffled_labels(:);
 %%
 rng('default')
 
-basal_variance = var(features_downsampled,[],1);
+% basal_variance = var(features_downsampled,[],1);
 %get the variance of behavioral factor during a state
 features_variance = NaN(numel(unique_states),size(features_downsampled,2));
 for i = 1:numel(unique_states)
-    features_variance(i,:) = var(features_downsampled(indx_clusters==unique_states(i),:),[],1)./basal_variance;
+    features_variance(i,:) = var(features_downsampled(indx_clusters==unique_states(i),:),[],1);
 end
 
 features_variance_shuf = NaN(numel(unique_states),size(features_downsampled,2),1000);
 for num_shuf = 1:5000    
    temp = cat(2,shuffled_labels{randperm(numel(shuffled_labels))});   
    for i = 1:numel(unique_states)
-      features_variance_shuf(i,:,num_shuf) = var(features_downsampled(temp==unique_states(i),:),[],1)./basal_variance;
+      features_variance_shuf(i,:,num_shuf) = var(features_downsampled(temp==unique_states(i),:),[],1);
    end      
 end
 
@@ -401,6 +403,12 @@ for cur_feature = 1:num_features
     pval_bin(cur_feature) = 1 - binocdf(sum(pval_store(cur_feature,:)<0.05),numel(pval_store(cur_feature,:)),0.05);
 end
 
+%normalize feature variance
+features_variance_norm = features_variance;
+for i = 1:size(features_variance,2)
+    features_variance_norm(:,i) = (features_variance_norm(:,i)-min(features_variance_norm(:,i)))/(max(features_variance_norm(:,i))-min(features_variance_norm(:,i)));
+end
+
 figure('position',[680   420   560   558]); hold on; 
 imagesc(floor(log10(pval_store)),[-4 -1]);
 cmap = magma(4);
@@ -419,35 +427,35 @@ end
 text(numel(unique_states)+2.5, -3,{'Binomial';'Probability'},'Rotation',90,'HorizontalAlignment','Center',...
     'FontSize',16,'FontWeight','normal','FontName','Arial')
 setFigureDefaults;
-set(gca,'position',[3 4 6 2],'box','on');
-set(c,'units','centimeters','position',[11.5 4 0.5 2]);
-for x_grid = 0.5:1:size(features_variance,1)+0.5
-    line([x_grid,x_grid],[0.5,size(features_variance,2)+0.5],'linewidth',1.5,'color','k')    
+set(gca,'position',[3 4 8 2.5],'box','on');
+set(c,'units','centimeters','position',[13.5 4 0.5 2.5]);
+for x_grid = 0.5:1:size(features_variance_norm,1)+0.5
+    line([x_grid,x_grid],[0.5,size(features_variance_norm,2)+0.5],'linewidth',1.5,'color','k')    
 end
-for y_grid = 0.5:1:size(features_variance,2)+0.5
-    line([0.5,size(features_variance,1)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','k')    
+for y_grid = 0.5:1:size(features_variance_norm,2)+0.5
+    line([0.5,size(features_variance_norm,1)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','k')    
 end 
 set(c,'YTick',linspace(-4,-1,5),'YTickLabel',{'','-4','-3','-2','-1'})
 
 % plot the relative increase or decrease of the motif's activity
 figure('position',[680   420   560   558]); hold on; 
-imagesc(log(features_variance'),[-3 3]);
-colormap(redgreencmap)
+imagesc(features_variance_norm',[0 1]);
+colormap(magma)
 c=colorbar;
-ylabel(c,{'Change in Variance';'Relative to Baseline (log)'},'FontName','Arial','FontWeight','normal','Fontsize',16,'Interpreter','tex');
+ylabel(c,{'Variance';'(normalized)'},'FontName','Arial','FontWeight','normal','Fontsize',16,'Interpreter','tex');
 title({'Behavioral Features Are Differentially';'Engaged Across Behavioral States'},'FontSize',16,'Fontweight','normal','FontName','Arial')
 ylim([0.5,size(pval_store,1)+0.5]);
 xlim([0.5,size(pval_store,2)+0.5]);
 xlabel('Behavioral State')
 set(gca,'YTick',(1:size(pval_store,1)),'YTickLabels',labels_abbrev)
 setFigureDefaults;
-set(gca,'position',[3 4 6 2],'box','on');
-set(c,'units','centimeters','position',[10 4 0.5 2]);
-for x_grid = 0.5:1:size(features_variance,1)+0.5
-    line([x_grid,x_grid],[0.5,size(features_variance,2)+0.5],'linewidth',1.5,'color','k')    
+set(gca,'position',[3 4 8 2.5],'box','on');
+set(c,'units','centimeters','position',[12 4 0.5 2.5]);
+for x_grid = 0.5:1:size(features_variance_norm,1)+0.5
+    line([x_grid,x_grid],[0.5,size(features_variance_norm,2)+0.5],'linewidth',1.5,'color','k')    
 end
-for y_grid = 0.5:1:size(features_variance,2)+0.5
-    line([0.5,size(features_variance,1)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','k')    
+for y_grid = 0.5:1:size(features_variance_norm,2)+0.5
+    line([0.5,size(features_variance_norm,1)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','k')    
 end
 
 if savefigs
@@ -470,19 +478,17 @@ for cur_motif = 1:size(H,1)
 end %motif loop
 clear data H w
 
-basal_variance = var(H_weight,[],1);
-
 %get the variance of behavioral factor during a state
 H_variance = NaN(numel(unique_states),size(H_weight,2));
 for i = 1:numel(unique_states)
-    H_variance(i,:) = var(H_weight(indx_clusters==unique_states(i),:),[],1)./basal_variance;
+    H_variance(i,:) = var(H_weight(indx_clusters==unique_states(i),:),[],1);
 end
 
 H_variance_shuf = NaN(numel(unique_states),size(H_weight,2),1000);
 for num_shuf = 1:5000    
    temp = cat(2,shuffled_labels{randperm(numel(shuffled_labels))});   
    for i = 1:numel(unique_states)
-      H_variance_shuf(i,:,num_shuf) = var(H_weight(temp==unique_states(i),:),[],1)./basal_variance;
+      H_variance_shuf(i,:,num_shuf) = var(H_weight(temp==unique_states(i),:),[],1);
    end      
 end
 %Add correct to the shuffled data set
@@ -513,8 +519,15 @@ for cur_motif = 1:size(H_variance,2)
        set(gca,'position',[pos(1) pos(2) 2.5 2.5])
     end   
     
-    pval_bin(cur_motif) = 1 - binocdf(sum(pval_store(cur_motif,:)<0.05),numel(pval_store(cur_motif,:)),0.05);
+    pval_bin(cur_motif) = 1 - binocdf(sum(pval_store(cur_motif,:)<0.1),numel(pval_store(cur_motif,:)),0.1);
 end
+
+%normalize motif variance
+H_variance_norm = H_variance;
+for i = 1:size(H_variance,2)
+    H_variance_norm(:,i) = (H_variance_norm(:,i)-min(H_variance_norm(:,i)))/(max(H_variance_norm(:,i))-min(H_variance_norm(:,i)));
+end
+
 
 figure('position',[680   420   560   558]); hold on; 
 imagesc(floor(log10(pval_store)),[-4 -1]);
@@ -535,38 +548,37 @@ end
 text(numel(unique_states)+2.5, -3,{'Binomial';'Probability'},'Rotation',90,'HorizontalAlignment','Center',...
     'FontSize',16,'FontWeight','normal','FontName','Arial')
 setFigureDefaults;
-set(gca,'position',[3 4 6 6],'box','on');
-set(c,'units','centimeters','position',[11.5 4 0.5 6]);
-for x_grid = 0.5:1:size(H_variance,2)+0.5
-    line([x_grid,x_grid],[0.5,size(H_variance,2)+0.5],'linewidth',1.5,'color','k')    
+set(gca,'position',[3 4 8 8],'box','on');
+set(c,'units','centimeters','position',[13.5 4 0.5 8]);
+for x_grid = 0.5:1:size(H_variance_norm,2)+0.5
+    line([x_grid,x_grid],[0.5,size(H_variance_norm,2)+0.5],'linewidth',1.5,'color','k')    
 end
-for y_grid = 0.5:1:size(H_variance,2)+0.5
-    line([0.5,size(H_variance,2)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','k')    
+for y_grid = 0.5:1:size(H_variance_norm,2)+0.5
+    line([0.5,size(H_variance_norm,2)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','k')    
 end 
 set(c,'YTick',linspace(-4,-1,5),'YTickLabel',{'','-4','-3','-2','-1'})
 
 % plot the relative increase or decrease of the motif's activity
 figure('position',[680   420   560   558]); hold on; 
-imagesc(log(H_variance'),[-1 1]);
-colormap(redgreencmap)
+imagesc(H_variance_norm',[0 1]);
+colormap magma
 c=colorbar;
-ylabel(c,{'Change in Variance';'Relative to Baseline (log)'},'FontName','Arial','FontWeight','normal','Fontsize',16,'Interpreter','tex');
+ylabel(c,{'Variance';'(Normalized By Motif)'},'FontName','Arial','FontWeight','normal','Fontsize',16,'Interpreter','tex');
 title({'Motif are Differentially';'Engaged Across Behavioral States'},'FontSize',16,'Fontweight','normal','FontName','Arial')
 ylim([0.5,size(pval_store,1)+0.5]);
 xlim([0.5,size(pval_store,2)+0.5]);
 xlabel('Behavioral State')
 ylabel('Basis Motif')
 setFigureDefaults;
-set(gca,'position',[3 4 6 6],'box','on');
-set(c,'units','centimeters','position',[10 4 0.5 6]);
-for x_grid = 0.5:1:size(H_variance,2)+0.5
-    line([x_grid,x_grid],[0.5,size(H_variance,2)+0.5],'linewidth',1.5,'color','k')    
+set(gca,'position',[3 4 8 8],'box','on');
+set(c,'units','centimeters','position',[11.5 4 0.5 8]);
+for x_grid = 0.5:1:size(H_variance_norm,2)+0.5
+    line([x_grid,x_grid],[0.5,size(H_variance_norm,2)+0.5],'linewidth',1.5,'color','k')    
 end
-for y_grid = 0.5:1:size(H_variance,2)+0.5
-    line([0.5,size(H_variance,2)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','k')    
+for y_grid = 0.5:1:size(H_variance_norm,2)+0.5
+    line([0.5,size(H_variance_norm,2)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','k')    
 end 
-
-
+%%
 if savefigs
     handles = get(groot, 'Children');
     saveCurFigs(handles,'-svg','Permutation_Test_H_variance',fn_path,1);
@@ -594,7 +606,8 @@ for num_shuf = 1:5000
 end
 %Add correct to the shuffled data set
 H_variance_shuf = cat(3,H_variance_shuf,H_variance);
-
+pval_store=NaN(size(H_variance,2),size(H_variance,1));
+pval_bin = NaN(size(H_variance,2),1);
 for cur_motif = 1:size(H_variance,2)
     figure('position',[215 116 1259 862]); hold on; 
     [r,c] = numSubplot(size(H_variance,1),1);
@@ -618,8 +631,16 @@ for cur_motif = 1:size(H_variance,2)
        pos = get(gca,'position');
        set(gca,'position',[pos(1) pos(2) 2.5 2.5])
     end   
+    
+    pval_bin(cur_motif) = 1 - binocdf(sum(pval_store(cur_motif,:)<0.1),numel(pval_store(cur_motif,:)),0.1);
+
 end
 
+%normalize motif variance
+H_variance_norm = H_variance;
+for i = 1:size(H_variance,2)
+    H_variance_norm(:,i) = (H_variance_norm(:,i)-min(H_variance_norm(:,i)))/(max(H_variance_norm(:,i))-min(H_variance_norm(:,i)));
+end
 
 figure('position',[680   420   560   558]); hold on; 
 imagesc(floor(log10(pval_store)),[-4 -1]);
@@ -640,35 +661,35 @@ end
 text(numel(unique_states)+2.5, -3,{'Binomial';'Probability'},'Rotation',90,'HorizontalAlignment','Center',...
     'FontSize',16,'FontWeight','normal','FontName','Arial')
 setFigureDefaults;
-set(gca,'position',[3 4 6 6],'box','on');
-set(c,'units','centimeters','position',[11.5 4 0.5 6]);
-for x_grid = 0.5:1:size(H_variance,2)+0.5
-    line([x_grid,x_grid],[0.5,size(H_variance,2)+0.5],'linewidth',1.5,'color','k')    
+set(gca,'position',[3 4 8 8],'box','on');
+set(c,'units','centimeters','position',[13.5 4 0.5 8]);
+for x_grid = 0.5:1:size(H_variance_norm,2)+0.5
+    line([x_grid,x_grid],[0.5,size(H_variance_norm,2)+0.5],'linewidth',1.5,'color','k')    
 end
-for y_grid = 0.5:1:size(H_variance,2)+0.5
-    line([0.5,size(H_variance,2)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','k')    
+for y_grid = 0.5:1:size(H_variance_norm,2)+0.5
+    line([0.5,size(H_variance_norm,2)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','k')    
 end 
 set(c,'YTick',linspace(-4,-1,5),'YTickLabel',{'','-4','-3','-2','-1'})
 
 % plot the relative increase or decrease of the motif's activity
 figure('position',[680   420   560   558]); hold on; 
-imagesc(log(H_variance'),[-0.5 0.5]);
-colormap(redgreencmap)
+imagesc(H_variance_norm',[0 1]);
+colormap magma
 c=colorbar;
-ylabel(c,{'Fold Change in Variance';'Relative to Baseline'},'FontName','Arial','FontWeight','normal','Fontsize',16,'Interpreter','tex');
+ylabel(c,{'Variance';'(Normalized By Motif)'},'FontName','Arial','FontWeight','normal','Fontsize',16,'Interpreter','tex');
 title({'Motif are Differentially';'Engaged Across Behavioral States'},'FontSize',16,'Fontweight','normal','FontName','Arial')
 ylim([0.5,size(pval_store,1)+0.5]);
 xlim([0.5,size(pval_store,2)+0.5]);
 xlabel('Behavioral State')
 ylabel('Basis Motif')
 setFigureDefaults;
-set(gca,'position',[3 4 6 6],'box','on');
-set(c,'units','centimeters','position',[10 4 0.5 6]);
-for x_grid = 0.5:1:size(H_variance,2)+0.5
-    line([x_grid,x_grid],[0.5,size(H_variance,2)+0.5],'linewidth',1.5,'color','k')    
+set(gca,'position',[3 4 8 8],'box','on');
+set(c,'units','centimeters','position',[11.5 4 0.5 8]);
+for x_grid = 0.5:1:size(H_variance_norm,2)+0.5
+    line([x_grid,x_grid],[0.5,size(H_variance_norm,2)+0.5],'linewidth',1.5,'color','k')    
 end
-for y_grid = 0.5:1:size(H_variance,2)+0.5
-    line([0.5,size(H_variance,2)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','k')    
+for y_grid = 0.5:1:size(H_variance_norm,2)+0.5
+    line([0.5,size(H_variance_norm,2)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','k')    
 end 
 
 if savefigs
@@ -730,7 +751,7 @@ set(gca,'position',[4 8 3.75 12],'box','on')
 %%
 if savefigs
     handles = get(groot, 'Children');
-    saveas(handles,'BinaryState_Vertical','svg')
+    saveas(handles,[fn_path 'BinaryState_Vertical'],'svg')
     close all;
 end
 
@@ -814,11 +835,11 @@ ylabel('Behavioral State')
 set(gca,'TickLength',[0,0])
 title('Ethogram of Behavioral States','FontName','Arial','Fontsize',16,'FontWeight','normal')
 setFigureDefaults
-set(gca,'position',[8 3 15 5])    
+set(gca,'position',[3 3 18.5 5])    
 %%
 if savefigs
     handles = get(groot, 'Children');
-    saveCurFigs(handles,'-svg','Ethogram',fn_path,1);
+    saveCurFigs(handles,'-png','Ethogram',fn_path,1);
     close all;
 end
 
@@ -879,8 +900,8 @@ end
 
 %% Create inidviudal high res frames for select snippets
 
-cur_cluster = 7;
-cur_snip = 6; 
+cur_cluster = 3;
+cur_snip = 2; 
 savedir = [fn_path sprintf('BehavioralCluster_%d_Frames',cur_cluster)];
 if ~exist(savedir)
     mkdir(savedir)
@@ -893,8 +914,8 @@ temp = [min(temp), max(temp)];
 temp = round(x_query_ds(temp),0);
 temp = temp+onset;
 
-if temp(2)-temp(1)>(5*60)
-  temp(2)=temp(1)+(5*60);
+if temp(2)-temp(1)>(15*60)
+  temp(2)=temp(1)+(15*60);
 end
 
 frames = read(bodycam,temp);
