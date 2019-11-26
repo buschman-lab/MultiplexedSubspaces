@@ -26,6 +26,7 @@ if opts.Verbose, fprintf('Calculating weights of network graph...\n'); end
 sel_N = size(data, 1);
 % w = sparse(sel_N, sel_N);
 temp = cell(1,sel_N);
+poolobg = parpool('local',6);
 parfor i = 1:sel_N
     temp{i} = sparse(1,sel_N);
     %Find those indices with overlap
@@ -35,6 +36,7 @@ parfor i = 1:sel_N
     if opts.Verbose & mod(i, round(sel_N/10)) == 0, fprintf('\t%d%% done...\n', round(i/sel_N*100)); end
 end %node loop
 w = sparse(cat(1,temp{:}));
+delete(poolobg);
 
 %w = (w+w') - eye(size(w,1)).*diag(w); %symmetrize -- may not be necessary depending on community algorithm
 if opts.Verbose, fprintf('done.\n'); end

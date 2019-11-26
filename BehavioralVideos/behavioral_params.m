@@ -1,7 +1,7 @@
 classdef behavioral_params  
     properties               
         %preprocessing parameters
-        zscore = 1; 
+        zscore = 0; 
         include_facecam = 1;
         derivative = 1;
         

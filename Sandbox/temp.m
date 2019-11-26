@@ -61,12 +61,12 @@ limb_speed = mean(limb_speed,2);
 % frontpaws_to_nose = sqrt(sum(frontpaws_to_nose.^2,2));
 
 %get the distance from nose to tail
-[tail_to_nose, ~, ~] = parse_dlc(raw_data,{'tailroot'},'nosetip',bp.dlc_epsilon);
-tail_to_nose = sqrt(sum(tail_to_nose.^2,2));
+% [tail_to_nose, ~, ~] = parse_dlc(raw_data,{'tailroot'},'nosetip',bp.dlc_epsilon);
+% tail_to_nose = sqrt(sum(tail_to_nose.^2,2));
 
 %combined all features
 % face_motion_energy{2} = -1 * face_motion_energy{2}+max(face_motion_energy{2}(:)); %may need to flip the whisker energy if high whisking actually blurs the camera and make low energy  
-features = cat(2,face_motion_energy{:},frontpaws_to_nose,limb_speed);
+features = cat(2,face_motion_energy{:},limb_speed);
 % labels = {'nose motion energy','whisker motion energy','front paws to nose distance','limb speed'};
 % labels_abbrev = {'NME','WME','F2N','LS'};
 
@@ -80,17 +80,12 @@ end
 
 %Trim to match start and stop of imaging 
 features = features(onset:offset,:);
-features_no_smooth = features_no_smooth(onset:offset,:);
 
 % Downsample to match motif duration
 features_downsampled = NaN(num_frames,size(features,2));
-features_no_smooth_downsampled = NaN(num_frames,size(features_no_smooth,2));
 for i = 1:size(features_downsampled,2)
     temp = features(:,i);
-    features_downsampled(:,i) = interp1(1:numel(temp), temp, linspace(1,numel(temp),num_frames),'linear');
-
-    temp = features_no_smooth(:,i);
-    features_no_smooth_downsampled(:,i) = interp1(1:numel(temp), temp, linspace(1,numel(temp),num_frames),'linear');    
+    features_downsampled(:,i) = interp1(1:numel(temp), temp, linspace(1,numel(temp),num_frames),'linear'); 
 end
 
 %store the mapping from original to downsampled 
@@ -98,10 +93,15 @@ x_query_ds = linspace(1,size(features,1),num_frames);
 
 if bp.zscore %optional zscore
    features_downsampled = zscore(features_downsampled,1);
-   features_no_smooth_downsampled = zscore(features_no_smooth_downsampled,1);
 end
 
 clear raw_data facecam_data W_clust_smooth
+
+
+%% Phenograph
+[ovr_comm_resampled, ovr_Q] = PhenographSimple(features_downsampled(1:3:end,:), 'knn', 15);
+
+%%
 
 %% Plot example behavioral traces
 num_features = size(features_downsampled,2);
@@ -136,7 +136,7 @@ end
 % split_idx = {-0.315,0.907,-2.484,-.14}; %mouse 431;
 % split_idx = {-0.834,.98,-1,.52}; %mouse 494 10_17_2019
 
-split_idx = {11.96,10.98,88.61,0.29};
+split_idx = {11.96,10.98,0.29};
 
 figure('position',[680   101   858   877]); hold on; 
 [n,c] = numSubplot(size(features_downsampled,2),2);
@@ -198,27 +198,6 @@ end
 pos = get(gca,'position');
 set(gca,'position',[3 3 6 6])
 
-% Plot the autocorrelation of the unsmooth factors to confirm appropriate smoothing
-figure('position',[1105 524 433 454]); hold on; 
-for i = 1:num_features
-    %plot pdf 
-    [xc,lags] = xcorr(features_no_smooth_downsampled(:,i)-nanmean(features_no_smooth_downsampled(:,i)),120*13,'coeff'); 
-    idx = [ceil(numel(lags)/2)+1:numel(lags)];
-    plot(lags(idx)/13,xc(idx),'linewidth',2,'color',col(i,:));   
-    title({'Behavioral Feature';'Autocorrelation (NOSMOOTH)'},'FontName','Arial','FontSize',16,'FontWeight','normal')    
-    ylim([min(xc) 1]);
-    xlim([0 max(lags/13)])
-    ylabel('Rho')
-    xlabel('time (s)')
-    
-    %get halflife
-    tau=find(xc(idx)>=0.5*xc(idx(1)),1,'last')/13;
-    text(30,0.3+(i*0.1),sprintf('%s \\tau = %.2g s',labels_abbrev{i},tau),'FontSize',16,'FontName','Arial')
-    setFigureDefaults;     
-    
-end
-pos = get(gca,'position');
-set(gca,'position',[3 3 6 6])
 
 % Correlation between factors
 figure; hold on; 
@@ -272,6 +251,7 @@ end
 
 %% Filter and Tabulate clusters
 [clusters,~,indx_clusters] = unique(features_binned,'rows');
+
 % indx_clusters = movmode(indx_clusters,bp.movmode_dur);
 temp = [];
 unique_states = unique(indx_clusters);
@@ -293,18 +273,22 @@ end
 indx_clusters = indx_clusters_temp;
 unique_states = unique(indx_clusters);
 
-%remove any states that occur for less 0.1% of activity
-bad_states = unique_states(clusters(:,5)<=ceil(0.1/100*numel(indx_clusters)));
+%remove any states that occur for less 1% of activity
+bad_states = unique_states(clusters(:,4)<=ceil(1/100*numel(indx_clusters)));
 bad_indices = ismember(indx_clusters,bad_states);
-clusters(clusters(:,5)<=ceil(0.1/100*numel(indx_clusters)),:)=[];
-unique_states(ismember(unique_states,bad_states))=[];
-features_downsampled(ismember(indx_clusters,bad_states),:)=[];
-features_binned(ismember(indx_clusters,bad_states),:)=[];
-indx_clusters(ismember(indx_clusters,bad_states))=[];
 
+%combine residual states
+unique_states(ismember(unique_states,bad_states))=bad_states(1);
+indx_clusters(ismember(indx_clusters,bad_states))=bad_states(1);
 
-
-warning('you are removing %d states and %d timepoints that contrinubte <0.1% of activity',numel(bad_states),numel(bad_indices));
+% indx_clusters = movmode(indx_clusters,bp.movmode_dur);
+temp = [];
+unique_states = unique(indx_clusters);
+for i = 1:numel(unique_states)
+    temp(i) = sum(indx_clusters==unique_states(i));  
+end
+clusters = clusters(unique_states,:);
+clusters(:,end+1) = temp;
 
 
 %% shuffle the order of each behavioral state
@@ -396,7 +380,6 @@ rng('default')
 data = load([fn_path fn_widefield],'w','data_test','H');
 w = data.w(:,expvaridx,:); 
 H = data.H(expvaridx,:);
-H(:,bad_indices)=[];
 
 H_weight = NaN(size(H))';
 for cur_motif = 1:size(H,1)
@@ -404,8 +387,9 @@ for cur_motif = 1:size(H,1)
 end %motif loop
 
 temp = H_weight./squeeze(nanmean(w,[1,3]));
-[H_thresh, ~, ~] = ThresholdMatrix(temp,0.1);
+[H_thresh, ~, ~] = ThresholdMatrix(temp,0.15);
 H_thresh(H_thresh==0)=NaN;
+H_thresh = H_thresh(1:3:end,:);
 
 fprintf('Fraction time active per motif')
 fprintf('\n%.2g', sum(H_thresh>0)/size(H_thresh,1));
@@ -415,7 +399,7 @@ fprintf('Total time active across motifs: %0.2g',sum(sum(H_thresh>0,2)>0)/size(H
 [motif_pev, ~] = TrialPEV(H_thresh,indx_clusters);
 
 motif_pev_shuf = NaN(n_shuf,size(H_thresh,2));
-motif_avg_shuf = NaN(size(motif_avg,1),size(motif_avg,2),n_shuf);
+% motif_avg_shuf = NaN(size(motif_avg,1),size(motif_avg,2),n_shuf);
 for cur_shuf = 1:n_shuf    
    temp = cat(2,shuffled_labels{randperm(numel(shuffled_labels))}); 
 %    temp = indx_clusters(randperm(numel(indx_clusters)));
@@ -443,7 +427,7 @@ ylabel('Percent Explained Variance');
 title({'Behavioral States Capture';'Significant Variance in';'Measured Features'},'FontName','Arial','FontSize',16,'Fontweight','normal')
 setFigureDefaults
 set(gca,'position',[3 3 6 6])
-ylim([0 10])
+ylim([0 30])
 
 
 %% Get the percent active during each cluster
@@ -708,115 +692,5 @@ end
 handles = get(groot, 'Children');
 saveCurFigs(handles,'-svg',sprintf('FaceCamSnippet%d',cur_snip),savedir,1);
 close all
-
-
-
-
-
-% % % features_reconstructed = NaN(size(features_downsampled));
-% % % behav_state_loadings = NaN(1,numel(unique_states));
-% % % for i = 1:numel(unique_states)
-% % %     temp =  NaN(size(features_downsampled));
-% % %     temp(indx_clusters==unique_states(i),:) = repmat(nanmean(features_downsampled(indx_clusters==unique_states(i),:),1),sum(indx_clusters==unique_states(i)),1); 
-% % %     features_reconstructed(indx_clusters==unique_states(i),:) = repmat(nanmean(features_downsampled(indx_clusters==unique_states(i),:),1),sum(indx_clusters==unique_states(i)),1);    
-% % %     
-% % %     temp(isnan(temp))=0;
-% % %     behav_state_loadings(i) = 1 - nanvar(features_downsampled(:)-temp(:))./nanvar(features_downsampled(:));
-% % % end
-% % % 
-% % % %zero out any nans since otherwise they won't be factored into the expvar
-% % % features_reconstructed(isnan(features_reconstructed))=0;
-% % % behav_state_expvar = 1 - nanvar(features_downsampled(:)-features_reconstructed(:))./nanvar(features_downsampled(:));
-% % % behav_state_loadings = behav_state_loadings/(sum(behav_state_loadings));
-% % % figure('position',[680   458   560   520]); hold on;
-% % % bar(behav_state_loadings*100,'facecolor',[0.5 0.5 0.5])
-% % % for i = 1:numel(behav_state_loadings)
-% % %     text(i,behav_state_loadings(i)*100+0.5,sprintf('%.2g%%',behav_state_loadings(i)*100),'Rotation',90,'FontSize',14,'FontName','Arial','Fontweight','normal')
-% % % end
-% % % xlim([0.5,numel(unique_states)+0.5])
-% % % ylabel({'Relative Percent';'Explained Variance'})
-% % % title({'Behavioral State';'Contributions'},'FontName','Arial','FontSize',16,'FontWeight','normal')
-% % % xlabel('Behavioral State')
-% % % setFigureDefaults;
-% % % set(gca,'position',[3 3 6 8.5])
-% % % 
-% % % %shuffle time-state correlation
-% % % rng('default')
-% % % behav_state_expvar_shuffled = NaN(1,1000);
-% % % for cur_shuf = 1:1000
-% % %     features_reconstructed_shuffled = NaN(size(features_downsampled));
-% % %     indx_clusters_shuffled = indx_clusters(randperm(numel(indx_clusters)));
-% % %     for i = 1:numel(unique_states) %shuffled the labels so applying mean state to incorrect indices
-% % %         features_reconstructed_shuffled(indx_clusters==unique_states(i),:) = repmat(nanmean(features_downsampled(indx_clusters_shuffled==unique_states(i),:),1),sum(indx_clusters==unique_states(i)),1);    
-% % %     end
-% % %     features_reconstructed_shuffled(isnan(features_reconstructed_shuffled))=0;
-% % %     behav_state_expvar_shuffled(cur_shuf) = 1 - nanvar(features_downsampled(:)-features_reconstructed_shuffled(:))./nanvar(features_downsampled(:));
-% % % end
-% % % %right tailed pvalue 
-% % % pval = sum([behav_state_expvar_shuffled,behav_state_expvar]>=behav_state_expvar)/numel([behav_state_expvar_shuffled,behav_state_expvar]);
-% % % 
-% % % figure; hold on;
-% % % histogram([behav_state_expvar_shuffled,behav_state_expvar],'numbins',100,'edgecolor','none','facecolor',[0.5 0.5 0.5])
-% % % line([behav_state_expvar,behav_state_expvar],[0 max(get(gca,'ylim'))],'linestyle','--','color',[0.75 0 0],'linewidth',2)
-% % % title({'Permutation Test with Average';'Clusters from Shuffled Indices'},'Fontweight','normal','FontSize',16,'FontName','Arial');
-% % % xlabel('Percent Explained Variance');
-% % % ylabel('Shuffle Counts');
-% % % setFigureDefaults;
-% % % set(gca,'position',[2 2 5 5])
-% % % 
-% % % %shuffle time-state correlation
-% % % rng('default')
-% % % behav_state_expvar_shuffled = NaN(1,1000);
-% % % for cur_shuf = 1:1000
-% % %     features_reconstructed_shuffled = NaN(size(features_downsampled));
-% % %     indx_clusters_shuffled = indx_clusters(randperm(numel(indx_clusters)));
-% % %     for i = 1:numel(unique_states) %shuffled the labels so applying mean state to incorrect indices
-% % %         features_reconstructed_shuffled(indx_clusters_shuffled==unique_states(i),:) = repmat(nanmean(features_downsampled(indx_clusters==unique_states(i),:),1),sum(indx_clusters==unique_states(i)),1);    
-% % %     end
-% % %     features_reconstructed_shuffled(isnan(features_reconstructed_shuffled))=0;
-% % %     behav_state_expvar_shuffled(cur_shuf) = 1 - nanvar(features_downsampled(:)-features_reconstructed_shuffled(:))./nanvar(features_downsampled(:));
-% % % end
-% % % %right tailed pvalue 
-% % % pval = sum([behav_state_expvar_shuffled,behav_state_expvar]>=behav_state_expvar)/numel([behav_state_expvar_shuffled,behav_state_expvar]);
-% % % 
-% % % figure; hold on;
-% % % histogram([behav_state_expvar_shuffled,behav_state_expvar],'numbins',100,'edgecolor','none','facecolor',[0.5 0.5 0.5])
-% % % line([behav_state_expvar,behav_state_expvar],[0 max(get(gca,'ylim'))],'linestyle','--','color',[0.75 0 0],'linewidth',2)
-% % % title({'Permutation Test with Average';'Clusters Applied to Shuffled Indices'},'Fontweight','normal','FontSize',16,'FontName','Arial');
-% % % xlabel('Percent Explained Variance');
-% % % ylabel('Shuffle Counts');
-% % % setFigureDefaults;
-% % % set(gca,'position',[2 2 5 5])
-% % % 
-% % % %shuffle labels
-% % % rng('default')
-% % % behav_state_expvar_shuffled = NaN(1,1000);
-% % % for cur_shuf = 1:1000
-% % %     features_reconstructed_shuffled = NaN(size(features_downsampled));
-% % %     unique_states_shuffled = unique_states(randperm(numel(unique_states)));
-% % %     for i = 1:numel(unique_states) %shuffled the labels so applying mean state to incorrect indices
-% % %         features_reconstructed_shuffled(indx_clusters==unique_states(i),:) = repmat(nanmean(features_downsampled(indx_clusters==unique_states_shuffled(i),:),1),sum(indx_clusters==unique_states(i)),1);    
-% % %     end
-% % %     features_reconstructed_shuffled(isnan(features_reconstructed_shuffled))=0;
-% % %     behav_state_expvar_shuffled(cur_shuf) = 1 - nanvar(features_downsampled(:)-features_reconstructed_shuffled(:))./nanvar(features_downsampled(:));
-% % % end
-% % % %right tailed pvalue 
-% % % pval = sum([behav_state_expvar_shuffled,behav_state_expvar]>=behav_state_expvar)/numel([behav_state_expvar_shuffled,behav_state_expvar]);
-% % % figure; hold on;
-% % % histogram([behav_state_expvar_shuffled,behav_state_expvar],'numbins',100,'edgecolor','none','facecolor',[0.5 0.5 0.5])
-% % % line([behav_state_expvar,behav_state_expvar],[0 max(get(gca,'ylim'))],'linestyle','--','color',[0.75 0 0],'linewidth',2)
-% % % title({'Permutation Test Shuffled';'Cluster Labels'},'Fontweight','normal','FontSize',16,'FontName','Arial');
-% % % xlabel('Percent Explained Variance');
-% % % ylabel('Shuffle Counts');
-% % % setFigureDefaults;
-% % % set(gca,'position',[2 2 5 5])
-% % % 
-% % % if savefigs
-% % %     handles = get(groot, 'Children');
-% % %     saveCurFigs(handles,'-svg','Explained Variance Figures',fn_path,1);
-% % %     close all;
-% % %     save([fn_path 'BehavioralStateStats'],'clusters','pval','behav_state_loadings','behav_state_expvar');
-% % % end
-
 
 
