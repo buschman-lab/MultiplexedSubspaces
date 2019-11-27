@@ -1,5 +1,5 @@
 %add paths
-% addpath(genpath('C:\Users\macdo\Documents\GitHub\Widefield_Imaging_Analysis'));
+addpath(genpath('C:\Users\macdo\Documents\GitHub\Widefield_Imaging_Analysis'));
 addpath(genpath('C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\'));
 %set filepaths
 fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse431_10_17_2019\';
@@ -8,6 +8,28 @@ fn_bodycam = 'Cam_1_20191017-155226_Mouse431_10_17_2019DLC_resnet50_Headfixed_Be
 fn_dlc = 'Cam_1_20191017-155226_Mouse431_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
 fn_savebase = 'Mouse431_10_17_2019';
 fn_widefield = '431-10-17-2019_1Fitted_block_hemoflag0_1';
+split_idx = {12,11.00,0.3}; %mouse 431
+
+
+% addpath(genpath('C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\'));
+% %set filepaths
+% fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse432_10_17_2019\';
+% fn_facecam = 'Cam_0_20191017-171729.avi';
+% fn_bodycam = 'Cam_1_20191017-171729_Mouse432_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000_labeled.mp4';
+% fn_dlc = 'Cam_1_20191017-171729_Mouse432_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
+% fn_savebase = 'Mouse432_10_17_2019';
+% fn_widefield = '432-10-17-2019_1Fitted_block_hemoflag0_1';
+% split_idx = {11.58,6,0.3}; %mouse 432
+
+% addpath(genpath('C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\'));
+% %set filepaths
+% fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse432_10_17_2019\';
+% fn_facecam = 'Cam_0_20191017-171729.avi';
+% fn_bodycam = 'Cam_1_20191017-171729_Mouse432_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000_labeled.mp4';
+% fn_dlc = 'Cam_1_20191017-171729_Mouse432_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
+% fn_savebase = 'Mouse432_10_17_2019';
+% fn_widefield = '432-10-17-2019_1Fitted_block_hemoflag0_1';
+
 
 %load behavioral analysis paramters
 bp = behavioral_params; 
@@ -18,7 +40,7 @@ expvaridx = expvaridx.idx;
 H = load([fn_path, fn_widefield],'H');
 num_frames = size(H.H,2);
 
-savefigs = 1; 
+savefigs = 0; 
 
 %% Preprocessing Behavioral Videos 
 %parse the facecam to get timing signal and behavioral features
@@ -55,27 +77,14 @@ limb_speed = cellfun(@(x) [0; mean(abs(diff(limbs(:,strcmp(id,x)),1)),2)],{'fron
 limb_speed = [limb_speed{:}];
 limb_speed = mean(limb_speed,2);
 
-%get the distance between nose and front paws
-% [frontpaws_to_nose, ~, ~] = parse_dlc(raw_data,{'frontrightpawcenter','frontleftpawcenter'},'nosetip',bp.dlc_epsilon);
-% %you've subtracted out the reference. Now get euclidean distance
-% frontpaws_to_nose = sqrt(sum(frontpaws_to_nose.^2,2));
-
-%get the distance from nose to tail
-% [tail_to_nose, ~, ~] = parse_dlc(raw_data,{'tailroot'},'nosetip',bp.dlc_epsilon);
-% tail_to_nose = sqrt(sum(tail_to_nose.^2,2));
-
 %combined all features
 % face_motion_energy{2} = -1 * face_motion_energy{2}+max(face_motion_energy{2}(:)); %may need to flip the whisker energy if high whisking actually blurs the camera and make low energy  
 features = cat(2,face_motion_energy{:},limb_speed);
-% labels = {'nose motion energy','whisker motion energy','front paws to nose distance','limb speed'};
-% labels_abbrev = {'NME','WME','F2N','LS'};
-
 labels = {'nose motion energy','whisker motion energy','limb speed'};
 labels_abbrev = {'NME','WME','LS'};
 
-features_no_smooth = features;
 for i = 1:size(features,2)
-    features(:,i) = convn(features(:,i),ones(65,1)/65,'same');
+    features(:,i) = convn(features(:,i),ones(130,1)/130,'same');
 end
 
 %Trim to match start and stop of imaging 
@@ -96,16 +105,10 @@ if bp.zscore %optional zscore
 end
 
 clear raw_data facecam_data W_clust_smooth
-
-
-%% Phenograph
-[ovr_comm_resampled, ovr_Q] = PhenographSimple(features_downsampled(1:3:end,:), 'knn', 15);
-
-%%
-
-%% Plot example behavioral traces
-num_features = size(features_downsampled,2);
+%% Parse states
+num_features = size(features_downsampled,2); 
 col = getColorPalet(num_features);
+
 data = features_downsampled(42000:43300,:);
 figure('units','centimeters','position',[1 1 15 25]); hold on;
 ax =[];
@@ -131,27 +134,36 @@ if savefigs
     saveCurFigs(handles,'-svg','Exampled_Traces',fn_path,1);
     close all;
 end
-%% Plot statistics about the behavioral traces
-% split_idx = {0,1,-2.125,.25}; %mouse 432 10_17_2019
-% split_idx = {-0.315,0.907,-2.484,-.14}; %mouse 431;
-% split_idx = {-0.834,.98,-1,.52}; %mouse 494 10_17_2019
 
-split_idx = {11.96,10.98,0.29};
 
 figure('position',[680   101   858   877]); hold on; 
-[n,c] = numSubplot(size(features_downsampled,2),2);
+[r,c] = numSubplot(num_features,2);
+features_binned = NaN(size(features_downsampled));
 x = linspace(0,60,size(features_downsampled,1));
-for i = 1:size(features_downsampled,2)
-    subplot(n,c,i); 
-    plot(x,features_downsampled(:,i),'color',[0.5 0.5 0.5]); 
-    title(sprintf('%s',labels{i}),'FontName','Arial','FontSize',16,'FontWeight','normal')
-    ylabel('Z-Score')
-    xlabel('Time (min)')
-    setFigureDefaults;
-    
+for i = 1:num_features
+    temp = NaN(size(features_downsampled(:,i)));
+    temp(features_downsampled(:,i)<=split_idx{i})=0;
+    temp(features_downsampled(:,i)>split_idx{i})=1;
+    features_binned(:,i) = temp;    
+    subplot(r,c,i); hold on;
+    title(sprintf('%s',labels{i}),'FontName','Arial','FontSize',16,'FontWeight','normal')  
+    plot(x,temp,'color',[0.5 0.5 0.5],'linestyle','none','marker','.','markersize',5)
+    set(gca,'ylim',[-0.25 1.25]);
+    xlabel('Time (min)');
+    ylabel('State');
+    set(gca,'YTick',[0 1],'YTickLabels',{'low','high'})
+    setFigureDefaults
     pos = get(gca,'position');
     set(gca,'position',[pos(1) pos(2) 6 6])
+    
 end
+
+if savefigs
+    handles = get(groot, 'Children');
+    saveCurFigs(handles,'-svg','MetricsOverTime',fn_path,1);
+    close all;
+end
+
 
 %distributions
 figure('position',[680   101   858   877]); hold on; 
@@ -175,6 +187,21 @@ for i = 1:num_features
     
     pos = get(gca,'position');
     set(gca,'position',[pos(1) pos(2) 3 3])
+end
+
+figure('position',[680   101   858   877]); hold on; 
+[n,c] = numSubplot(size(features_downsampled,2),2);
+x = linspace(0,60,size(features_downsampled,1));
+for i = 1:size(features_downsampled,2)
+    subplot(n,c,i); 
+    plot(x,features_downsampled(:,i),'color',[0.5 0.5 0.5]); 
+    title(sprintf('%s',labels{i}),'FontName','Arial','FontSize',16,'FontWeight','normal')
+    ylabel('Z-Score')
+    xlabel('Time (min)')
+    setFigureDefaults;
+    
+    pos = get(gca,'position');
+    set(gca,'position',[pos(1) pos(2) 6 6])
 end
 
 % Plot the autocorrelation of factors 
@@ -220,39 +247,8 @@ if savefigs
     close all;
 end
 
-%% Parse states
-figure('position',[680   101   858   877]); hold on; 
-[r,c] = numSubplot(num_features,2);
-features_binned = NaN(size(features_downsampled));
-x = linspace(0,60,size(features_downsampled,1));
-for i = 1:num_features
-    temp = NaN(size(features_downsampled(:,i)));
-    temp(features_downsampled(:,i)<=split_idx{i})=0;
-    temp(features_downsampled(:,i)>split_idx{i})=1;
-    features_binned(:,i) = temp;    
-    subplot(r,c,i); hold on;
-    title(sprintf('%s',labels{i}),'FontName','Arial','FontSize',16,'FontWeight','normal')  
-    plot(x,temp,'color',[0.5 0.5 0.5],'linestyle','none','marker','.','markersize',5)
-    set(gca,'ylim',[-0.25 1.25]);
-    xlabel('Time (min)');
-    ylabel('State');
-    set(gca,'YTick',[0 1],'YTickLabels',{'low','high'})
-    setFigureDefaults
-    pos = get(gca,'position');
-    set(gca,'position',[pos(1) pos(2) 6 6])
-    
-end
-
-if savefigs
-    handles = get(groot, 'Children');
-    saveCurFigs(handles,'-svg','MetricsOverTime',fn_path,1);
-    close all;
-end
-
-%% Filter and Tabulate clusters
+%% Tabulate clusters
 [clusters,~,indx_clusters] = unique(features_binned,'rows');
-
-% indx_clusters = movmode(indx_clusters,bp.movmode_dur);
 temp = [];
 unique_states = unique(indx_clusters);
 for i = 1:numel(unique_states)
@@ -273,22 +269,25 @@ end
 indx_clusters = indx_clusters_temp;
 unique_states = unique(indx_clusters);
 
-%remove any states that occur for less 1% of activity
-bad_states = unique_states(clusters(:,4)<=ceil(1/100*numel(indx_clusters)));
-bad_indices = ismember(indx_clusters,bad_states);
+%create a 'junk' state that groups together all states that occur for less 1% of activity
+bad_states = unique_states(clusters(:,num_features+1)<=ceil(1/100*numel(indx_clusters)));
+if ~isempty(bad_states)
+    bad_indices = ismember(indx_clusters,bad_states);
 
-%combine residual states
-unique_states(ismember(unique_states,bad_states))=bad_states(1);
-indx_clusters(ismember(indx_clusters,bad_states))=bad_states(1);
+    %combine residual states
+    unique_states(ismember(unique_states,bad_states))=bad_states(1);
+    indx_clusters(ismember(indx_clusters,bad_states))=bad_states(1);
 
-% indx_clusters = movmode(indx_clusters,bp.movmode_dur);
-temp = [];
-unique_states = unique(indx_clusters);
-for i = 1:numel(unique_states)
-    temp(i) = sum(indx_clusters==unique_states(i));  
+    % indx_clusters = movmode(indx_clusters,bp.movmode_dur);
+    temp = [];
+    unique_states = unique(indx_clusters);
+    for i = 1:numel(unique_states)
+        temp(i) = sum(indx_clusters==unique_states(i));  
+    end
+    clusters = clusters(unique_states,:);
+    clusters(:,end) = temp;
 end
-clusters = clusters(unique_states,:);
-clusters(:,end+1) = temp;
+num_states = numel(clusters(:,1));
 
 
 %% shuffle the order of each behavioral state
@@ -300,7 +299,7 @@ consecutive_frames = cellfun(@(x) reshape(x', 2,[])', consecutive_frames,'Unifor
 
 %break into cell array of cells with the different consecutive indices
 cluster_groups = {};
-shuffled_labels = {};
+shuffled_labels_organized = {};
 for j = 1:numel(frame_indices)
    x = frame_indices{j};
    y = consecutive_frames{j};
@@ -312,12 +311,13 @@ for j = 1:numel(frame_indices)
        else
            cluster_groups{j,i} = x(y(i-1,2):y(i,2)-1);
        end
-       shuffled_labels{j,i} = ones(1,numel(cluster_groups{j,i}))*unique_states(j);
+       shuffled_labels_organized{j,i} = ones(1,numel(cluster_groups{j,i}))*unique_states(j);
    end
 end
-shuffled_labels = shuffled_labels(:);
+shuffled_labels = shuffled_labels_organized(:);
 
 %%
+num_features = size(features_downsampled,2);
 n_shuf = 1000;
 rng('default')
 
@@ -373,10 +373,7 @@ if savefigs
     close all;
 end
 
-
-%%
-n_shuf=1000;
-rng('default')
+%% 
 data = load([fn_path fn_widefield],'w','data_test','H');
 w = data.w(:,expvaridx,:); 
 H = data.H(expvaridx,:);
@@ -386,10 +383,219 @@ for cur_motif = 1:size(H,1)
     H_weight(:,cur_motif) = helper.reconstruct(nanmean(w(:,cur_motif,:),1),H(cur_motif,:)); 
 end %motif loop
 
+
+%% each time the state occurs, get the average intensity of each motif
+temp = cellfun(@(x) numel(x)>13, cluster_groups,'UniformOutput',0);
+cluster_group_clean = cluster_groups;
+for i = 1:size(temp,1)
+    cluster_group_clean(i,cell2mat(temp(i,:))==0)={[]};
+end
+
+%loop through each cluster and get the average weighting of each motif per 
+avg_h = [];
+avg_pev = {};
+for i = 1:size(cluster_group_clean,1)
+   temp = cluster_group_clean(i,:);
+   temp = temp(~cellfun('isempty',temp));
+   for j = 1:numel(temp)
+      avg_h{i}(j,:) = nanmean(H_weight(temp{j},:));
+   end
+end
+
+if ~isempty(bad_states)
+    avg_h(num_states:end)=[];
+end
+
+if ~isempty(bad_states)
+    state_code=clusters(1:end-1,:);
+else
+    state_code=clusters;
+end
+
+%%get the distirbutions
+% for i = 1:numel(avg_h)
+%     temp = avg_h{i};
+%     figure; hold on; 
+%     for j = 1:size(temp,2)
+%        [f,xi] = ksdensity(temp(:,j)); 
+%        plot(xi,f,'linewidth',1); 
+%     end
+%     pause()
+% end
+
+%% for each motif, get the average +/- the sem. anova comparing that motif across behavioral states
+sig_color = [0.75 0.75 0.75; 0.25 0.25 0.25];
+col = getColorPalet(numel(unique_states));
+temp_avg = MakeCellsEqual(avg_h,1,1); 
+temp_avg = cat(3,temp_avg{:});
+pval = [];
+fstat = [];
+for i = 1:size(temp_avg,2)
+   test = squeeze(temp_avg(:,i,:));
+   group = ones(size(test)).*(1:size(test,2));
+   test = test(:);
+   group = group(:);
+   group(isnan(test))=[];
+   test(isnan(test))=[];  
+   [pval(i),tab] = kruskalwallis(test,group,'off');
+   fstat(i) = tab{2,5};
+end
+
+figure('Position',[0 0 1000 1000]); hold on; 
+s3 = subplot(313,'Units','centimeters','Position',[4 6 2  4.5]); hold on
+s1 = subplot(312,'Units','centimeters','Position',[8 6 10 4.5]); hold on
+s2 = subplot(311,'Units','centimeters','Position',[8 11 10 1.5]); hold on
+
+axes(s1);
+
+y=[];
+for cur_state = 1:size(temp_avg,3)
+    for cur_motif = 1:size(temp_avg,2)
+        y(cur_state,cur_motif) = nanmedian(squeeze(temp_avg(:,cur_motif,cur_state)));
+    end
+end
+imagesc(y./mean(y,1),[0.25 1.75])
+colormap(gca,flipud(redgreencmap));
+c = colorbar;
+ylabel(c,{'Average Motif Intensity';'(relative to average across states)'},'FontSize',16,'Fontweight','normal','FontName','Arial');
+set(c,'units','centimeters','position',[18.25 6 0.5 4.5])
+
+for x_grid = 0.5:1:size(y,2)+0.5
+    line([x_grid,x_grid],[0.5,size(y,1)+0.5],'linewidth',1.5,'color','w')    
+end
+for y_grid = 0.5:1:size(y,1)+0.5
+    line([0.5,size(y,2)+0.5],[y_grid, y_grid],'linewidth',1.5,'color','w')    
+end  
+xlabel('Basis Motifs')
+
+xlim([0.5 size(y,2)+.5])
+ylim([0.5 size(y,1)+0.5])
+set(gca,'YColor','none')
+setFigureDefaults
+
+axes(s2); hold on
+%Plot the fscore and the significance
+plot(fstat,'LineWidth',2,'Marker','.','MarkerSize',5,'MarkerEdgeColor',[0.4 0.4 0.4],'Color',[0.4 0.4 0.4])
+for i = 1:numel(pval)
+   AddSig(1,pval(i),[i,i,fstat(i),fstat(i)],1,15,1,90)
+end
+%Change marker color for significant motifs (lighter)
+scatter((1:1:size(temp_avg,2)),fstat,50,sig_color((pval<=0.05)+1,:),'filled')
+xlim([0.5 size(temp_avg,2)+.5])
+set(gca,'XTick',(1:2:size(temp_avg,2)),'YTick',[0,15])
+ylabel({'\chi^2';''},'Rotation',0,'Units','Centimeters','position',[11 1.25]);
+set(gca,'yaxislocation','right')
+set(gca,'XColor','none');
+setFigureDefaults
+
+axes(s3); hold on
+imagesc(state_code(:,1:num_features),[0 1.25]); 
+colormap(gca,'magma')
+ylabel('Behavioral State')
+set(gca,'XTick',(1:num_features),'XTickLabel',labels,'XTickLabelRotation',90,'TickLength',[0,0],'YTick',(1:1:size(state_code,1)))
+set(gca,'Xaxislocation','top')
+for x_grid = 0.5:1:num_features+0.5
+    line([x_grid,x_grid],[0.5,size(state_code,1)+0.5],'linewidth',1.5,'color','w')    
+end
+for y_grid = 0.5:1:size(state_code,1)+0.5
+    line([0.5,num_features+0.5],[y_grid, y_grid],'linewidth',1.5,'color','w')    
+end  
+for i = 1:size(state_code,1)
+   text(num_features+1,i,sprintf('%.2g%%',sum(indx_clusters==unique_states(i))/numel(indx_clusters)*100),'FontName','Arial','FontSize',16,'FontWeight','normal');
+end
+xlim([0.5 num_features+0.5])
+ylim([0.5 size(state_code,1)+0.5])
+setFigureDefaults
+
+
+set(gcf,'Position',[680   150  800   650]);
+
+fh = gcf;
+
+
+%% similarly can do the drime analysis
+rng('default');
+d = NaN(numel(avg_h),numel(avg_h));
+% d_shuf = NaN(numel(avg_h),numel(avg_h),999);
+pval = NaN(numel(avg_h),numel(avg_h));
+for i = 1:numel(avg_h)
+   for j = 1:numel(avg_h) 
+      x = squeeze(temp(:,:,i));
+      x(isnan(x(:,1)),:) = [];
+      y = squeeze(temp(:,:,j));
+      y(isnan(y(:,1)),:) = [];      
+      d(i,j) = dprime(x,y);
+      
+      d_shuf = NaN(1,999);
+      for cur_shuf = 1:999
+         z = cat(1,x,y);
+         idx = randperm(size(z,1),size(x,1));
+         x_shuf = z(idx,:);
+         z(idx,:)= [];
+         d_shuf(cur_shuf) = dprime(x_shuf,z);
+      end      
+      d_shuf = cat(2,d_shuf,d(i,j)); 
+      
+      pval(i,j) = sum(d_shuf>d(i,j))/numel(d_shuf);
+   end
+end
+
+
+%%
+
+
+
+%% PHONE
+%% Filter and Tabulate clusters
+indx_clusters = ovr_comm(:,1);
+
+% indx_clusters = movmode(indx_clusters,bp.movmode_dur);
+temp = [];
+unique_states = unique(indx_clusters);
+for i = 1:numel(unique_states)
+    temp(i) = sum(indx_clusters==unique_states(i));  
+end
+clusters = temp';
+
+%reorder states by decreasing contribution
+[~, idx] = sort(temp,'descend');
+clusters = clusters(idx);
+
+%rename indx_clusters
+indx_clusters_temp = NaN(size(indx_clusters));
+for i = 1:numel(idx)
+    indx_clusters_temp(indx_clusters==idx(i))=i;
+end   
+indx_clusters = indx_clusters_temp;
+unique_states = unique(indx_clusters);
+
+%remove any states that occur for less 1% of activity
+bad_states = unique_states(clusters<=ceil(1/100*numel(indx_clusters)));
+bad_indices = ismember(indx_clusters,bad_states);
+
+%combine residual states
+unique_states(ismember(unique_states,bad_states))=bad_states(1);
+indx_clusters(ismember(indx_clusters,bad_states))=bad_states(1);
+
+% indx_clusters = movmode(indx_clusters,bp.movmode_dur);
+temp = [];
+unique_states = unique(indx_clusters);
+for i = 1:numel(unique_states)
+    temp(i) = sum(indx_clusters==unique_states(i));  
+end
+clusters = temp';
+%%
+
+
+
+
+
+
+
 temp = H_weight./squeeze(nanmean(w,[1,3]));
-[H_thresh, ~, ~] = ThresholdMatrix(temp,0.15);
+[H_thresh, ~, ~] = ThresholdMatrix(temp,0.1);
 H_thresh(H_thresh==0)=NaN;
-H_thresh = H_thresh(1:3:end,:);
+
 
 fprintf('Fraction time active per motif')
 fprintf('\n%.2g', sum(H_thresh>0)/size(H_thresh,1));

@@ -3,8 +3,13 @@ function y = MakeCellsEqual(x,dim,pad_flag)
 desired_size = (cellfun(@(x) size(x,dim), x,'UniformOutput',0));
 
 if pad_flag
-    desired_size = max([desired_size{:}]);
-    y= cellfun(@(v) [v, nan(1, desired_size-numel(v))], x, 'UniformOutput', false);
+    if dim ==2
+        desired_size = max([desired_size{:}]);
+        y= cellfun(@(v) [v, nan(size(v,1), desired_size-size(v,2))], x, 'UniformOutput', false);
+    elseif dim==1
+        desired_size = max([desired_size{:}]);
+        y= cellfun(@(v) [v', nan(size(v,2), desired_size-size(v,1))]', x, 'UniformOutput', false);
+    end
 else
     desired_size = min([desired_size{:}]);
     if dim ==1
