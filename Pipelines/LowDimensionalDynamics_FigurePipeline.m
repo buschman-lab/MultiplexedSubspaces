@@ -4,7 +4,7 @@ if ~exist(savedir)
     mkdir(savedir)
 end
 savefigs = 1;
-writestats = 0;  
+writestats = 1;  
 filename = [savedir 'FigureStatistics.csv'];
 %Delete the data table and rewrite
 if writestats || exist(filename)
@@ -17,11 +17,14 @@ mouse_num = load('Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring201
 group = isVPA(mouse_num.mousenum); 
 
 %% Figure comparing cnmf to nmf and pca
-other_methods = CompileStats(GrabFiles('block',0,{[base 'TrainRepitoires\TrainingFit_CompareDiscoveryMethods']}),{'nmf','spca'},0,group);
+other_methods = CompileStats(GrabFiles('block',0,{[base 'TrainRepitoires\TrainingFit_CompareDiscoveryMethods_full']}),{'nmf','spca'},0,group);
 cnmf = CompileStats(GrabFiles('block',0,{[base 'TrainRepitoires\TrainingFit_Lambda4e-4_Kval28']}),{'ExpVar_all','numFactors'},0,group);
 %%
-Plot_CompareDiscoveryMethods(other_methods,cnmf); 
+stats = Plot_CompareDiscoveryMethods(other_methods,cnmf); 
 
+if writestats 
+    save([savedir 'comparediscovermethodsstats.mat'],'stats');
+end
 if savefigs
    handles = get(groot, 'Children');
    saveCurFigs(handles,'-svg','Train_ExpVar',savedir,1);
@@ -124,7 +127,16 @@ set(gca,'position',[2,4,4,8.5])
 [p, h] = signrank(data(1,:),data(2,:));
 AddSig(h,p,[1,2,100,100],2,5,1)
 
-%%
+if writestats
+    clear stats;
+    stats.within_median = median(data(1,:));
+    stats.ci_within = bootci(1000,@median,(data(1,:)));
+    stats.between_median = median(data(2,:));
+    stats.ci_between = bootci(1000,@median,(data(2,:)));
+    stats.difference  =median(data(1,:))-median(data(2,:));
+    stats.pval = signrank(data(1,:),data(2,:));
+    save([savedir filesep 'within_between_stats.mat'],'stats');
+end
 if savefigs
    handles = get(groot, 'Children');
    saveCurFigs(handles,'-svg','Within_between_expvar',savedir,1);
@@ -144,28 +156,28 @@ load('Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedDa
 label={'Static','SpatialStatic','framewise'};
 %Smooth everything
 [nP,nK,nT] = size(W_all);
+W_all_smooth = W_all;
 for cur_k = 1:nK
     temp = squeeze(W_all(:,cur_k,:));
-    reshape(temp,sqrt(nP),sqrt(nP),nT);
-    temp(isnan(temp))=0;
-    temp = imgaussfilt3(temp,[1,1,0.5]);
-    W_all(:,cur_k,:) = temp;
+    temp = reshape(temp,sqrt(nP),sqrt(nP),nT);
+    temp = SpatialGaussian(temp);
+    W_all_smooth(:,cur_k,:) = reshape(temp,nP,1,nT);
 end
-Comparison = toggleModFlag(W_all,[],1); %Completely static motifs
-data = NaN(size(Comparison,2),3);
-[data(:,1), ~,~] = CorrelateMotifs(W_all,Comparison);
-Comparison = toggleModFlag(W_all,[],2); %Spatially static motifs
-[data(:,2), data(:,3),~] = CorrelateMotifs(W_all,Comparison);
+Comparison = toggleModFlag(W_all_smooth,[],1); %Completely static motifs
+data = NaN(size(Comparison,2),2);
+[data(:,1), data(:,2),~] = CorrelateMotifs(W_all_smooth,Comparison);
 data = 1-data; %Dissimilarity 
-data = data';
 
 figure('position',[680   514   242   464]); hold on
 COL = {[0.4 0.4 0.4]};
-vp =CompareViolins(data(3,:),{''},0.4,COL);
+vp =CompareViolins(data(:,2)',fp,'col',COL,'label','');
 ylabel({'Dissimilarity (1-\rho)';'With Dynamic Motifs'})
 xlabel({'Static';'Network'});
 setFigureDefaults();
 set(gca,'position',[3 3 2 8.5],'ylim',[0 1])
+
+clear W_all W_all_smooth
+%%
 
 if savefigs
    handles = get(groot, 'Children');
@@ -173,9 +185,9 @@ if savefigs
    close all
 end
 if writestats
-   for i = 1:size(data,1)
-       u = mean(data(i,:));
-       ci = bootci(1000,@mean,data(i,:));
+   for i = 1:size(data,2)
+       u = median(data(:,i));
+       ci = bootci(1000,@median,data(:,i));
        T = {'Variable',sprintf('Dissimilarity_%d_Fig1E',i);'Mean',u;'CI_l',ci(1);'CI_u',ci(2)};
        [T_new] = WriteStatToTable(T,filename,0);
    end
@@ -247,11 +259,13 @@ if writestats
    fprintf(fileID,'\npval = %.4g',...
        pval_store);   
    temp = data(1,:) - data(end,:);   
-   ci = bootci(1000,@nanmedian,temp);
-   fprintf(fileID,'\ndifference between 2 and 12 = %.4g ci %d, %d, pval = %.4g',nanmedian(temp),ci(1),ci(2),pval);    
-   fprintf(fileID,'\nremoved tau (<4) = %d removed metric (no active) = %d',rmv_tau,rmv_metric);
-   fprintf(fileID,'\nHalf-life of decay =%d 25th = %d, 75th',nanmedian(tau_hl),prctile(tau_hl,25),prctile(tau_hl,75))
-   fprintf(fileID,'\nHalf-life of average decay =%d +/- SEM %d',tau_hl_mean*75,std(tau_hl_bootstrap)*75,prctile(tau_hl,75))
+   ci = bootci(1000,@nanmedian,temp);    
+   fprintf(fileID,'\ndifference between 2 and 12 = %.4g ci %d, %d, pval = %.4g',nanmedian(temp),ci(1),ci(2),pval);       
+   fprintf(fildID,'\nFirst correlation %g ci %g and %g pval %d',nanmedian(data(1,:)),bootci(1000,@nanmedian,data(1,:)),signrank(data(1,:),0,'tail','right'))
+   fprintf(fileID,'\nFirst correlation %g ci %g and %g pval %d',nanmedian(data(12,:)),bootci(1000,@nanmedian,data(12,:)),signrank(data(12,:),0,'tail','right'))   
+   fprintf(fileID,'\nremoved tau (<4) = %g removed metric (no active) = %d',rmv_tau,rmv_metric);
+   fprintf(fileID,'\nHalf-life of decay =%g 25th = %g, 75th',nanmedian(tau_hl),prctile(tau_hl,25),prctile(tau_hl,75))
+   fprintf(fileID,'\nHalf-life of average decay =%g +/- SEM %d',tau_hl_mean*75,std(tau_hl_bootstrap),prctile(tau_hl,75))
    fclose(fileID); 
 end
 %% Static network vs motifs
@@ -281,7 +295,16 @@ if savefigs
 end
 
 
-
+if writestats
+    clear stats;
+    stats.within_median = median(data(1,:));
+    stats.ci_within = bootci(1000,@median,(data(1,:)));
+    stats.between_median = median(data(2,:));
+    stats.ci_between = bootci(1000,@median,(data(2,:)));
+    stats.difference  =median(data(1,:))-median(data(2,:));
+    stats.pval = signrank(data(1,:),data(2,:));
+    save([savedir filesep 'within_static_dynamic.mat'],'stats');
+end
 
 %% END OF FIGURE 3 DYNAMICS
 
@@ -336,25 +359,24 @@ if savefigs
    close all
 end
 if writestats    
-   u = mean(data(3,:));
-   ci = bootci(1000,@mean,data(3,:));
-   T = {'Variable',sprintf('BasisMotifs%d_Fig3D',2);'Mean',u;'CI_l',ci(1);'CI_u',ci(2)};
-   [T_new] = WriteStatToTable(T,filename,0);
-   fileID = fopen([savedir 'FigureStatistics.txt'],'a');
-   temp = data(1,:)-data(2,:);
-   ci = bootci(1000,@mean,temp);
-   fprintf(fileID,'\nWithin vs Between: Diff = %.4g CI %.4g %.4g, pval=%.4g',...
-       nanmedian(temp),ci(1),ci(2), signrank(data(1,:),data(2,:)));
-   
-   temp = data(1,:)-data(3,:);
-   ci = bootci(1000,@mean,temp);
-   fprintf(fileID,'\nWithin vs Basis: Diff = %.4g CI %.4g %.4g, pval=%.4g',...
-       nanmedian(temp),ci(1),ci(2), signrank(data(1,:),data(3,:)));
-   
-   temp = data(2,:)-data(3,:);
-   ci = bootci(1000,@mean,temp);
-   fprintf(fileID,'\nBetween vs Clust: Diff = %.4g CI %.4g %.4g, pval=%.4g',...
-       nanmedian(temp),ci(1),ci(2), signrank(data(2,:),data(3,:)));
+    clear stats;
+    stats.basis_median = median(data(3,:));
+    stats.ci_basis = bootci(1000,@median,(data(3,:)));
+    stats.staticbasis_median = median(data(4,:));
+    stats.ci_staticbasis = bootci(1000,@median,(data(4,:)));
+    stats.difference_staticbasistobasis  =median(data(3,:))-median(data(4,:));
+    stats.pval_staticbasistobasis = signrank(data(3,:),data(4,:));
+    
+    stats.difference_orig_between =median(data(1,:))-median(data(2,:));
+    stats.pval_difference_orig_between= signrank(data(1,:),data(2,:));
+    
+    stats.difference_orig_basis  =median(data(1,:))-median(data(3,:));
+    stats.pval_orig_basis  = signrank(data(1,:),data(3,:));
+    
+    stats.difference_between_basis =median(data(2,:))-median(data(3,:));
+    stats.pval_between_basis = signrank(data(2,:),data(3,:));
+    save([savedir filesep 'basismotifs_stats.mat'],'stats');
+
 end
 
 %% Figure 3D Exp Var Loadings 
@@ -375,7 +397,7 @@ for i = 1:size(data,1)
 end
 %%
 figure('position',[680   558   422   420]); hold on;
-errorbar(1:1:size(data,1),nanmedian(data,2),(nanmedian(data,2)-ci(:,1)),(ci(:,2)-nanmedian(data,2)),'LineWidth',2,'Color',[0.4 0.4 0.4])
+errorbar(1:1:size(data,1),nanmean(data,2),(nanmean(data,2)-ci(:,1)),(ci(:,2)-nanmean(data,2)),'LineWidth',2,'Color',[0.4 0.4 0.4])
 title({'All Basis Motifs Are';'Used to Explain Activity'},'FontWeight','normal','FontName','Arial',...
     'units','centimeters','position',[2 5.5]); 
 xlabel('Basis Motif');
@@ -395,7 +417,7 @@ if savefigs
 end
 if writestats
    for i = 1:size(data,1)
-       u = nanmedian(data(i,:));       
+       u = nanmean(data(i,:));       
        n = sum(~isnan(data(i,:)));
        T = {'Variable',sprintf('Loadings%d_Fig3',i);'Mean',u;'CI_l',ci(i,1);'CI_u',ci(i,2);'NumDataPoints',n};
        [T_new] = WriteStatToTable(T,filename,0);

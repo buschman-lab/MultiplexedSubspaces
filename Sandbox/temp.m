@@ -1,3 +1,110 @@
+%PCA on the behavioral data
+[coef, score, pev] = pca(features_downsampled);
+
+% zscore the H values
+data = load([fn_path fn_widefield],'w','data_test','H');
+w = data.w(:,expvaridx,:); 
+H = data.H(expvaridx,:);
+
+H_weight = NaN(size(H))';
+for cur_motif = 1:size(H,1)
+    H_weight(:,cur_motif) = helper.reconstruct(nanmean(w(:,cur_motif,:),1),H(cur_motif,:)); 
+end %motif loop
+
+%%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%
+
+
+
+
+
+
 %add paths
 addpath(genpath('C:\Users\macdo\Documents\GitHub\Widefield_Imaging_Analysis'));
 addpath(genpath('C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\'));

@@ -10,9 +10,7 @@ fn_savebase = 'Mouse431_10_17_2019';
 fn_widefield = '431-10-17-2019_1Fitted_block_hemoflag0_1';
 split_idx = {12,11.00,0.3}; %mouse 431
 
-
-% addpath(genpath('C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\'));
-% %set filepaths
+% % %set filepaths
 % fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse432_10_17_2019\';
 % fn_facecam = 'Cam_0_20191017-171729.avi';
 % fn_bodycam = 'Cam_1_20191017-171729_Mouse432_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000_labeled.mp4';
@@ -23,13 +21,13 @@ split_idx = {12,11.00,0.3}; %mouse 431
 
 % addpath(genpath('C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\'));
 % %set filepaths
-% fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse432_10_17_2019\';
-% fn_facecam = 'Cam_0_20191017-171729.avi';
-% fn_bodycam = 'Cam_1_20191017-171729_Mouse432_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000_labeled.mp4';
-% fn_dlc = 'Cam_1_20191017-171729_Mouse432_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
-% fn_savebase = 'Mouse432_10_17_2019';
-% fn_widefield = '432-10-17-2019_1Fitted_block_hemoflag0_1';
-
+% fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse494_10_17_2019\';
+% fn_facecam = 'Cam_0_20191017-184642.avi';
+% fn_bodycam = 'Cam_1_20191017-184642_Mouse494_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000_labeled.mp4';
+% fn_dlc = 'Cam_1_20191017-184642_Mouse494_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
+% fn_savebase = 'Mouse494_10_17_2019';
+% fn_widefield = '494-10-17-2019_1Fitted_block_hemoflag0_1';
+% split_idx = {11.47,17.53,0.3};
 
 %load behavioral analysis paramters
 bp = behavioral_params; 
@@ -385,7 +383,7 @@ end %motif loop
 
 
 %% each time the state occurs, get the average intensity of each motif
-temp = cellfun(@(x) numel(x)>13, cluster_groups,'UniformOutput',0);
+temp = cellfun(@(x) numel(x)>1, cluster_groups,'UniformOutput',0);
 cluster_group_clean = cluster_groups;
 for i = 1:size(temp,1)
     cluster_group_clean(i,cell2mat(temp(i,:))==0)={[]};
@@ -397,8 +395,11 @@ avg_pev = {};
 for i = 1:size(cluster_group_clean,1)
    temp = cluster_group_clean(i,:);
    temp = temp(~cellfun('isempty',temp));
-   for j = 1:numel(temp)
-      avg_h{i}(j,:) = nanmean(H_weight(temp{j},:));
+   temp = cellfun(@(x) SplitIntoSubarray(x,1),temp,'UniformOutput',0);
+   temp = cat(2,temp{:});  
+   for j = 1:size(temp,2)
+%       avg_h{i}(j,:) = nanmean(H_weight(temp(:,j),:));
+        avg_h{i}(j,:) = (H_weight(temp(:,j),:));
    end
 end
 
@@ -412,10 +413,15 @@ else
     state_code=clusters;
 end
 
-%%get the distirbutions
+% seperate samples by 1 second to get more independent samples
+avg_h = cellfun(@(x) x(1:7:end,:), avg_h, 'UniformOutput',0);
+
+% 
+% %get the distirbutions
 % for i = 1:numel(avg_h)
 %     temp = avg_h{i};
 %     figure; hold on; 
+%     temp = log(temp);
 %     for j = 1:size(temp,2)
 %        [f,xi] = ksdensity(temp(:,j)); 
 %        plot(xi,f,'linewidth',1); 
@@ -448,10 +454,11 @@ s2 = subplot(311,'Units','centimeters','Position',[8 11 10 1.5]); hold on
 
 axes(s1);
 
-y=[];
+y=[]; 
+hold on
 for cur_state = 1:size(temp_avg,3)
     for cur_motif = 1:size(temp_avg,2)
-        y(cur_state,cur_motif) = nanmedian(squeeze(temp_avg(:,cur_motif,cur_state)));
+        y(cur_state,cur_motif) = nanmean(squeeze(temp_avg(:,cur_motif,cur_state)));
     end
 end
 imagesc(y./mean(y,1),[0.25 1.75])
@@ -477,13 +484,13 @@ axes(s2); hold on
 %Plot the fscore and the significance
 plot(fstat,'LineWidth',2,'Marker','.','MarkerSize',5,'MarkerEdgeColor',[0.4 0.4 0.4],'Color',[0.4 0.4 0.4])
 for i = 1:numel(pval)
-   AddSig(1,pval(i),[i,i,fstat(i),fstat(i)],1,15,1,90)
+   AddSig(1,pval(i),[i-0.1,i-0.1,fstat(i),fstat(i)],1,24,1,90)
 end
 %Change marker color for significant motifs (lighter)
 scatter((1:1:size(temp_avg,2)),fstat,50,sig_color((pval<=0.05)+1,:),'filled')
 xlim([0.5 size(temp_avg,2)+.5])
-set(gca,'XTick',(1:2:size(temp_avg,2)),'YTick',[0,15])
-ylabel({'\chi^2';''},'Rotation',0,'Units','Centimeters','position',[11 1.25]);
+set(gca,'XTick',(1:2:size(temp_avg,2)),'Ytick',[min(get(gca,'Ytick')),max(get(gca,'Ytick'))]);
+ylabel({'\chi^2';''},'Rotation',0,'Units','Centimeters','position',[11.25 1.25]);
 set(gca,'yaxislocation','right')
 set(gca,'XColor','none');
 setFigureDefaults
@@ -512,36 +519,57 @@ set(gcf,'Position',[680   150  800   650]);
 
 fh = gcf;
 
-
+if savefigs
+    handles = get(groot, 'Children');
+    saveCurFigs(handles,'-svg','ANOVA_figure',fn_path,1);
+    close all;
+end
 %% Plot the H autocorrelation
-figure('position',[680   101   858   877]); hold on; 
+figure('position',[ 209         101        1329         877]); hold on; 
 H_weight_temp = (H_weight-nanmean(H_weight,1))';
 tau = NaN(1,size(H_weight_temp,1));
+% [r,c] = numSubplot(size(H_weight_temp,1),1);
 for i = 1:size(H_weight_temp,1)
     %plot pdf     
-    [xc,lags] = xcorr(H_weight_temp(i,:),20*13,'coeff'); 
+%     subplot(r,c,i); hold on; 
+    [xc,lags] = xcorr(H_weight_temp(i,:),10*13,'coeff'); 
+    
+    N = (numel(H_weight_temp(i,:)));
+    for j = 1:numel(xc)
+        t = xc(j)*(sqrt(N-2)/sqrt((1-xc(j)^2)));        
+%         pval(j) = 1-tcdf(t,N-2); %right tailed stat
+        s = tcdf(t,N-2);
+        pval(j) = 2 * min(s,1-s);
+    end
+    
     idx = [ceil(numel(lags)/2)+1:numel(lags)];
-    plot(lags(idx)/13,xc(idx),'linewidth',2,'color',[0.5 0.5 0.5]);   
-    title({'Autocorrelation of Motif';'Temporal Weightings'},'FontName','Arial','FontSize',16,'FontWeight','normal')    
+    pval = pval(idx);
+    sig_xc = xc(idx);
+    sig_xc(pval>=0.05/numel(idx))=NaN;    
+    plot(lags(idx)/13,xc(idx),'linewidth',2,'color',[0.2 0.2 0.2]);
+    plot(lags(idx)/13,sig_xc,'linewidth',2,'color',[0.8500 0.3723 0.0078]);
+    
+    
+    title(sprintf('Motif %d',i),'FontName','Arial','FontSize',12,'FontWeight','normal')    
     xlim([0 max(lags/13)])
     ylabel('Rho')
     xlabel('time (s)')    
     tau(i)=find(xc(idx)>=0.5*xc(idx(1)),1,'last')/13;
+    
+    line([0 max(lags/13)],[0 0],'linestyle','--','linewidth',2,'color',[0.75 0.75 0.75]); 
+    text(3,0.5,sprintf('\\tau = %.2gs',tau(i)),'FontSize',12,'FontName','Arial')
+    setFigureDefaults; 
+    
+    pos = get(gca,'position');
+    set(gca,'position',[pos(1) pos(2) 3 3])
+    
+    
+    ylim([-0.25 1]);
 end
-
-% ylim([-0.5 1]);
-%get halflife
-text(3,0.5,sprintf('\\tau = %.2g +/- %.2gs',nanmean(tau),sem(tau,2)),'FontSize',16,'FontName','Arial')
-setFigureDefaults; 
-
-pos = get(gca,'position');
-set(gca,'position',[pos(1) pos(2) 6 6])
-
-
 
 if savefigs
     handles = get(groot, 'Children');
-    saveCurFigs(handles,'-svg','H_autocorrelation',fn_path,1);
+    saveCurFigs(handles,'-svg','H_autocorrelation_sigtesting',fn_path,1);
     close all;
 end
 
