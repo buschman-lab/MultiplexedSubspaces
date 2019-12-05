@@ -6,7 +6,7 @@ if ~ispc
 end
 
 if nargin<2
-    save_dir = '/TrainRepitoires/TrainingFit_CompareDiscoveryMethods/';
+    save_dir = '/TrainRepitoires/TrainingFit_CompareDiscoveryMethods_full/';
 end
 save_file_name = sprintf('block_%d',block);
 
@@ -14,11 +14,11 @@ save_file_name = sprintf('block_%d',block);
 
 %Perform seqNMF
 [seq.ExpVar_frame,seq.ExpVar_all,~,~,~,~,~,~,seq.numFactors,~,~,seq.opts] = ...
-    Discover_Motifs('block',block,'K',50,'bucket','Z:/');
+    Discover_Motifs('block',block,'K',50);
 
 %Perform CNMF sweep
 nmf = struct();
-for cur_k = [1:1:25,50:25:300]
+for cur_k = 1:250
     [nmf(cur_k).ExpVar_frame,nmf(cur_k).ExpVar_all,~,~,~,~,~,~,nmf(cur_k).numFactors,~,~,nmf(cur_k).opts] = ...
         Discover_Motifs(...
             'block',block,...
@@ -41,5 +41,7 @@ end
 
 filename = [save_dir save_file_name '.mat'];
 save(filename,'nmf','spca','seq','-v7.3');
+
+fprintf('Done Saving Data to %s',filename');
 
 end

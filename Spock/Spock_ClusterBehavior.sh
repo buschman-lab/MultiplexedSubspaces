@@ -4,9 +4,9 @@
 #SBATCH -J 'pheno'
 #SBATCH -o out/cluster_behavior_%j.out
 #SBATCH -p all
-#SBATCH -t 5
-#SBATCH --mem-per-cpu=10G  
-#SBATCH --array=1
+#SBATCH -t 600
+#SBATCH --mem-per-cpu=24G  
+#SBATCH --array=2-6
 #SBATCH --mail-type=FAIL                         # Event(s) that triggers email notification (BEGIN,END,FAIL,ALL)
 #SBATCH --mail-user=<camdenm@princeton.edu>    # Destination email address
 
@@ -18,4 +18,4 @@ cd "/jukebox/buschman/Rodent Data/Wide Field Microscopy/Widefield_Imaging_Analys
 
 #run a paranoid version of matlab that crashes gracefully and records why just incase.
 # in addition, xvfb-run also creates a virtual desktop so that you can plot easily
-xvfb-run -d matlab -nosplash -nodisplay -nodesktop -r "try; Spock_ClusterBehavior($SLURM_ARRAY_TASK_ID,30); catch me; fprintf('Error: %s / %s\n',me.identifier,me.message); for k=1:length(me.stack), me.stack(k), end; end; exit"
+xvfb-run -d matlab -nosplash -nodisplay -nodesktop -r "try; Spock_ClusterBehavior($SLURM_ARRAY_TASK_ID); catch me; fprintf('Error: %s / %s\n',me.identifier,me.message); for k=1:length(me.stack), me.stack(k), end; end; exit"

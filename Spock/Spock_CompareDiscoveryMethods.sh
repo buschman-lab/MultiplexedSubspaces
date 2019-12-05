@@ -4,8 +4,8 @@
 #SBATCH -J 'DiscoverMotifs'
 #SBATCH -o out/DiscoverMotifs_output_%j.out
 #SBATCH -p all
-#SBATCH -t 240
-#SBATCH --mem-per-cpu=16G  
+#SBATCH -t 2400
+#SBATCH --mem-per-cpu=24G  
 #SBATCH --array=1-318
 #SBATCH --mail-type=FAIL                         # Event(s) that triggers email notification (BEGIN,END,FAIL,ALL)
 #SBATCH --mail-user=<camdenm@princeton.edu>    # Destination email address
