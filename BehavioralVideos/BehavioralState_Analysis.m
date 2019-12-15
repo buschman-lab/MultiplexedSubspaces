@@ -1,14 +1,14 @@
 %add paths
 addpath(genpath('C:\Users\macdo\Documents\GitHub\Widefield_Imaging_Analysis'));
 addpath(genpath('C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\'));
-% %set filepaths
-fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse431_10_17_2019\';
-fn_facecam = 'Cam_0_20191017-155226.avi';
-fn_bodycam = 'Cam_1_20191017-155226_Mouse431_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000_labeled.mp4';
-fn_dlc = 'Cam_1_20191017-155226_Mouse431_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
-fn_savebase = 'Mouse431_10_17_2019';
-fn_widefield = '431-10-17-2019_1Fitted_block_hemoflag0_1';
-split_idx = {12,11.00,0.3}; %mouse 431
+% % %set filepaths
+% fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse431_10_17_2019\';
+% fn_facecam = 'Cam_0_20191017-155226.avi';
+% fn_bodycam = 'Cam_1_20191017-155226_Mouse431_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000_labeled.mp4';
+% fn_dlc = 'Cam_1_20191017-155226_Mouse431_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
+% fn_savebase = 'Mouse431_10_17_2019';
+% fn_widefield = '431-10-17-2019_1Fitted_block_hemoflag0_1';
+% split_idx = {12,11.00,0.3}; %mouse 431
 
 % % %set filepaths
 % fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse432_10_17_2019\';
@@ -19,15 +19,15 @@ split_idx = {12,11.00,0.3}; %mouse 431
 % fn_widefield = '432-10-17-2019_1Fitted_block_hemoflag0_1';
 % split_idx = {11.58,6,0.3}; %mouse 432
 
-% addpath(genpath('C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\'));
-% %set filepaths
-% fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse494_10_17_2019\';
-% fn_facecam = 'Cam_0_20191017-184642.avi';
-% fn_bodycam = 'Cam_1_20191017-184642_Mouse494_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000_labeled.mp4';
-% fn_dlc = 'Cam_1_20191017-184642_Mouse494_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
-% fn_savebase = 'Mouse494_10_17_2019';
-% fn_widefield = '494-10-17-2019_1Fitted_block_hemoflag0_1';
-% split_idx = {11.47,17.53,0.3};
+
+%set filepaths
+fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse494_10_17_2019\';
+fn_facecam = 'Cam_0_20191017-184642.avi';
+fn_bodycam = 'Cam_1_20191017-184642_Mouse494_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000_labeled.mp4';
+fn_dlc = 'Cam_1_20191017-184642_Mouse494_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
+fn_savebase = 'Mouse494_10_17_2019';
+fn_widefield = '494-10-17-2019_1Fitted_block_hemoflag0_1';
+split_idx = {12.06,17.53,0.15};
 
 %load behavioral analysis paramters
 bp = behavioral_params; 
@@ -413,37 +413,75 @@ else
     state_code=clusters;
 end
 
-% seperate samples by 1 second to get more independent samples
+% seperate samples by 0.5 second to get more independent samples
 avg_h = cellfun(@(x) x(1:7:end,:), avg_h, 'UniformOutput',0);
 
-% 
-% %get the distirbutions
-% for i = 1:numel(avg_h)
-%     temp = avg_h{i};
-%     figure; hold on; 
-%     temp = log(temp);
-%     for j = 1:size(temp,2)
-%        [f,xi] = ksdensity(temp(:,j)); 
-%        plot(xi,f,'linewidth',1); 
-%     end
-%     pause()
-% end
+%get distribution
+temp_avg = MakeCellsEqual(avg_h,1,1); 
+temp_avg = cat(3,temp_avg{:});
+temp_avg(temp_avg<=eps)=NaN;
+temp_avg(isnan(temp_avg))=[];
+
+figure; hold on; 
+[f,xi] = ksdensity((temp_avg(:))); 
+plot(xi,f,'linewidth',2,'color',[0.25 0.25 0.25]);
+title({'Distribution of Motif';'Intensity Before log Transform'},'FontName','Arial','FontSize',16,'FontWeight','normal');
+xlabel('Motif Intensity');
+ylabel('PDF');
+setFigureDefaults
+set(gca,'position',[3 3 6 6]);
+
+figure; hold on; 
+[f,xi] = ksdensity(log(temp_avg(:))); 
+plot(xi,f,'linewidth',2,'color',[0.25 0.25 0.25]);
+title({'Distribution of Motif';'Intensity After log Transform'},'FontName','Arial','FontSize',16,'FontWeight','normal');
+xlabel('ln(motif intensity)');
+ylabel('PDF');
+setFigureDefaults
+set(gca,'position',[3 3 6 6]);
+
+if savefigs
+    handles = get(groot, 'Children');
+    saveCurFigs(handles,'-svg','Distribution_figures',fn_path,1);
+    close all;
+end
+
+%%
+temp_avg = MakeCellsEqual(avg_h,1,1); 
+temp_avg = cat(3,temp_avg{:});
+temp_avg(temp_avg<=eps)
+motif_group = ones(size(temp_avg)).*(1:size(temp_avg,2));
+state_group = temp_avg; 
+for i = 1:size(temp_avg,3)
+   state_group(:,:,i) = ones(size(state_group(:,:,i)))*i; 
+end
+temp_avg(temp_avg<=eps)=NaN;
+temp_avg = log(temp_avg);
+[p, tbl,stats] = anovan(temp_avg(:),cat(2,motif_group(:),state_group(:)),'model','interaction');
+
+save([fn_path '2wayAnovaData.mat'],'p','tbl','stats');
 
 %% for each motif, get the average +/- the sem. anova comparing that motif across behavioral states
+fp = fig_params;
 sig_color = [0.75 0.75 0.75; 0.25 0.25 0.25];
 col = getColorPalet(numel(unique_states));
 temp_avg = MakeCellsEqual(avg_h,1,1); 
 temp_avg = cat(3,temp_avg{:});
 pval = [];
 fstat = [];
+sig_comparison = {};
 for i = 1:size(temp_avg,2)
    test = squeeze(temp_avg(:,i,:));
    group = ones(size(test)).*(1:size(test,2));
    test = test(:);
+   test(test<=eps)=NaN;
    group = group(:);
    group(isnan(test))=[];
-   test(isnan(test))=[];  
-   [pval(i),tab] = kruskalwallis(test,group,'off');
+   test(isnan(test))=[];     
+   [pval(i),tab,stats] = anova1(log(test),group,'off');
+   c = multcompare(stats,'Display','off');
+   temp =c(:,1:2);
+   sig_comparison{i} = temp(sum(c(:,end)<0.05,2)>0,:);   
    fstat(i) = tab{2,5};
 end
 
@@ -453,19 +491,20 @@ s1 = subplot(312,'Units','centimeters','Position',[8 6 10 4.5]); hold on
 s2 = subplot(311,'Units','centimeters','Position',[8 11 10 1.5]); hold on
 
 axes(s1);
-
 y=[]; 
 hold on
 for cur_state = 1:size(temp_avg,3)
     for cur_motif = 1:size(temp_avg,2)
-        y(cur_state,cur_motif) = nanmean(squeeze(temp_avg(:,cur_motif,cur_state)));
-    end
+        temp = squeeze(temp_avg(:,cur_motif,cur_state));
+        temp(temp<=eps)=NaN;        
+        y(cur_state,cur_motif) = nanmean(log(temp));
+    end    
 end
-imagesc(y./mean(y,1),[0.75 1.25])
+imagesc(y./nanmean(y),[0.95 1.05])
 colormap(gca,flipud(redgreencmap(64,'Interpolation','linear')));
 c = colorbar;
-set(c,'YTick',[0.75, 1, 1.25]);
-ylabel(c,{'Normalized Motif Intensity'},'FontSize',16,'Fontweight','normal','FontName','Arial');
+set(c,'YTick',[0.95, 1, 1.05]);
+ylabel(c,{'Normalized Motif';'Intensity (log)'},'FontSize',16,'Fontweight','normal','FontName','Arial');
 set(c,'units','centimeters','position',[18.25 6 0.5 4.5])
 
 for x_grid = 0.5:1:size(y,2)+0.5
@@ -480,18 +519,30 @@ xlim([0.5 size(y,2)+.5])
 ylim([0.5 size(y,1)+0.5])
 set(gca,'YColor','none')
 setFigureDefaults
+% For each significant comparison put a box around motifs that were different
+for i = 1:numel(sig_comparison)
+   temp = unique(sig_comparison{i}(:));
+
+   for j = 1:numel(temp)
+       line([i-0.5, i+0.5],[temp(j)-0.5, temp(j)-0.5],'color',[0.2 0.7 1],'linewidth',2.25)
+       line([i-0.5, i+0.5],[temp(j)+0.5, temp(j)+0.5],'color',[0.2 0.7 1],'linewidth',2.25)
+       line([i-0.5, i-0.5],[temp(j)-0.5, temp(j)+0.5],'color',[0.2 0.7 1],'linewidth',2.25)
+       line([i+0.5, i+0.5],[temp(j)-0.5, temp(j)+0.5],'color',[0.2 0.7 1],'linewidth',2.25)
+   end
+    
+end
 
 axes(s2); hold on
 %Plot the fscore and the significance
 plot(fstat,'LineWidth',2,'Marker','.','MarkerSize',5,'MarkerEdgeColor',[0.4 0.4 0.4],'Color',[0.4 0.4 0.4])
 for i = 1:numel(pval)
-   AddSig(1,pval(i),[i-0.1,i-0.1,fstat(i),fstat(i)],1,24,1,90)
+   AddSig(1,pval(i),[i-0.1,i-0.1,fstat(i),fstat(i)],1,5,1,90)
 end
 %Change marker color for significant motifs (lighter)
 scatter((1:1:size(temp_avg,2)),fstat,50,sig_color((pval<=0.05/numel(pval))+1,:),'filled')
 xlim([0.5 size(temp_avg,2)+.5])
 set(gca,'XTick',(1:2:size(temp_avg,2)),'Ytick',[min(get(gca,'Ytick')),max(get(gca,'Ytick'))]);
-ylabel({'\chi^2';''},'Rotation',0,'Units','Centimeters','position',[11.25 1.25]);
+ylabel({'F';'stat';''},'Rotation',0,'Units','Centimeters','position',[11.25 1.4]);
 set(gca,'yaxislocation','right')
 set(gca,'XColor','none');
 setFigureDefaults
@@ -515,8 +566,7 @@ xlim([0.5 num_features+0.5])
 ylim([0.5 size(state_code,1)+0.5])
 setFigureDefaults
 
-
-set(gcf,'Position',[680   150  800   650]);
+set(gcf,'Position',[680   150  875  650]);
 
 fh = gcf;
 
@@ -524,6 +574,7 @@ if savefigs
     handles = get(groot, 'Children');
     saveCurFigs(handles,'-svg','ANOVA_figure',fn_path,1);
     close all;
+    save([fn_path, 'indiviudalAnova.mat'],'sig_comparison','fstat','pval');
 end
 %% Plot the H autocorrelation
 figure('position',[ 209         101        1329         877]); hold on; 

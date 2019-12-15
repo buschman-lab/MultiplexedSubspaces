@@ -18,7 +18,7 @@ classdef fig_params
         c_wh_same = [0 0 0.75]; %withheld, same animal
         c_wh_diff = [0.3 0.7 .4]; %withheld, different animal
         c_static = [0.5 0.5 0.5]; %static 
-        c_sensory = [0.3 0.7 0; 0.3 0.7 1; 0.7,0.1,0] %aud,air,vis. 
+        c_sensory = [0.3 0.7 1; 0.7,0.1,0; 0.3 0.7 0] %air,vis,aud. 
         c_visual = [0, 0, 1; 0.7,0.1,0 ];
         c_tactile = [1, 0, 0; 0.3, 0.7, 1];
  

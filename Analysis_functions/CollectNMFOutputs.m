@@ -1,5 +1,7 @@
 function [w, cost, loadings, power, numFactors, Xhat, Residuals, W, H] = ...
-    CollectNMFOutputs(w, h, cost, loadings, power, nanpxs, block, X)
+    CollectNMFOutputs(w, h, cost, loadings, power, nanpxs, block, X, removeFlag)
+
+if nargin <9; removeFlag = 1; end
 
 %Gather in case used GPU
 cost = {gather(cost)};
@@ -7,13 +9,16 @@ loadings = {gather(loadings)};
 power = {gather(power)};
 w = gather(w);
 
-%Remove empty w or w with barely anything
-indempty = sum(sum(w>0,1),3)==0; % W is literally empty
-Wflat = sum(w,3); 
-indempty = indempty | (max(Wflat,[],1).^2> .5*sum(Wflat.^2,1)); % or one pixel has >50% of the power
-w(:,indempty,:) = []; % Delete factors that meet the above critera
-H = gather(h);
-H(indempty,:) = [];
+if removeFlag %Remove empty w or w with barely anything
+    indempty = sum(sum(w>0,1),3)==0; % W is literally empty
+    Wflat = sum(w,3); 
+    indempty = indempty | (max(Wflat,[],1).^2> .5*sum(Wflat.^2,1)); % or one pixel has >50% of the power
+    w(:,indempty,:) = []; % Delete factors that meet the above critera
+    H = gather(h);
+    H(indempty,:) = [];
+else
+   H = gather(h);
+end
 
 %Number of factors
 numFactors = {size(w,2)};

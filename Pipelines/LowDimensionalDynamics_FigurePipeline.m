@@ -4,7 +4,7 @@ if ~exist(savedir)
     mkdir(savedir)
 end
 savefigs = 1;
-writestats = 1;  
+writestats = 0;  
 filename = [savedir 'FigureStatistics.csv'];
 %Delete the data table and rewrite
 if writestats || exist(filename)
@@ -17,7 +17,7 @@ mouse_num = load('Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring201
 group = isVPA(mouse_num.mousenum); 
 
 %% Figure comparing cnmf to nmf and pca
-other_methods = CompileStats(GrabFiles('block',0,{[base 'TrainRepitoires\TrainingFit_CompareDiscoveryMethods_full']}),{'nmf','spca'},0,group);
+other_methods = CompileStats(GrabFiles('block',0,{[base 'TrainRepitoires\TrainingFit_CompareDiscoveryMethods_250Dimensions']}),{'nmf','spca'},0,group);
 cnmf = CompileStats(GrabFiles('block',0,{[base 'TrainRepitoires\TrainingFit_Lambda4e-4_Kval28']}),{'ExpVar_all','numFactors'},0,group);
 %%
 stats = Plot_CompareDiscoveryMethods(other_methods,cnmf); 
@@ -33,39 +33,84 @@ end
 
 %% Distribution of Events
 D = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\TrainRepitoires\TrainingFit_Lambda4e-4_Kval28';
-params = gatherHs(318,'TrainRepitoire_block',0,D);
-%Get the average number for all factors in a epoch
+data = CompileStats(GrabFiles('block',0,{D}),{'w','H'},0,group);
+occurance = MotifOccurance(data,0.75);
 %%
-figure('position',[680   451   268   527]); hold on;
-setFigureDefaults();
-occurance = [params(:).IndiOccurance]/2;
-hh = histogram(occurance,ceil(max(occurance)),'BinEdges',(0:1:ceil(max(occurance))));
-set(hh(1),'FaceColor',fp.c_discovery,'FaceAlpha',0.4,'EdgeColor',fp.c_discovery,'EdgeAlpha',0.8);
-ymax = get(gca,'ylim');
-line([mean(occurance),mean(occurance)],[0,ymax(2)+2],'LineWidth',2,...
-    'linestyle','--','Color',[0.3 0.3 0.3]);
-ylabel('# Motifs');
-xlabel({'Motif Frequency';'(occurence/minute)'})
-ylim([0 ymax(2)+2]);
-xlim([0 max(occurance)])
+figure('position',[680   382   974   596]); hold on; 
+histogram([occurance{:}]/2,'FaceColor',fp.c_discovery,'EdgeColor',fp.c_discovery-0.1,'linewidth',1,'BinWidth',1);    % Plot with errorbars
+ylabel('Number of Motifs')
+xlabel({'Motif Frequency';'(occurence/minute)'});
+line([nanmedian([occurance{:}])/2,nanmedian([occurance{:}])/2],[0 750],'color','k','linestyle','--','linewidth',1.5)
+text(nanmedian([occurance{:}]/2)+3,300,['\mu_{1/2}=', num2str(round(nanmedian([occurance{:}]/2),2))],'FontSize',16,'FontWeight','normal','FontName','Arial');
+xlim([0 15])
+ylim([0 700])
+title('Motif Frequency','FontName','Arial','FontWeight','normal','FontSize',16);
+setFigureDefaults
 set(gca,'position',[2 3 3.5 8.5])
-title({'Motif Frequency';''},'FontWeight','normal','units','centimeters','position',[1.75,9.25],'FontName','Arial');
-text(mean([params(:).Occurance])+1,400,['\mu=', num2str(round(mean(occurance),2))],'FontSize',16,'FontWeight','normal','FontName','Arial');
+legend off
 
 %%
 if savefigs
    handles = get(groot, 'Children');
-   saveCurFigs(handles,'-svg','FittingStats_NumEvents',savedir,1);
+   saveCurFigs(handles,'-svg','FittingStats_NumEvents_new',savedir,1);
    close all
 end
 if writestats
-   u = mean(occurance);
-   ci = bootci(1000,@mean,occurance);
-   temp = sort(occurance,'ascend');   
+   u = nanmean([occurance{:}]/2);
+   ci = bootci(1000,@nanmean,[occurance{:}]/2);
+   temp = sort([occurance{:}],'ascend');   
    temp = temp(floor(numel(temp)/2)-1);
    T = {'Variable','MotifOccurance_Fig1C';'Mean',u;'CI_l',ci(1);'CI_u',ci(2);'HalfOccurAtLeastPerMin',temp};
    [T_new] = WriteStatToTable(T,filename,0);       
 end
+
+%% Number of motifs
+occurance = cellfun(@(x) size(x,1), {data(:).H},'UniformOutput',0);
+figure('position',[680   382   974   596]); hold on; 
+histogram([occurance{:}],'FaceColor',fp.c_discovery,'EdgeColor',fp.c_discovery-0.1,'linewidth',1,'BinWidth',1);    % Plot with errorbars
+ylabel('Number of Epochs')
+xlabel({'Number of';'Discovered Motifs'});
+line([nanmedian([occurance{:}]),nanmedian([occurance{:}])],[0 300],'color','k','linestyle','--','linewidth',1.5)
+text(nanmedian([occurance{:}])-12,19,['\mu_{1/2}=', num2str(round(nanmedian([occurance{:}]),2))],'FontSize',16,'FontWeight','normal','FontName','Arial');
+xlim([0 30])
+ylim([0 20])
+title('Motif Frequency','FontName','Arial','FontWeight','normal','FontSize',16);
+setFigureDefaults
+set(gca,'position',[2 3 3.5 8.5])
+legend off
+
+%%
+if savefigs
+   handles = get(groot, 'Children');
+   saveCurFigs(handles,'-svg','FittingStats_NumberOfMotifs',savedir,1);
+   close all
+end
+
+%% Histogram of Percent Explained Variance
+D = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\TrainRepitoires\TrainingFit_Lambda4e-4_Kval28';
+data = CompileStats(GrabFiles('block',0,{D}),{'ExpVar_all'},0,group);
+data = [data(:).ExpVar_all]*100;
+%%
+figure('position',[680   382   974   596]); hold on; 
+histogram(data,'FaceColor',fp.c_discovery,'EdgeColor',fp.c_discovery-0.1,'linewidth',1,'BinWidth',2);    % Plot with errorbars
+ylabel('Number of Epochs')
+xlabel({'Percent Explained';'Variance'});
+line([nanmedian(data),nanmedian(data)],[0 300],'color','k','linestyle','--','linewidth',1.5)
+text(nanmedian(data)-35,25,['\mu_{1/2}=', num2str(round(nanmedian(data),2))],'FontSize',16,'FontWeight','normal','FontName','Arial');
+xlim([50 100])
+ylim([0 41])
+title('Motif Frequency','FontName','Arial','FontWeight','normal','FontSize',16);
+setFigureDefaults
+set(gca,'position',[2 3 3.5 8.5])
+legend off
+
+%%
+if savefigs
+   handles = get(groot, 'Children');
+   saveCurFigs(handles,'-svg','FittingStats_Explained Variance distribution',savedir,1);
+   close all
+end
+
 
 %% Figure 2 D Loadings
 %organize data
@@ -335,15 +380,15 @@ for i =1:numel(D)
     data(i,:) = temp*100;
 end
 %%
-figure('position',[150  150   550   550]); hold on;
+figure('position',[ 150   150   735   678]); hold on;
 COL = {[0 0 0.75],[0.25 0.75 0],[0.85,0.37,0.001],[0.5 0.5 0.5]};
 vp =CompareViolins(data,fp,'label',label,'col',COL);
-t=title({'Basis Motifs Capture';'Majority of Cortical Activity'},'Units','Centimeters',...
-    'FontName','Arial','FontWeight','normal','VerticalAlignment','bottom','position',[4.2598 9 0]);
+% t=title({'Basis Motifs Capture';'Majority of Cortical Activity'},'Units','Centimeters',...
+%     'FontName','Arial','FontWeight','normal','VerticalAlignment','bottom','position',[4.2598 9 0]);
 ylabel({'Percent Explained Variance'});
 ylim([0 100])
 setFigureDefaults();
-set(gca,'XTickLabelRotation',45,'ytick',(0:20:100),'Clipping','off','position',[3 4 8.5 8.5])
+set(gca,'XTickLabelRotation',45,'ytick',(0:20:100),'Clipping','off','position',[3 4 10 10])
 [pval, h] = signrank(data(1,:),data(3,:));
 AddSig(h,pval,[1 3 96.5],3,5,1); 
 [pval, h] = signrank(data(1,:),data(2,:));
@@ -714,8 +759,27 @@ end %function end
     
     
     
-    
-    
+%     %%
+%     params = gatherHs(318,'TrainRepitoire_block',0,D);
+% %Get the average number for all factors in a epoch
+% %%
+% figure('position',[680   451   268   527]); hold on;
+% setFigureDefaults();
+% occurance = [params(:).IndiOccurance]/2;
+% hh = histogram(occurance,ceil(max(occurance)),'BinEdges',(0:1:ceil(max(occurance))));
+% set(hh(1),'FaceColor',fp.c_discovery,'FaceAlpha',0.4,'EdgeColor',fp.c_discovery,'EdgeAlpha',0.8);
+% ymax = get(gca,'ylim');
+% line([mean(occurance),mean(occurance)],[0,ymax(2)+2],'LineWidth',2,...
+%     'linestyle','--','Color',[0.3 0.3 0.3]);
+% ylabel('# Motifs');
+% xlabel({'Motif Frequency';'(occurence/minute)'})
+% ylim([0 ymax(2)+2]);
+% xlim([0 max(occurance)])
+% set(gca,'position',[2 3 3.5 8.5])
+% title({'Motif Frequency';''},'FontWeight','normal','units','centimeters','position',[1.75,9.25],'FontName','Arial');
+% text(mean([params(:).Occurance])+1,400,['\mu=', num2str(round(mean(occurance),2))],'FontSize',16,'FontWeight','normal','FontName','Arial');
+% 
+%     
     
     
     
