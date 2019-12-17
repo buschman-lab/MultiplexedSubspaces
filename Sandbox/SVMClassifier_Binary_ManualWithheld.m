@@ -1,4 +1,4 @@
-function [features, Observed, Shuffled] = SVMClassifier_Binary(Data,cvp,varargin)
+function [features, Observed, Shuffled] = SVMClassifier_Binary_ManualWithheld(Data,cvp,varargin)
 % Camden MacDowell 2019
 %
 % See MATLAB documentation for fitcsvm for more details.  
@@ -98,8 +98,8 @@ validationResponse(~features) = [];
 if opts.optimize %slow
     if opts.verbose; fprintf('\n Performing optimization'); end
     c = cvpartition(trainingResponse, 'kfold', opts.numkfold);
-    optstune = struct('Optimizer','bayesopt','ShowPlots',false,'CVPartition',c,...
-        'AcquisitionFunctionName','expected-improvement-plus','MaxObjectiveEvaluations',60,...
+    optstune = struct('Optimizer','bayesopt','ShowPlots',true,'CVPartition',c,...
+        'AcquisitionFunctionName','expected-improvement-plus','MaxObjectiveEvaluations',100,...
         'UseParallel',1);
     svmmod = fitcsvm(trainingPredictors,trainingResponse,'KernelFunction',opts.kernel,...
         'OptimizeHyperparameters','auto','HyperparameterOptimizationOptions',optstune,...
@@ -143,6 +143,8 @@ Observed.Classifier = classificationSVM;
 Observed.trainingResponse = trainingResponse;
 Observed.trainingPredictors = trainingPredictors;
 Observed.validationPredictors = validationPredictors;
+
+
 
 % Now randomly shuffle the held out labels and use the same classifier 
 % Compute validation predictions

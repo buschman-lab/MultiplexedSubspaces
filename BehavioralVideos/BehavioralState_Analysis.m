@@ -2,13 +2,13 @@
 addpath(genpath('C:\Users\macdo\Documents\GitHub\Widefield_Imaging_Analysis'));
 addpath(genpath('C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\'));
 % % %set filepaths
-% fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse431_10_17_2019\';
-% fn_facecam = 'Cam_0_20191017-155226.avi';
-% fn_bodycam = 'Cam_1_20191017-155226_Mouse431_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000_labeled.mp4';
-% fn_dlc = 'Cam_1_20191017-155226_Mouse431_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
-% fn_savebase = 'Mouse431_10_17_2019';
-% fn_widefield = '431-10-17-2019_1Fitted_block_hemoflag0_1';
-% split_idx = {12,11.00,0.3}; %mouse 431
+fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse431_10_17_2019\';
+fn_facecam = 'Cam_0_20191017-155226.avi';
+fn_bodycam = 'Cam_1_20191017-155226_Mouse431_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000_labeled.mp4';
+fn_dlc = 'Cam_1_20191017-155226_Mouse431_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
+fn_savebase = 'Mouse431_10_17_2019';
+fn_widefield = '431-10-17-2019_1Fitted_block_hemoflag0_1';
+split_idx = {12,11.00,0.3}; %mouse 431
 
 % % %set filepaths
 % fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse432_10_17_2019\';
@@ -21,13 +21,13 @@ addpath(genpath('C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\'));
 
 
 %set filepaths
-fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse494_10_17_2019\';
-fn_facecam = 'Cam_0_20191017-184642.avi';
-fn_bodycam = 'Cam_1_20191017-184642_Mouse494_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000_labeled.mp4';
-fn_dlc = 'Cam_1_20191017-184642_Mouse494_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
-fn_savebase = 'Mouse494_10_17_2019';
-fn_widefield = '494-10-17-2019_1Fitted_block_hemoflag0_1';
-split_idx = {12.06,17.53,0.15};
+% fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse494_10_17_2019\';
+% fn_facecam = 'Cam_0_20191017-184642.avi';
+% fn_bodycam = 'Cam_1_20191017-184642_Mouse494_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000_labeled.mp4';
+% fn_dlc = 'Cam_1_20191017-184642_Mouse494_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
+% fn_savebase = 'Mouse494_10_17_2019';
+% fn_widefield = '494-10-17-2019_1Fitted_block_hemoflag0_1';
+% split_idx = {12.06,17.53,0.15};
 
 %load behavioral analysis paramters
 bp = behavioral_params; 
@@ -217,7 +217,7 @@ for i = 1:num_features
     
     %get halflife
     tau=find(xc(idx)>=0.5*xc(idx(1)),1,'last')/13;
-    text(30,0.3+(i*0.1),sprintf('%s \\tau = %.2g s',labels_abbrev{i},tau),'FontSize',16,'FontName','Arial')
+    text(30,0.3+(i*0.1),sprintf('%s \\tau = %.3g s',labels_abbrev{i},tau),'FontSize',16,'FontName','Arial')
     setFigureDefaults;       
 end
 pos = get(gca,'position');
@@ -395,13 +395,37 @@ avg_pev = {};
 for i = 1:size(cluster_group_clean,1)
    temp = cluster_group_clean(i,:);
    temp = temp(~cellfun('isempty',temp));
-   temp = cellfun(@(x) SplitIntoSubarray(x,1),temp,'UniformOutput',0);
-   temp = cat(2,temp{:});  
+%    temp = cellfun(@(x) SplitIntoSubarray(x,13),temp,'UniformOutput',0);
+%    temp = cat(2,temp{:});  
    for j = 1:size(temp,2)
-%       avg_h{i}(j,:) = nanmean(H_weight(temp(:,j),:));
-        avg_h{i}(j,:) = (H_weight(temp(:,j),:));
+      test = (H_weight(temp{j},:));
+      test(test<=eps)=NaN;
+      test=log(test);
+      test(~any(~isnan(test), 2),:)=[];
+%       test(isnan(test))=min(test(:));
+      avg_h{i}(j,:) = nanmean(test);
+%       avg_h{i}(j,:) = (H_weight(temp(:,j),:));
    end
 end
+
+
+% avg_h = [];
+% avg_pev = {};
+% for i = 1:size(cluster_group_clean,1)
+%    temp = cluster_group_clean(i,:);
+%    temp = temp(~cellfun('isempty',temp));
+% %    temp = cellfun(@(x) SplitIntoSubarray(x,13),temp,'UniformOutput',0);
+% %    temp = cat(2,temp{:});  
+%    for j = 1:size(temp,2)
+%       test = (H_weight(temp(:,j),:));
+%       test(test<=eps)=NaN;
+%       test=log(test);
+%       test(~any(~isnan(test), 2),:)=[];
+%       test(isnan(test))=min(test(:));
+%       avg_h{i}(j,:) = nanmean(test);
+% %       avg_h{i}(j,:) = (H_weight(temp(:,j),:));
+%    end
+% end
 
 if ~isempty(bad_states)
     avg_h(num_states:end)=[];
@@ -411,6 +435,17 @@ if ~isempty(bad_states)
     state_code=clusters(1:end-1,:);
 else
     state_code=clusters;
+end
+
+avg_h_classification = avg_h;
+
+for i = 1:numel(avg_h_classification)
+   temp = avg_h_classification{i}; 
+   temp(temp<=eps)=NaN;
+   temp=log(temp);
+   temp(~any(~isnan(temp), 2),:)=[];
+   temp(isnan(temp))=min(temp(:));
+   avg_h_classification{i} = temp;
 end
 
 % seperate samples by 0.5 second to get more independent samples
@@ -446,20 +481,6 @@ if savefigs
     close all;
 end
 
-%%
-temp_avg = MakeCellsEqual(avg_h,1,1); 
-temp_avg = cat(3,temp_avg{:});
-temp_avg(temp_avg<=eps)
-motif_group = ones(size(temp_avg)).*(1:size(temp_avg,2));
-state_group = temp_avg; 
-for i = 1:size(temp_avg,3)
-   state_group(:,:,i) = ones(size(state_group(:,:,i)))*i; 
-end
-temp_avg(temp_avg<=eps)=NaN;
-temp_avg = log(temp_avg);
-[p, tbl,stats] = anovan(temp_avg(:),cat(2,motif_group(:),state_group(:)),'model','interaction');
-
-save([fn_path '2wayAnovaData.mat'],'p','tbl','stats');
 
 %% for each motif, get the average +/- the sem. anova comparing that motif across behavioral states
 fp = fig_params;
@@ -758,3 +779,21 @@ end
 handles = get(groot, 'Children');
 saveCurFigs(handles,'-svg',sprintf('FaceCamSnippet%d',cur_snip),savedir,1);
 close all
+
+% % % % 
+% % % % %%temp_avg = MakeCellsEqual(avg_h,1,1); 
+% % % % temp_avg = cat(3,temp_avg{:});
+% % % % temp_avg(temp_avg<=eps)
+% % % % motif_group = ones(size(temp_avg)).*(1:size(temp_avg,2));
+% % % % state_group = temp_avg; 
+% % % % for i = 1:size(temp_avg,3)
+% % % %    state_group(:,:,i) = ones(size(state_group(:,:,i)))*i; 
+% % % % end
+% % % % temp_avg(temp_avg<=eps)=NaN;
+% % % % temp_avg = log(temp_avg);
+% % % % temp_avg = temp_avg(:);
+% % % % motif_group = motif_group(:);
+% % % % state_group = state_group(:);
+% % % % [p, tbl,stats] = anovan(temp_avg(1:7:end),cat(2,motif_group(1:7:end),state_group(1:7:end)),'model','interaction');
+% % % % %%
+% % % % save([fn_path '2wayAnovaData.mat'],'p','tbl','stats');
