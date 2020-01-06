@@ -1,4 +1,4 @@
-function [features, Observed, Shuffled] = SVMClassifier_Binary(Data,cvp,varargin)
+function [features, Observed, Shuffled, TrainAUC] = SVMClassifier_Binary(Data,cvp,varargin)
 % Camden MacDowell 2019
 %
 % See MATLAB documentation for fitcsvm for more details.  
@@ -44,6 +44,7 @@ opts.solver = 1; %SVM solver to use: 1=SMO,2=ISDA,3=L1QP
 opts.numkfold = 10;
 opts.kernel = 'rbf'; 
 opts.optimize = 1; %auto, all, or none
+opts.optimize_maxiter = 50; 
 
 %Process optional inputs
 if mod(length(varargin), 2) ~= 0, error('Must pass key/value pairs for options.'); end
@@ -99,7 +100,7 @@ if opts.optimize %slow
     if opts.verbose; fprintf('\n Performing optimization'); end
     c = cvpartition(trainingResponse, 'kfold', opts.numkfold);
     optstune = struct('Optimizer','bayesopt','ShowPlots',false,'CVPartition',c,...
-        'AcquisitionFunctionName','expected-improvement-plus','MaxObjectiveEvaluations',60,...
+        'AcquisitionFunctionName','expected-improvement-plus','MaxObjectiveEvaluations',opts.optimize_maxiter,...
         'UseParallel',1);
     svmmod = fitcsvm(trainingPredictors,trainingResponse,'KernelFunction',opts.kernel,...
         'OptimizeHyperparameters','auto','HyperparameterOptimizationOptions',optstune,...
@@ -117,6 +118,13 @@ end
 % Create the result struct with predict function
 svmPredictFcn = @(x) predict(classificationSVM, x);
 validationPredictFcn = @(x) svmPredictFcn(x);
+
+% Gut check with within training data AUC
+[~, trainingScores] = validationPredictFcn(trainingPredictors);
+TrainAUC = [];
+for i = 1:numel(unique(response))
+    [~,~,~,TrainAUC(i).AUC,~,~] = perfcurve(trainingResponse,trainingScores(:,i),i);
+end
 
 % Compute validation predictions
 [validationPredictions, validationScores] = validationPredictFcn(validationPredictors);

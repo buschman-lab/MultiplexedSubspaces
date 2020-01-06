@@ -425,7 +425,7 @@ elseif args.label_column>0
    labelCols=1;
    labels=inData(:,args.label_column);
    inData(:,args.label_column)=[];
-   parameter_names(args.label_column)=[];
+%    parameter_names(args.label_column)=[]; %%commented by camden  
    umap.dimNames=parameter_names;
    nLabels=length(unique(labels));
    if exist(args.label_file, 'file')

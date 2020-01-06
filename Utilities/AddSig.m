@@ -1,4 +1,4 @@
-function AddSig(h,pval,pos,numcomp,nsoffset,show_p,angle)
+function th = AddSig(h,pval,pos,numcomp,nsoffset,show_p,angle)
     if nargin <3
         pos = [1 2 1.01];
     end
@@ -21,7 +21,7 @@ function AddSig(h,pval,pos,numcomp,nsoffset,show_p,angle)
             pval=1e-16;
             exponent = floor(log10(pval));
             str = (sprintf('p<10^{%d}',exponent));
-            text([loc loc],[pos(3)+nsoffset pos(3)+nsoffset],str,'Color',[0.1 0.1 0.1],'FontSize',14,'FontWeight','normal','HorizontalAlignment','Center','Rotation',angle);                  
+            th = text([loc loc],[pos(3)+nsoffset pos(3)+nsoffset],str,'Color',[0.1 0.1 0.1],'FontSize',14,'FontWeight','normal','HorizontalAlignment','Center','Rotation',angle);                  
         else
             exponent = floor(log10(pval));
             if exponent<-3
@@ -29,16 +29,16 @@ function AddSig(h,pval,pos,numcomp,nsoffset,show_p,angle)
             else
                 str = (sprintf('p=%.2g',pval));
             end
-            text([loc loc],[pos(3)+nsoffset pos(3)+nsoffset],str,'Color',[0.1 0.1 0.1],'FontSize',14,'FontWeight','normal','HorizontalAlignment','Center','Rotation',angle);                  
+            th =text([loc loc],[pos(3)+nsoffset pos(3)+nsoffset],str,'Color',[0.1 0.1 0.1],'FontSize',14,'FontWeight','normal','HorizontalAlignment','Center','Rotation',angle);                  
         end
     else        
         line([pos(1) pos(2)],[pos(3),pos(3)],'Color',[0.1 0.1 0.1],'LineWidth',2)
         if pval<0.0001
-            text([loc loc],[pos(3)+nsoffset pos(3)+nsoffset],'**','Color',[0.1 0.1 0.1],'FontSize',18,'FontWeight','normal','HorizontalAlignment','Center','Rotation',angle);
+            th = text([loc loc],[pos(3)+nsoffset pos(3)+nsoffset],'**','Color',[0.1 0.1 0.1],'FontSize',18,'FontWeight','normal','HorizontalAlignment','Center','Rotation',angle);
         elseif pval<0.05/numcomp
-            text([loc loc],[pos(3)+nsoffset pos(3)+nsoffset],'*','Color',[0.1 0.1 0.1],'FontSize',18,'FontWeight','normal','HorizontalAlignment','Center','Rotation',angle);
+            th = text([loc loc],[pos(3)+nsoffset pos(3)+nsoffset],'*','Color',[0.1 0.1 0.1],'FontSize',18,'FontWeight','normal','HorizontalAlignment','Center','Rotation',angle);
         else       
-            text([loc loc],[pos(3)+nsoffset pos(3)+nsoffset],'n.s.','Color',[0.1 0.1 0.1],'FontSize',16,'FontWeight','normal','HorizontalAlignment','Center','Rotation',angle);
+            th = text([loc loc],[pos(3)+nsoffset pos(3)+nsoffset],'n.s.','Color',[0.1 0.1 0.1],'FontSize',16,'FontWeight','normal','HorizontalAlignment','Center','Rotation',angle);
         end
     end
 end

@@ -8,7 +8,7 @@ num_samples = cellfun(@(x) size(x,1),avg_h_classification,'UniformOutput',0);
 num_samples = min([num_samples{:}]);
 
 n_test = floor(cur_round/10*num_samples);
-n_train = num_samples-n_test-13;
+n_train = num_samples-n_test;
 
 classification_data = cell(1,size(avg_h_classification,2));
 for i = 1:size(avg_h_classification,2)

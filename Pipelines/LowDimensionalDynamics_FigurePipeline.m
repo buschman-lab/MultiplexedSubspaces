@@ -34,16 +34,16 @@ end
 %% Distribution of Events
 D = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\TrainRepitoires\TrainingFit_Lambda4e-4_Kval28';
 data = CompileStats(GrabFiles('block',0,{D}),{'w','H'},0,group);
-occurance = MotifOccurance(data,0.75);
+occurance = MotifOccurance(data,1,0,0);
 %%
 figure('position',[680   382   974   596]); hold on; 
 histogram([occurance{:}]/2,'FaceColor',fp.c_discovery,'EdgeColor',fp.c_discovery-0.1,'linewidth',1,'BinWidth',1);    % Plot with errorbars
 ylabel('Number of Motifs')
 xlabel({'Motif Frequency';'(occurence/minute)'});
-line([nanmedian([occurance{:}])/2,nanmedian([occurance{:}])/2],[0 750],'color','k','linestyle','--','linewidth',1.5)
-text(nanmedian([occurance{:}]/2)+3,300,['\mu_{1/2}=', num2str(round(nanmedian([occurance{:}]/2),2))],'FontSize',16,'FontWeight','normal','FontName','Arial');
-xlim([0 15])
-ylim([0 700])
+line([nanmean([occurance{:}])/2,nanmean([occurance{:}])/2],[0 1000],'color','k','linestyle','--','linewidth',1.5)
+text(nanmean([occurance{:}]/2)+3,300,['\mu=', num2str(round(nanmean([occurance{:}]/2),2))],'FontSize',16,'FontWeight','normal','FontName','Arial');
+xlim([-1 20])
+ylim([0 800])
 title('Motif Frequency','FontName','Arial','FontWeight','normal','FontSize',16);
 setFigureDefaults
 set(gca,'position',[2 3 3.5 8.5])
@@ -245,13 +245,13 @@ load('ClusteredDPs_rawdata.mat','W_all')
 
 %compute the half life of the mean 
 x = (1:1:(size(metric,2))*1)';
-y = nanmedian(metric,1)';
+y = nanmean(metric,1)';
 f = fit(x,y,'exp1','StartPoint',[0,0]);
 tau_hl_mean = -1*(log(2)/f.b);
     
 tau_hl_bootstrap = zeros(1000,1);
 for i = 1:1000
-    temp = nanmedian(metric(randi(size(metric,1),size(metric,1),1),:),1);
+    temp = nanmean(metric(randi(size(metric,1),size(metric,1),1),:),1);
     x_temp = (1:75:(numel(temp))*75)';
     y_temp = temp';
     f_temp = fit(x_temp,y_temp,'exp1','StartPoint',[0,0]);
@@ -260,7 +260,7 @@ end
 %%
 figure('position',[542   420   336   555]); hold on;
 data = metric(:,1:end)'; 
-shadedErrorBar(1:1:size(data,1),nanmedian(data,2),(nanstd(data,[],2)),'lineprops',{'-','color',...
+shadedErrorBar(1:1:size(data,1),nanmean(data,2),(nanstd(data,[],2)),'lineprops',{'-','color',...
 [0.4 0.4 0.4],'linewidth',2},'transparent',1,'patchSaturation',0.2);
 p1 = plot(f,x,y,'k');
 set(p1,'linewidth',2);
@@ -297,19 +297,23 @@ if writestats
    fileID = fopen([savedir 'FigureStatistics_AutoCorrelation.txt'],'w');
    fprintf(fileID,'\nTemporalAutoCorrelation\n') 
    fprintf(fileID,'\nmeans = %.4g',...
-       nanmedian(data,2));
+       nanmean(data,2));
    fprintf(fileID,'\nTemporalAutoCorrelation\n STD = %.4g',...
        nanstd(data,[],2));
    fprintf(fileID,'\nTemporalAutoCorrelation\n pval from 0')
    fprintf(fileID,'\npval = %.4g',...
        pval_store);   
    temp = data(1,:) - data(end,:);   
-   ci = bootci(1000,@nanmedian,temp);    
-   fprintf(fileID,'\ndifference between 2 and 12 = %.4g ci %d, %d, pval = %.4g',nanmedian(temp),ci(1),ci(2),pval);       
-   fprintf(fildID,'\nFirst correlation %g ci %g and %g pval %d',nanmedian(data(1,:)),bootci(1000,@nanmedian,data(1,:)),signrank(data(1,:),0,'tail','right'))
-   fprintf(fileID,'\nFirst correlation %g ci %g and %g pval %d',nanmedian(data(12,:)),bootci(1000,@nanmedian,data(12,:)),signrank(data(12,:),0,'tail','right'))   
+   ci = bootci(1000,@nanmean,temp);    
+   fprintf(fileID,'\ndifference between 2 and 12 = %.4g ci %d, %d, pval = %.4g',nanmean(temp),ci(1),ci(2),pval);       
+   fprintf(fileID,'\nFirst correlation %g ci %g and %g pval %d',nanmean(data(1,:)),bootci(1000,@nanmean,data(1,:)),signrank(data(1,:),0,'tail','right'))
+   fprintf(fileID,'\nFirst correlation %g ci %g and %g pval %d',nanmean(data(12,:)),bootci(1000,@nanmean,data(12,:)),signrank(data(12,:),0,'tail','right'))   
+   [pval, ~] = signrank((data(1,:)),(data(5,:)));
+   fprintf(fileID,'\n5th correlation %g ci %g and %g pval %d',nanmean(data(5,:)),bootci(1000,@nanmean,data(5,:)),signrank(data(5,:),0,'tail','right'))  
+      [pval, ~] = signrank((data(1,:)),(data(8,:)));
+   fprintf(fileID,'\n5th correlation %g ci %g and %g pval %d',nanmean(data(8,:)),bootci(1000,@nanmean,data(8,:)),signrank(data(8,:),0,'tail','right'))  
    fprintf(fileID,'\nremoved tau (<4) = %g removed metric (no active) = %d',rmv_tau,rmv_metric);
-   fprintf(fileID,'\nHalf-life of decay =%g 25th = %g, 75th',nanmedian(tau_hl),prctile(tau_hl,25),prctile(tau_hl,75))
+   fprintf(fileID,'\nHalf-life of decay =%g 25th = %g, 75th',nanmean(tau_hl),prctile(tau_hl,25),prctile(tau_hl,75))
    fprintf(fileID,'\nHalf-life of average decay =%g +/- SEM %d',tau_hl_mean*75,std(tau_hl_bootstrap),prctile(tau_hl,75))
    fclose(fileID); 
 end
@@ -496,8 +500,23 @@ if savefigs
    saveCurFigs(handles,'-svg','KSweep',savedir,1);
    close all
 end
-%% END BASIS MOTIF FIGURE
 
+%% statistics for how much explained variance captured during spotaneous behavioral recordings
+files = GrabFiles('hemoflag0_',0,{'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\TestRepitoires\Clustered_Fit_Long_Recordings'});
+stats_uncorrected = CompileStats(files,{'ExpVar_all'},[],'none');
+
+if writestats
+    clear stats;
+    stats.within_median = median(data(1,:));
+    stats.ci_within = bootci(1000,@median,(data(1,:)));
+    stats.between_median = median(data(2,:));
+    stats.ci_between = bootci(1000,@median,(data(2,:)));
+    stats.difference  =median(data(1,:))-median(data(2,:));
+    stats.pval = signrank(data(1,:),data(2,:));
+    save([savedir filesep 'within_between_stats.mat'],'stats');
+end
+
+%% END BASIS MOTIF FIGURE
 
 
 
