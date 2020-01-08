@@ -188,7 +188,7 @@ function [features] = FeatureSelection(trainingPredictors,trainingResponse,type,
     switch type
         case 'none'
             if verbose; fprintf('\nPerforming no feature selection'); end
-            features = (1:1:numel(trainingResponse));
+            features = (1:1:size(trainingPredictors,2));
         case 'anova'
             if verbose; fprintf('\nPerforming feature selection using ANOVA'); end
             %Compute the anova fstat between response for each feature
@@ -201,10 +201,11 @@ function [features] = FeatureSelection(trainingPredictors,trainingResponse,type,
                 [~,features] = maxk(stat,number); %reduce number of features
             else
                 features = (1:1:numel(stat));
-            end
+            end       
+            
         otherwise
             if verbose; fprintf('\nUnknown feature selection\n no selection performed'); end
-            features = (1:1:numel(trainingResponse));
+            features = (1:1:size(trainingPredictors,2));
     end   
         
     
