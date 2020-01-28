@@ -11,6 +11,11 @@ while ~in_tiff.lastDirectory
 end
 img_count = in_tiff.currentDirectory;
 
+%stop from going on for a long time
+if img_count >500
+   img_count = 500;
+end
+
 %Grab the middle image
 if fixed_image == 0
     img_idx = 1;
@@ -37,7 +42,7 @@ elseif fixed_image == 2 %get mean image
     fprintf('\nCalculating average image of first % to use as fixed image...\n');
     fixed_img = zeros(in_tiff(1).getTag('ImageLength'),in_tiff(1).getTag('ImageWidth'));
     stack = uint16(zeros(size(fixed_img,1),size(fixed_img,2),img_count));
-    for cur_img_ind = 1:img_count
+    for cur_img_ind = 1:2:img_count
         %Find the current input image file
         cur_in_file = find(cur_img_ind <= cumsum(img_count), 1, 'first');
         if cur_in_file > 1

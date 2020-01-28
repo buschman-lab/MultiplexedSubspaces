@@ -1,6 +1,6 @@
 %PREPROCESSING PIPELINE
 
-% User selects folders of recordings and does manual steps
+% User selects folders of recordings for one animal and does manual steps
 % Then automatically generates spock bash scripts to run and
 % send a dependency to spock to combined all dffs in each folder
 % in order. 
@@ -22,22 +22,30 @@ opts = ConfigurePreProcessing();
 ref_imgs = cellfun(@(x) GetReferenceImage(x,opts.fixed_image),...
     file_list, 'UniformOutput',0);
 
+%loop through reference images, register, and apply manual changes
 for cur_fold = 1:numel(folder_list)
-    fprintf('\n Working on recording %d of %d',cur_fold, numel(folder_list));
-    clear prepro_log
-    %manual allignment 
-    prepro_log = ManualAlignment(ref_imgs{cur_fold},opts);
+    if cur_fold ==1
+        %manual allignment 
+        prepro_log = ManualAlignment(ref_imgs{cur_fold},opts);
 
-    %mask vasculature and manual cleanup (optional)
-    prepro_log = MaskVasculature(...
-        prepro_log.cropped_alligned_img,prepro_log);
-    
-    %close figure
-    close
-    
+        %mask vasculature and manual cleanup (optional)
+        prepro_log = MaskVasculature(...
+            prepro_log.cropped_alligned_img,prepro_log);
+        
+        close
+        %no transformation
+        prepro_log.tform = []; 
+        prepro_log.output_size = [];
+    else %new images
+        %Register Reference Images to the first reference image          
+        [prepro_log.tform,prepro_log.output_size] = RegisterReferenceImages(ref_imgs{1},ref_imgs{cur_fold},'auto');               
+        saveCurFigs(gcf,'-dpng',sprintf('registration_%s',fn),[save_dir 'PreprocessingFigures'],0); %close all;       
+        
+    end
     %save off the options to each folder
     save([folder_list{cur_fold} filesep 'prepro_log'],'prepro_log')
 end
+
 
 %% Spock Preprocessing 
 % Open ssh connection

@@ -1,6 +1,6 @@
 function [dff,avgproj] = makeDFF(stack, opts, w)
 %This function takes the imput raw stack and makes a dff along the third dimension. 
-if nargin <3; w = opts.fps*10; end
+if nargin <3; w = opts.fps*60; end
 
 %Choose type of averaging
 if strcmp(opts.method,'mean')
@@ -9,7 +9,7 @@ elseif strcmp(opts.method,'median')
     avgproj  = nanmedian(stack,3);
 elseif strcmp(opts.method,'mode')
     avgproj  = mode(stack,3);
-elseif strcmp(opts.method,'movingavg') %10 second moving average window
+elseif strcmp(opts.method,'movingavg') %60 second moving average window
     avgproj = movmean(stack,w,3,'Endpoints','shrink');
 else
     error('unknown dff method');

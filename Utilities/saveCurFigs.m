@@ -35,6 +35,9 @@ end
 	
 
 startDir = pwd; %so you return user to start dir after saving figs
+if ~exist(save_dir,'dir')
+    mkdir(save_dir);
+end
 cd(save_dir);
 
 for cur_f = 1:numel(handles)
