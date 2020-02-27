@@ -1,4 +1,4 @@
-function fh = Plot_CompareBehaviorStates_2States(weight,yvals)
+function fh = Plot_CompareBehaviorStates_Scatter(weight,yvals)
 
 rng('default');
 sig_color = [0.75 0.75 0.75; 0.25 0.25 0.25];
@@ -8,11 +8,22 @@ y_diff = [];
 for i = 1:size(weight,1)
    temp = cat(1,weight{i,:})';    
    %temp is a n x 2 matrix of average motif weights where columns are state 1 and 2 and
-   %rows are instances
-%    temp = temp/nanmean(temp(:)); %get normalized differences  
-   pval(i) = ranksum(temp(:,1),temp(:,2));   
-   y(:,i) = nanmedian(temp);
+   %rows are instances     
+   temp = temp/nanmean(temp(:)); %get normalized differences    
+   pval(i) = ranksum(temp(:,1),temp(:,2)); 
+   y(:,i) = nanmean(temp);
 end
+
+stats = Plot_CompareMotifStatistic(x,y,varargin)
+%plotting options; 
+opts.paired = 1; 
+opts.yvals = [0 0.05];
+opts.xvals = [0 0.05];
+opts.pos = [3 3 4 5]; 
+opts.figpos = [652   272   502   518];
+
+
+
 
 figure('Position',[0 0 1000 5000]); hold on; 
 s1 = subplot(312,'Units','centimeters','Position',[8 6 10 2.0]); hold on

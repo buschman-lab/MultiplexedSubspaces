@@ -1,4 +1,4 @@
-function [dff_norm_lin_array, nanpxs_array] = linearizeDff(dffarray,varargin)
+function [dff_norm_lin_array, nanpxs_array, stats] = linearizeDff(dffarray,varargin)
 %input dff is cell array, output dff_norm_lin is also cell array same with
 %nanpxs
 
@@ -9,7 +9,7 @@ opts.sm_kern = []; % [1 1 1; 1 1 1; 0 0 0];
 opts.spatialbin = 2;
 opts.filtband = [0.1 4];
 opts.ftype = 'bandpass';
-opts.nSTD = 0;
+opts.nSTD = 2;
 opts.Verbose = 1; 
 opts.fps = 13; %original data frame rate
 
@@ -52,10 +52,13 @@ for cur_rec = 1:size(dffarray,2)
 
     %Find bursts by thresholding 
     [dff, nanpxs] = conditionDffMat(dff);
+    stats = struct();
     for px = 1:size(dff,2)
         temp = dff(:,px)';
 %         temp(temp<=(opts.nSTD*std(temp)))=0; %Previous
 %         version as of 6/10/2019
+        stats.perc_points = sum(temp<=(mean(temp)+(opts.nSTD*std(temp))))/numel(temp);
+        stats.thresh_val = mean(temp)+(opts.nSTD*std(temp));
         temp(temp<=(mean(temp)+(opts.nSTD*std(temp))))=0; 
         dff(:,px) = temp';
     end

@@ -1,4 +1,4 @@
-%Saving Information
+    %Saving Information
 savedir = 'C:\Users\macdo\OneDrive\Buschman Lab\AnalysisCode_Repository\Mesoscale Network Dynamics 2019 Analyses\Training and Testing Statistics\11-5-2019';
 if ~exist(savedir)
     mkdir(savedir)
@@ -448,7 +448,7 @@ end
 figure('position',[680   558   422   420]); hold on;
 errorbar(1:1:size(data,1),nanmean(data,2),(nanmean(data,2)-ci(:,1)),(ci(:,2)-nanmean(data,2)),'LineWidth',2,'Color',[0.4 0.4 0.4])
 title({'All Basis Motifs Are';'Used to Explain Activity'},'FontWeight','normal','FontName','Arial',...
-    'units','centimeters','position',[2 5.5]); 
+    'units','centimeters','position',[3 6.5]); 
 xlabel('Basis Motif');
 ylabel({'Relative Percent';'Explained Variance'});
 setFigureDefaults();
@@ -456,7 +456,7 @@ ylim([0 100]);
 xticks((1:4:size(data,1)))
 xlim([0 size(data,1)+0.5])
 box off
-set(gca,'Position',[4 2.25 4.5 5],'Clipping','off');
+set(gca,'Position',[4 2.25 6 6],'Clipping','off');
 
 %%
 if savefigs
@@ -484,16 +484,16 @@ for i = 1:length(klist)
     plot(kval(knnval==klist(i)),numClust(knnval==klist(i)),'Marker','.','color',COL(i,:),'MarkerSize',20,'LineStyle','none')
 end
 title({'Basis Motifs Are Robust';'to CNMF Parameters'},'FontWeight','normal','FontName','Arial',...
-    'units','Centimeters','Position',[2 5.5])
+    'units','Centimeters','Position',[3 6.5])
 xlim([0 40])
 ylim([1 20])
 xlabel({'Max # Discoverable';'Motifs Per Epoch ({\itK})'});
 ylabel('# Basis Motifs');
 set(gca,'LineWidth',2,'FontSize',16,'FontWeight','normal','FontName','Arial')
 setFigureDefaults;
-set(gca,'units','centimeters','position',[4 3 4.5 5]);
+set(gca,'units','centimeters','position',[4 3 6 6]);
 plot(28,numClust(kval==28),'Marker','o','color',[0.9 0 0],'Markersize',15,'LineStyle','none','Linewidth',2);
-set(gcf,'Position',[680   438  500  375]);
+set(gcf,'Position',[680   305   500   508]);
 %%
 if savefigs
    handles = get(groot, 'Children');
@@ -528,13 +528,16 @@ end
 
 %% SOCIAL FIGURE
 D = [];
-D{1} = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\TestRepitoires\Clustered_Fit_Kval28_lambda1';
-D{2} = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\Social\Social_TestRepitoires\NewClustered_Fit_Kval28_lambda1';
-D{3} = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\Social\Social_TestRepitoires\NewsClustToRegular_Fit_Kval28_lambda1';
-D{4} = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\Social\Social_TestRepitoires\NewsClustToSocial_Fit_Kval28_lambda1/';
+% D{1} = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\TestRepitoires\Clustered_Fit_Kval28_lambda1';
+% D{2} = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\Social\Social_TestRepitoires\NewClustered_Fit_Kval28_lambda1';
+D{1} = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\Social\Social_TestRepitoires\NewsClustToRegular_Fit_Kval28_lambda1';
+D{2} = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\Social\Social_TestRepitoires\NewsClustToSocial_Fit_Kval28_lambda1/';
+% base = {'Fitted_block_ModFlag0','Fitted_block_ModFlag0','Fitted_block_ModFlag0','Fitted_block_ModFlag0'};
+% label = {'Solo: Solo','Solo: Social','Social: Solo','Social: Social'};
 
-base = {'Fitted_block_ModFlag0','Fitted_block_ModFlag0','Fitted_block_ModFlag0','Fitted_block_ModFlag0'};
-label = {'Solo: Solo','Solo: Social','Social: Solo','Social: Social'};
+base = {'Fitted_block_ModFlag0','Fitted_block_ModFlag0'};
+label = {'Solo','Social'};
+
 
 params = cell(1,numel(D));
 
@@ -561,25 +564,27 @@ end
 COL = {[0.85,0.37,0.001],[0.85,0.37,0.001],[.14 0.4 0.6431],[0.14 0.4 0.6431]};
 vp =CompareViolins(data,fp,'label',label,'col',COL);
 title({'Basis Motifs Generalize Across';'Social and Solo Environments'},'FontWeight','normal','FontName','Arial',...
-    'units','centimeters','Position',[4 9.25]);
+    'units','centimeters','Position',[1.75 9.25]);
 ylabel({'Percent Explained Variance'});
 ylim([0 100]);
 setFigureDefaults;
 set(gca,'XTickLabelRotation',45,'ytick',(0:20:100))
 [pval, h] = ranksum(data(1,:),data(2,:)); %independent samples solo vs social environment
 AddSig(h,pval,[1 2 99],2,5,1); 
-[pval, h] = ranksum(data(3,:),data(4,:)); %Also independent
-AddSig(h,pval,[3 4 99],2,5,1); 
+% [pval, h] = ranksum(data(3,:),data(4,:)); %Also independent
+% AddSig(h,pval,[3 4 99],2,5,1); 
 
-xlabel({'Basis Motif Type: Environment'})
+% xlabel({'Basis Motif Type: Environment'})
 set(gca,'Clipping','off','LineWidth',2,'Fontsize',16,'Fontweight','normal');
 %Make it so all Y axis are identical across figures
-set(gca,'Units','centimeters','position',[3 5 8 8.5]);
+% set(gca,'Units','centimeters','position',[3 5 8 8.5]);
+set(gca,'Units','centimeters','position',[4 5 4 8.5]);
 set(gcf,'Position',[524   290   500  600]);
 %%
 if savefigs
    handles = get(groot, 'Children');
-   saveCurFigs(handles,'-png','SocialExpVar_BothDirections',savedir,1);
+%    saveCurFigs(handles,'-png','SocialExpVar_BothDirections',savedir,1);
+   saveCurFigs(handles,'-png','SocialExpVar_SuppDirection',savedir,1);
    close all
 end
 if writestats

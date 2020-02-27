@@ -1,37 +1,28 @@
 %add paths
 addpath(genpath('C:\Users\macdo\Documents\GitHub\Widefield_Imaging_Analysis'));
 % 
-% fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse431_10_17_2019\';
-% fn_facecam = 'Cam_0_20191017-155226.avi';
-% fn_bodycam = 'Cam_1_20191017-155226_Mouse431_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000_labeled.mp4';
-% fn_dlc = 'Cam_1_20191017-155226_Mouse431_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
-% fn_savebase = 'Mouse431_10_17_2019';
-% fn_widefield = '431-10-17-2019_1Fitted_block_hemoflag0_1';
-% cd(fn_path);
-% load('wrkplacedata.mat')
-
-fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse432_10_17_2019\';
-fn_facecam = 'Cam_0_20191017-171729.avi';
-fn_bodycam = 'Cam_1_20191017-171729_Mouse432_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000_labeled.mp4';
-fn_dlc = 'Cam_1_20191017-171729_Mouse432_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
-fn_savebase = 'Mouse432_10_17_2019';
-fn_widefield = '432-10-17-2019_1Fitted_block_hemoflag0_1';
+fn_path = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\DeepLabCut_BehavioralState_Analysis\Mouse431_10_17_2019\';
+fn_facecam = 'Cam_0_20191017-155226.avi';
+fn_bodycam = 'Cam_1_20191017-155226_Mouse431_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000_labeled.mp4';
+fn_dlc = 'Mouse431_10_17_2019DLC.csv';
+fn_savebase = 'Mouse431_10_17_2019';
+fn_widefield = '431-10-17-2019_1Fitted_block_hemoflag0_1';
 cd(fn_path);
-load('tempdata.mat');
+load('wrkplacedata.mat')
 
-% fn_path = 'C:\Users\macdo\OneDrive\Buschman Lab\Scratch Data\Mouse432_10_18_2019\';
-% fn_facecam = 'Cam_0_20191018-151602.avi';
-% fn_bodycam = '';
-% fn_dlc = 'Cam_1_20191018-151602_Mouse432_10_18_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000.csv';
-% fn_savebase = 'Mouse432_10_18_2019';
-% fn_widefield = '432-10-18-2019_1Fitted_block_hemoflag0_1';
+% fn_path = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\DeepLabCut_BehavioralState_Analysis\Mouse432_10_17_2019\';
+% fn_facecam = 'Cam_0_20191017-171729.avi';
+% fn_bodycam = 'Cam_1_20191017-171729_Mouse432_10_17_2019DLC_resnet50_Headfixed_Behavior_BodyNov8shuffle1_120000_labeled.mp4';
+% fn_dlc = 'Mouse432_10_17_2019DLC.csv';
+% fn_savebase = 'Mouse432_10_17_2019';
+% fn_widefield = '432-10-17-2019_1Fitted_block_hemoflag0_1';
 % cd(fn_path);
 % load('tempdata.mat');
 
 %load behavioral analysis paramters
 bp = behavioral_params; 
 
-expvaridx = load('OrderedByExpVar_Final.mat');
+expvaridx = load('Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\TrainRepitoires\TrainingFit_Lambda4e-4_Kval28\OrderedByExpVar_Final.mat');
 expvaridx = expvaridx.idx;
 
 data = load([fn_path fn_widefield],'w','H');
@@ -115,6 +106,7 @@ features_downsampled = zscore(features_downsampled,1);
 
 
 %% GMM
+rng('default');
 Y = features_downsampled;
 options = statset('Display','final','MaxIter',500);
 gmm = fitgmdist(Y,2,'options',options,'CovarianceType','full','RegularizationValue',0,'SharedCovariance',false);
@@ -206,6 +198,7 @@ set(gca,'position',[4 2 5 6])
 stats.state_median_dur = round(temp_median_dur(1,:)/13,2);
 stats.state_median_dur_ci = round(temp_median_dur(2:3,:)/13,2);
 stats.state_instances = temp_num_instances;
+stats.state_timespent = temp_timespent;
 
 %% Get motif weight by state
 weight = cell(size(H_weight,2),size(instances,1));
@@ -221,8 +214,39 @@ weight = MakeCellsEqual(weight,2,1);
 weight = reshape(weight,size(H_weight,2),size(instances,1));
 
 %% Compare Weights Across Motifs
-fh = Plot_CompareBehaviorStates_2States(weight,[0.6 1.4]);
+%looking at the previous figures, make sure inactive/active in correct row;
+% temp = weight;
+% weight(:,1) = temp(:,2);%active
+% weight(:,2) = temp(:,1);%inactive
 
+fh = Plot_CompareBehaviorStates_2States(weight,[0.8 1.2]);
+
+% save([fn_path,'processed_weights.mat'],'weight');
+
+%% load the processed weights from each animal
+weight =  weight_431;
+for i = 1:size(weight,1)
+   for j = 1:size(weight,2)
+       weight{i,j} = [weight_431{i,j},weight_432{i,j}];
+   end       
+end
+avg_weight = [nanmean(([weight{:,1}])),nanmean(([weight{:,2}]))];
+weight_norm = weight;
+for i = 1:size(weight,1)
+   for j = 1:size(weight,2)
+       weight_norm{i,j} = (weight{i,j})/avg_weight(j);
+   end       
+end
+
+    
+fh = Plot_CompareBehaviorStates_2States(weight_norm,[0.9 1.1]);
+fh = Plot_CompareBehaviorStates_2States(weight,[0.9 1.1]);
+
+% x = cell2mat(weight(:,1))';
+% y = cell2mat(weight(:,2))';
+% stats = Plot_CompareMotifStatistic(x,y,'yvals',[0, 7e-4],'xvals',[0, 7e-4]);
+
+    
 %% Classify
 rng('default');
 num_xval = 100; 
@@ -277,6 +301,13 @@ stats.auc_median = nanmedian(auc)*100;
 stats.auc_ci_median = bootci(1000,@nanmedian,auc)*100;
 stats.auc_all = auc; 
 
+if savefigs
+    handles = get(groot, 'Children');
+    saveCurFigs(handles,'-svg','GMM_Figsnew','C:\Users\macdo\OneDrive\Buschman Lab\AnalysisCode_Repository\Mesoscale Network Dynamics 2019 Analyses\Behavioral_Classification\',1);
+    close all;
+    save(['C:\Users\macdo\OneDrive\Buschman Lab\AnalysisCode_Repository\Mesoscale Network Dynamics 2019 Analyses\Behavioral_Classification\' 'stats.mat'],'stats');
+end
+
 %% Plot the autocorrelation of behavioral variables
 col = getColorPalet(3);
 figure('position',[1105 524 433 454]); hold on;
@@ -324,7 +355,7 @@ ylim([-0.25 1]);
 %%
 if savefigs
     handles = get(groot, 'Children');
-    saveCurFigs(handles,'-svg','GMM_Figs',fn_path,1);
+    saveCurFigs(handles,'-svg','GMM_FigsNew',fn_path,1);
     close all;
     save([fn_path 'stats.mat'],'stats');
 end

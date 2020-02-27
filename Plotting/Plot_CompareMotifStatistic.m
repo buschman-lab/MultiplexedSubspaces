@@ -23,7 +23,7 @@ for i = 1:size(y,2)
     if h == 1                
         if pval<0.0001
             scatter(nanmean(x(:,i)),nanmean(y(:,i)),100,[1 0 0],'filled')
-        elseif pval<0.05/size(y,2)
+        elseif pval<0.05%/size(y,2)
             scatter(nanmean(x(:,i)),nanmean(y(:,i)),50,[1 0 0],'filled')     
         end  
     end

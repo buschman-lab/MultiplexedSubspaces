@@ -20,13 +20,16 @@ function [stats,group] = CompileStats(in_fns,variables,group_ids,group)
     %Load variables of interest
     stats = struct();
     for i = 1:numel(in_fns)
+%         try
         if mod(i,round(0.1*numel(in_fns))) ==0
             fprintf('\t%g%% Complete\n', round(i./numel(in_fns)*100,2));
         end
         temp = load(in_fns{i},variables{:});
         for j= 1:numel(variables)
             stats(i).(variables{j}) = temp.(variables{j});
-        end         
+        end  
+%         catch
+%         end
     end
         
 end %function end 
