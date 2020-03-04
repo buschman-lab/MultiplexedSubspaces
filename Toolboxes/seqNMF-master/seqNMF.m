@@ -172,7 +172,7 @@ for iter = 1 : params.maxiter
             XhatHT = Xhat * H_shifted';
 
             % Compute regularization terms for W update
-            if params.lambda>0 && params.useWupdate; % Often get similar results with just H update, so option to skip W update
+            if params.lambda>0 && params.useWupdate % Often get similar results with just H update, so option to skip W update
                 dRdW = params.lambda.*XS*(H_shifted')*(~eye(K)); 
             else
                 dRdW = 0;
@@ -264,7 +264,7 @@ end
             params.W_init = max(X(:))*rand(N, K, L);%max(X(:))*rand(N, K, L);
         end
         if isempty(params.H_init)
-            params.H_init = max(X(:))*rand(K,T)./(sqrt(T/3)); %max(X(:))*rand(K,T)./(sqrt(T/3)); % normalize so frobenius norm of each row ~ 1
+            params.H_init = max(X(:))*rand(K,T)./(sqrt(T/3)); %max(X(:))*rand(K,T)./(sqrt(T/3)); %normalize so frobenius norm of each row ~ 1
         else
             params.H_init = [zeros(K,L),params.H_init,zeros(K,L)];
         end

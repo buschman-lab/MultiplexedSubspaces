@@ -21,4 +21,5 @@ opts.bucket = '/jukebox/buschman/';
 opts.data_file_name = '/AnalyzedData_MesomappingManuscript_5_2019/DFF_Data/AllData_binned_SmallMask_3x_2minTraining.mat';
 
 
+
 end

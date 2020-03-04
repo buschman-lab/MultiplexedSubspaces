@@ -9,9 +9,9 @@ for i = 1:size(weight,1)
    temp = cat(1,weight{i,:})';    
    %temp is a n x 2 matrix of average motif weights where columns are state 1 and 2 and
    %rows are instances
-%    temp = temp/nanmean(temp(:)); %get normalized differences  
    pval(i) = ranksum(temp(:,1),temp(:,2));   
-   y(:,i) = nanmedian(temp);
+   temp = temp/nanmean(temp(:)); %get normalized differences  
+   y(:,i) = nanmean(temp);
 end
 
 figure('Position',[0 0 1000 5000]); hold on; 

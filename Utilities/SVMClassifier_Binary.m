@@ -24,7 +24,7 @@ function [features, Observed, Shuffled, TrainAUC] = SVMClassifier_Binary(Data,cv
 % @Box contraint: is the regularization parameter, where
 % increase = hard margin and thus high cost on missclassified points. 
 %  
-% @Kernal sclae is 1/gamma. This is the radius of influence of the sample
+% @Kernal scale is 1/gamma. This is the radius of influence of the sample
 % selected by the model as support vectors. If small then you end up with
 % lots of support vectors that really only apply to those specific points
 % (low radius of influence). If large than the opposite and the model is to
