@@ -14,7 +14,7 @@
 module load matlab/R2018a
 
 #move to the repo
-cd "/jukebox/buschman/Rodent Data/Wide Field Microscopy/Widefield_Imaging_Analysis/Spock/"
+cd "/jukebox/buschman/Rodent Data/Wide Field Microscopy/Widefield_Imaging_Analysis/BehavioralVideos/"
 
 #run a paranoid version of matlab that crashes gracefully and records why just incase.
 # in addition, xvfb-run also creates a virtual desktop so that you can plot easily
