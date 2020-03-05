@@ -28,8 +28,9 @@ for cur_k = 1:size(w,2)
 end
 
 %trim any timepoints with zero variance. 
-bad_tp = squeeze(nanvar(w_alligned,[],[1,2])<=eps);
+temp = reshape(w_alligned,size(w_alligned,1)*size(w_alligned,2),size(w_alligned,3));
+bad_tp = nanvar(temp,[],1)<=eps;
 
-w_alligned(:,:,bad_tp)=[];
+w_alligned(:,:,bad_tp')=[];
 
 end %function end

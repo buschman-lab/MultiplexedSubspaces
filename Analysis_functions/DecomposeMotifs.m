@@ -21,7 +21,7 @@ w = w.w;
 d_motifs = size(w,2);
 
 %% Fit to the raw dat using the same dimensions at cNMF
-[fit_to_data.X_recon,  fit_to_data.err, fit_to_data.Wt, fit_to_data.A, fit_to_data.Ws] = NMFSpaceTime(X','maxiter',fit_iter,'verbose',0,'d_time',d_motifs,'d_space',d_motifs,'err_tol',0);
+[fit_to_data.X_recon,  fit_to_data.err, fit_to_data.Wt, fit_to_data.A, fit_to_data.Ws] = NMFSpaceTime(X','maxiter',fit_iter,'verbose',1,'d_time',d_motifs,'d_space',d_motifs,'err_tol',0);
 fit_to_data.pev = CalculateExplainedVariance(X,X-fit_to_data.X_recon');  
 
 %% Fit to discovered motifs
