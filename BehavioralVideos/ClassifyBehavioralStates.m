@@ -53,10 +53,13 @@ active = active(randperm(size(active,1),num_sample),:);
 inactive = inactive(randperm(size(inactive,1),num_sample),:);data = [cat(1,inactive,active), cat(1,ones(size(inactive,1),1),2*ones(size(active,1),1))];
 [~, Observed, ~, trained] = SVMClassifier_Binary(data,[],'holdout',param_mat(1,block),...
     'nshuf',0,'pca',0,'solver',1,'kernel','linear','numkfold',param_mat(2,block),'featureselect','none',...
-    'optimize',0,'optimize_maxiter',100);
+    'optimize',0,'optimize_maxiter',250);
 
 if ~ispc
-   save(['/jukebox/buschman/Rodent Data/Wide Field Microscopy/VPA Experiments_Spring2018/AnalyzedData_MesomappingManuscript_5_2019/DeepLabCut_BehavioralState_Analysis/linearclassification/',sprintf('Block%d.mat',block)],'Observed','trained')
+    if ~exists('/jukebox/buschman/Rodent Data/Wide Field Microscopy/VPA Experiments_Spring2018/AnalyzedData_MesomappingManuscript_5_2019/DeepLabCut_BehavioralState_Analysis/linearclassification/')
+        mkdir('/jukebox/buschman/Rodent Data/Wide Field Microscopy/VPA Experiments_Spring2018/AnalyzedData_MesomappingManuscript_5_2019/DeepLabCut_BehavioralState_Analysis/linearclassification/');
+    end
+    save(['/jukebox/buschman/Rodent Data/Wide Field Microscopy/VPA Experiments_Spring2018/AnalyzedData_MesomappingManuscript_5_2019/DeepLabCut_BehavioralState_Analysis/linearclassification/',sprintf('Block%d.mat',block)],'Observed','trained')
 end
     
 
