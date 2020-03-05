@@ -17,14 +17,17 @@ X = data{opts.block};
 
 %load the motifs
 w = load([opts.bucket opts.base '/AnalyzedData_MesomappingManuscript_5_2019/TrainRepitoires/TrainingFit_Lambda4e-4_Kval28/TrainRepitoire_block_' num2str(opts.block)],'w');
-d_motifs = size(w.w,2);
+w = w.w; 
+d_motifs = size(w,2);
 
 %% Fit to the raw dat using the same dimensions at cNMF
 [fit_to_data.X_recon,  fit_to_data.err, fit_to_data.Wt, fit_to_data.A, fit_to_data.Ws] = NMFSpaceTime(X','maxiter',fit_iter,'verbose',0,'d_time',d_motifs,'d_space',d_motifs,'err_tol',0);
 fit_to_data.pev = CalculateExplainedVariance(X,X-fit_to_data.X_recon');  
 
 %% Fit to discovered motifs
-X = reshape(w.w,size(w.w,1),size(w.w,2)*size(w.w,3));
+%allign motifs to their maximal cross correlation with each other
+w_alligned = AlignMotifs(w); 
+X = reshape(w_alligned,size(w_alligned,1),size(w_alligned,2)*size(w_alligned,3));
 
 % Main loop 
 max_iter = 250; %iterations allowed to reach the explained variance of cnmf
