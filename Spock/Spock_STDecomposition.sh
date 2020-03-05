@@ -6,7 +6,7 @@
 #SBATCH -p all
 #SBATCH -t 900
 #SBATCH --mem-per-cpu=16G  
-#SBATCH --array=1
+#SBATCH --array=1-318
 #SBATCH --mail-type=FAIL                         # Event(s) that triggers email notification (BEGIN,END,FAIL,ALL)
 #SBATCH --mail-user=<camdenm@princeton.edu>    # Destination email address
 

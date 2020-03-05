@@ -1,4 +1,4 @@
-function [X_recon,err,Wt,A,Ws, fit_to_data] = DecomposeMotifs(varargin)
+function [X_recon,err,Wt,A,Ws, fit_to_data,opts] = DecomposeMotifs(varargin)
 %Set options
 opts = SetAnalysisOptions();
 opts = ParseOptionalInputs(opts,varargin); 

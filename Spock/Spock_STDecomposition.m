@@ -11,10 +11,10 @@ end
 save_file_name = sprintf('block_%d',block);
 
 %% Body
-[X_recon,err,Wt,A,Ws, fit_to_data] = DecomposeMotifs('block',block);
+[X_recon,err,Wt,A,Ws, fit_to_data, opts] = DecomposeMotifs('block',block);
 
 %Save off
-save_dir = [seq.opts.bucket seq.opts.base save_dir];
+save_dir = [opts.bucket opts.base save_dir];
 if ~exist(save_dir)
     mkdir(save_dir);
 end
