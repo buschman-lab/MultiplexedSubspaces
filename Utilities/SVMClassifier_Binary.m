@@ -45,6 +45,7 @@ opts.numkfold = 10;
 opts.kernel = 'rbf'; 
 opts.optimize = 1; %auto, all, or none
 opts.optimize_maxiter = 50; 
+opts.usepar = 0; %use parallel with optimizing
 
 %Process optional inputs
 if mod(length(varargin), 2) ~= 0, error('Must pass key/value pairs for options.'); end
@@ -101,7 +102,7 @@ if opts.optimize %slow
     c = cvpartition(trainingResponse, 'kfold', opts.numkfold);
     optstune = struct('Optimizer','bayesopt','ShowPlots',false,'CVPartition',c,...
         'AcquisitionFunctionName','expected-improvement-plus','MaxObjectiveEvaluations',opts.optimize_maxiter,...
-        'UseParallel',1);
+        'UseParallel',opts.usepar);
     svmmod = fitcsvm(trainingPredictors,trainingResponse,'KernelFunction',opts.kernel,...
         'OptimizeHyperparameters',{'Standardize','BoxConstraint','KernelScale'},...
         'HyperparameterOptimizationOptions',optstune,'Solver',solver{opts.solver});

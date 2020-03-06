@@ -4,8 +4,8 @@
 #SBATCH -J 'svm'
 #SBATCH -o out/svm_%j.out
 #SBATCH -p all
-#SBATCH -t 60
-#SBATCH --mem-per-cpu=12G  
+#SBATCH -t 240
+#SBATCH --mem-per-cpu=20G  
 #SBATCH --array=1
 #SBATCH --mail-type=FAIL                         # Event(s) that triggers email notification (BEGIN,END,FAIL,ALL)
 #SBATCH --mail-user=<camdenm@princeton.edu>    # Destination email address
