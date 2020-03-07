@@ -83,7 +83,7 @@ end
 
 %get the contibutions of each motif to classification accuracy
 if ~ispc
-    if ~exists('/jukebox/buschman/Rodent Data/Wide Field Microscopy/VPA Experiments_Spring2018/AnalyzedData_MesomappingManuscript_5_2019/DeepLabCut_BehavioralState_Analysis/LeaveOneOutClassification/')
+    if ~exist('/jukebox/buschman/Rodent Data/Wide Field Microscopy/VPA Experiments_Spring2018/AnalyzedData_MesomappingManuscript_5_2019/DeepLabCut_BehavioralState_Analysis/LeaveOneOutClassification/')
         mkdir('/jukebox/buschman/Rodent Data/Wide Field Microscopy/VPA Experiments_Spring2018/AnalyzedData_MesomappingManuscript_5_2019/DeepLabCut_BehavioralState_Analysis/LeaveOneOutClassification/');
     end
     save('/jukebox/buschman/Rodent Data/Wide Field Microscopy/VPA Experiments_Spring2018/AnalyzedData_MesomappingManuscript_5_2019/DeepLabCut_BehavioralState_Analysis/LeaveOneOutClassification/LeaveOneOut.mat','auc_leave','auc_full','auc_full_iter')

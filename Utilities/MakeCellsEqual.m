@@ -9,6 +9,9 @@ if pad_flag
     elseif dim==1
         desired_size = max([desired_size{:}]);
         y= cellfun(@(v) [v', nan(size(v,2), desired_size-size(v,1))]', x, 'UniformOutput', false);
+    elseif dim ==3
+        desired_size = max([desired_size{:}]);
+        y= cellfun(@(v) cat(3, v, nan(size(v,1),size(v,2), desired_size-size(v,3))), x, 'UniformOutput', false);
     end
 else
     desired_size = min([desired_size{:}]);

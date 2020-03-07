@@ -1,5 +1,5 @@
     %Saving Information
-savedir = 'C:\Users\macdo\OneDrive\Buschman Lab\AnalysisCode_Repository\Mesoscale Network Dynamics 2019 Analyses\Training and Testing Statistics\11-5-2019';
+savedir = 'C:\Users\macdo\OneDrive\Buschman Lab\AnalysisCode_Repository\Mesoscale Network Dynamics 2019 Analyses\Training and Testing Statistics\Revisions';
 if ~exist(savedir)
     mkdir(savedir)
 end
@@ -15,10 +15,73 @@ fp = fig_params;
 
 mouse_num = load('Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\Spock_Code_Repository\MOUSEGROUPINFO\MouseNumInfoByRec.mat');
 group = isVPA(mouse_num.mousenum); 
+mouse_num_sal = mouse_num.mousenum(group==0);
+
+%% Figure comparing cnmf to space-time nmf
+cnmf = CompileStats(GrabFiles('block',0,{[base 'TrainRepitoires\TrainingFit_Lambda4e-4_Kval28']}),{'ExpVar_all','numFactors'},0,group);
+stnmf = CompileStats(GrabFiles('block',0,{[base 'SpaceTimeNMF_Comparison\SpaceTimeNMF_xcorr_alligned_90expvar']}),{'Ws','Wt','A','fit_to_data'},0,group);
+
+%% Plot the comparison
+data = cat(1,arrayfun(@(x) x.fit_to_data.pev,stnmf),arrayfun(@(x) x.ExpVar_all, cnmf))*100;
+figure('position',[680  200  242   600]); hold on
+CompareViolins(data,fp,'label',{'stNMF','Motifs'},'col',{[0.4 0.4 0.4],fp.c_discovery});
+set(gca,'XTickLabelRotation',45)
+ylim([50 100]);
+ylabel({'Percent Explained Variance'})
+setFigureDefaults;
+set(gca,'position',[2,4,4,8.5])
+signrank(data(1,:),data(2,:))
+[p, h] = signrank(data(1,:),data(2,:));
+AddSig(h,p,[1,2,100,100],2,5,1)
+
+if writestats
+    stats.median_stnmf = nanmedian(data(1,:));
+    stats.median_stnmf_ci = bootci(1000,@nanmedian, data(1,:));
+    stats.rankofA = arrayfun(@(x) rank(x.fit_to_data.A)/size(x.fit_to_data.A,2),stnmf,'UniformOutput',1);
+    save([savedir 'stnmfvscnmfstats.mat'],'stats');
+end
+
+if savefigs
+    handles = get(groot, 'Children');
+    saveCurFigs(handles,'-svg','stnmf_cnmf_pev',savedir,1);
+    close all;
+end
+
+%% Plot the motif decomposition
+s_dim = arrayfun(@(x) size(x.Ws,1), stnmf)./arrayfun(@(x) x.numFactors{1}, cnmf);
+t_dim = arrayfun(@(x) size(x.Wt,2), stnmf)./arrayfun(@(x) x.numFactors{1}, cnmf);
+
+data = cat(1,s_dim,t_dim);
+figure('position',[680  200  242   600]); hold on
+CompareViolins(data,fp,'label',{'Space','Time'},'col',{[0.4 0.4 0.4],[0.4 0.4 0.4]});
+set(gca,'XTickLabelRotation',45)
+ylim([0 7]);
+line([0,3],[1,1],'linestyle','--','color','k','Linewidth',fp.p_line_width)
+ylabel({'Dimensions'})
+setFigureDefaults;
+set(gca,'position',[2,4,4,8.5])
+[p, h] = signrank(data(1,:),1);
+AddSig(h,p,[1,1,max(data(1,:)),max(data(1,:))],1,0.5,1)
+[p, h] = signrank(data(2,:),1);
+AddSig(h,p,[2,2,max(data(2,:)),max(data(2,:))],1,0.5,1)
+
+if writestats
+    stats.median_s_dim = nanmedian(data(1,:));
+    stats.median_s_dim_ci = bootci(1000,@nanmedian, data(1,:))
+    stats.s_dim_pval = signrank(data(1,:),1);
+    stats.median_t_dim = nanmedian(data(2,:));
+    stats.median_t_dim_ci = bootci(1000,@nanmedian, data(2,:))
+    stats.t_dim_pval = signrank(data(2,:),1);    
+    save([savedir 'moitf_st_decomposition_stats.mat'],'stats');
+end
+if savefigs
+    handles = get(groot, 'Children');
+    saveCurFigs(handles,'-svg','motif_spacetime_decomposition',savedir,1);
+    close all;
+end
 
 %% Figure comparing cnmf to nmf and pca
 other_methods = CompileStats(GrabFiles('block',0,{[base 'TrainRepitoires\TrainingFit_CompareDiscoveryMethods_250Dimensions']}),{'nmf','spca'},0,group);
-cnmf = CompileStats(GrabFiles('block',0,{[base 'TrainRepitoires\TrainingFit_Lambda4e-4_Kval28']}),{'ExpVar_all','numFactors'},0,group);
 %%
 stats = Plot_CompareDiscoveryMethods(other_methods,cnmf); 
 
@@ -52,7 +115,7 @@ legend off
 %%
 if savefigs
    handles = get(groot, 'Children');
-   saveCurFigs(handles,'-svg','FittingStats_NumEvents_new',savedir,1);
+   saveCurFigs(handles,'-svg','FittingStats_NumEvents',savedir,1);
    close all
 end
 if writestats
@@ -62,6 +125,39 @@ if writestats
    temp = temp(floor(numel(temp)/2)-1);
    T = {'Variable','MotifOccurance_Fig1C';'Mean',u;'CI_l',ci(1);'CI_u',ci(2);'HalfOccurAtLeastPerMin',temp};
    [T_new] = WriteStatToTable(T,filename,0);       
+end
+
+%% Motif frequency averaged by epoch
+avg_frequency = cellfun(@(x) nanmean(x)/2,occurance);
+
+figure('position',[680   382   974   596]); hold on; 
+histogram(avg_frequency,'FaceColor',fp.c_discovery,'EdgeColor',fp.c_discovery-0.1,'linewidth',1,'BinWidth',1);    % Plot with errorbars
+ylabel('Number of Epochs')
+xlabel({'Average Motif';'Frequency';'(occurance/min)'});
+line([nanmedian(avg_frequency),nanmedian(avg_frequency)],[0 80],'color','k','linestyle','--','linewidth',1.5)
+text(nanmedian(avg_frequency)+1.5,50,['\mu_{1/2}=', num2str(round(nanmedian(avg_frequency),2))],'FontSize',16,'FontWeight','normal','FontName','Arial');
+xlim([-1 10])
+ylim([0 80])
+title('Motif Frequency','FontName','Arial','FontWeight','normal','FontSize',16);
+setFigureDefaults
+set(gca,'position',[2 3.5 3.5 8.5])
+legend off
+
+%%
+if savefigs
+   handles = get(groot, 'Children');
+   saveCurFigs(handles,'-svg','FittingStats_NumEvents_PerEpoch',savedir,1);
+   close all
+end
+if writestats
+   stats.median_freq = nanmedian(avg_frequency);
+   stats.median_freq_ci = bootci(1000,@nanmedian,avg_frequency);
+   temp = sort(avg_frequency,'ascend');   
+   stats.halfpoint_freq = temp(floor(numel(temp)/2)-1);
+   save([savedir 'motiffrequencyperepoch.mat'],'stats');   
+
+    [stats_tab, anova_tbl] = StatByAnimal(avg_frequency,mouse_num_sal);
+    save([savedir 'motiffreqbyepoch_splitbyanimal.mat'],'stats_tab','anova_tbl');
 end
 
 %% Number of motifs
@@ -84,6 +180,10 @@ if savefigs
    handles = get(groot, 'Children');
    saveCurFigs(handles,'-svg','FittingStats_NumberOfMotifs',savedir,1);
    close all
+end
+if writestats
+    [stats_tab, anova_tbl] = StatByAnimal([occurance{:}],mouse_num_sal);
+    save([savedir 'numberofmotifs_splitbyanimal.mat'],'stats_tab','anova_tbl');
 end
 
 %% Histogram of Percent Explained Variance
@@ -109,6 +209,10 @@ if savefigs
    handles = get(groot, 'Children');
    saveCurFigs(handles,'-svg','FittingStats_Explained Variance distribution',savedir,1);
    close all
+end
+if writestats
+    [stats_tab, anova_tbl] = StatByAnimal(data,mouse_num_sal);
+    save([savedir 'pev_training_splitbyanimal.mat'],'stats_tab','anova_tbl');
 end
 
 
@@ -181,6 +285,11 @@ if writestats
     stats.difference  =median(data(1,:))-median(data(2,:));
     stats.pval = signrank(data(1,:),data(2,:));
     save([savedir filesep 'within_between_stats.mat'],'stats');
+    
+    %by the animals
+    [stats_tab_within, anova_tbl_within] = StatByAnimal(data(1,:),mouse_num_sal)
+    [stats_tab_between, anova_tbl_between] = StatByAnimal(data(2,:),mouse_num_sal)
+    save([savedir 'pev_heldout_splitbyanimal.mat'],'stats_tab_within','anova_tbl_within','stats_tab_between','anova_tbl_between');    
 end
 if savefigs
    handles = get(groot, 'Children');
@@ -425,7 +534,11 @@ if writestats
     stats.difference_between_basis =median(data(2,:))-median(data(3,:));
     stats.pval_between_basis = signrank(data(2,:),data(3,:));
     save([savedir filesep 'basismotifs_stats.mat'],'stats');
-
+    
+    
+    %by the animals
+    [stats_tab, anova_tbl] = StatByAnimal(data(3,:),mouse_num_sal)    
+    save([savedir 'pev_clustered_splitbyanimal.mat'],'stats_tab','anova_tbl');      
 end
 
 %% Figure 3D Exp Var Loadings 

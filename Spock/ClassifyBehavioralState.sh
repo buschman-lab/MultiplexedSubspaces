@@ -4,7 +4,7 @@
 #SBATCH -J 'svm'
 #SBATCH -o out/svm_%j.out
 #SBATCH -p all
-#SBATCH -t 240
+#SBATCH -t 900
 #SBATCH --mem-per-cpu=20G  
 #SBATCH --array=1
 #SBATCH --mail-type=FAIL                         # Event(s) that triggers email notification (BEGIN,END,FAIL,ALL)
@@ -18,4 +18,4 @@ cd "/jukebox/buschman/Rodent Data/Wide Field Microscopy/Widefield_Imaging_Analys
 
 #run a paranoid version of matlab that crashes gracefully and records why just incase.
 # in addition, xvfb-run also creates a virtual desktop so that you can plot easily
-xvfb-run -d matlab -nosplash -nodisplay -nodesktop -r "try; ClassifyBehavioralStates($SLURM_ARRAY_TASK_ID); catch me; fprintf('Error: %s / %s\n',me.identifier,me.message); for k=1:length(me.stack), me.stack(k), end; end; exit"
+xvfb-run -d matlab -nosplash -nodisplay -nodesktop -r "try; ClassifyBehavioralStates(); catch me; fprintf('Error: %s / %s\n',me.identifier,me.message); for k=1:length(me.stack), me.stack(k), end; end; exit"
