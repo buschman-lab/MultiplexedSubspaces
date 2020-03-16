@@ -1,8 +1,15 @@
-function Plot_MotifDuration()
+function Plot_MotifDuration(fn)
+% load data 
+for i = 1:numel(fn)
+    fprintf('\n\tloading_data %d',i);
+   w = load(fn{i},'paramsweep');
+end
 %% plot with an error bar
 figure; hold on;
-for i = 1:size(data)
-    w = data{i};
+for i = 1:size(fn)
+    fprintf('\n\tloading_data %d',i);
+    w = load(fn{i},'paramsweep');
+%     w = data{i};
     amp_weight = NaN(size(w,2),size(w,3));
     for j = 1:size(w,2)
         temp = squeeze(w(:,j,:));
