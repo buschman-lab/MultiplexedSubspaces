@@ -13,7 +13,7 @@ classdef fig_params
         
         %colors
         c_discovery = [0.3 0.7 1]; %light blue
-        c_pca = [0.105,0.319,0.46] %dark green
+        c_pca = [0.14 0.6412 0.2471] %dark green 0.1412    0.5412    0.2471
         c_nmf = [0.850,0.3723,0.00784]; %orange
         c_wh_same = [0 0 0.75]; %withheld, same animal
         c_wh_diff = [0.3 0.7 .4]; %withheld, different animal
@@ -21,7 +21,8 @@ classdef fig_params
         c_sensory = [0.3 0.7 1; 0.7,0.1,0; 0.3 0.7 0] %air,vis,aud. 
         c_visual = [0, 0, 1; 0.7,0.1,0 ];
         c_tactile = [1, 0, 0; 0.3, 0.7, 1];
- 
+        c_spacetime = [0.7608 0 0.0627]; %the space, time decomposition
+        
         %Global figure options
         font_size = 16;
         font_name = 'Arial';

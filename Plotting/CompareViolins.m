@@ -2,12 +2,13 @@ function vp = CompareViolins(data,fp,varargin)
     opts.col = fp.GenDefaultColorArray(size(data,1));
     opts.xpos = (1:1:size(data,1)); 
     opts.label = arrayfun(@(x) num2str(x),1:size(data,1),'UniformOutput',0);
+    opts.divfactor = 1;
     
     opts = ParseOptionalInputs(opts,varargin); 
     
     %Make plot
     vp = distributionPlot(data','distWidth',fp.vp_dist_w,'color',opts.col,...
-        'histOpt',1.1,'divfactor',1,'addSpread',0,'showMM',0,...
+        'histOpt',1.1,'divfactor',opts.divfactor,'addSpread',0,'showMM',0,...
         'xNames',opts.label,'xValues',opts.xpos);
     hold on
     set(vp{1},'FaceAlpha',fp.vp_alpha);

@@ -1,4 +1,4 @@
-function [stats] = Plot_CompareDiscoveryMethods(other_methods,cnmf)
+function [stats] = Plot_CompareDiscoveryMethods(other_methods,cnmf,stnmf)
 
 %general plot params
 xvals = [0,125]; 
@@ -11,6 +11,7 @@ other_methods = squeeze(struct2cell(other_methods));
 num_components = 1:numel(other_methods{1,1});
 
 % Main plot
+st_s_ev = arrayfun(@(x) x.fit_to_data.pev,stnmf);
 
 %nmf
 spatial_nmf = cellfun(@(x) cat(1,x(:).ExpVar_all), other_methods(1,:),'UniformOutput',0);
@@ -77,7 +78,7 @@ g(2,1).axe_property('Xlim',xvals,'XTickLabel','','YTicklabel','','XGrid','on','Y
 g(2,1).set_names('x','','y','')
 
 %Create cnmf histogram on side
-g(3,1)=gramm('x',cat(1,spatial_pca_ev'*100,spatial_nmf_ev'*100,cnmf_ev),'color',group_sub);
+g(3,1)=gramm('x',cat(1,st_s_dim'*100,spatial_pca_ev'*100,spatial_nmf_ev'*100,cnmf_ev),'color',[repmat({'stNMF'},1,numel(st_s_ev)),group_sub]);
 g(3,1).set_layout_options('Position',[0.6 0.1 0.075 0.6],...
     'legend',false,...
     'margin_height',[0.1 0.02],...
@@ -91,7 +92,9 @@ g(3,1).set_names('x','','y','')
 %Set global axe properties
 %g.axe_property('color',[0.9 0.9 0.9],'XGrid','on','YGrid','on','GridColor',[1 1 1],'GridAlpha',0.8,'TickLength',[0 0],'XColor',[0.3 0.3 0.3],'YColor',[0.3 0.3 0.3])
 g.axe_property('TickDir','in','GridColor',[0.3 0.3 0.3],'Linewidth',1.5,'FontSize',16,'FontName','Arial','FontWeight','normal');
-g.set_color_options('map',[fp.c_discovery;fp.c_nmf;fp.c_pca]);
+g(1,1).set_color_options('map',[fp.c_discovery;fp.c_nmf;fp.c_pca]);
+g(2,1).set_color_options('map',[fp.c_discovery;fp.c_nmf;fp.c_pca]);
+g(3,1).set_color_options('map',[fp.c_discovery;fp.c_nmf;fp.c_pca;fp.c_spacetime]);
 g.draw();
 %%
 %reset colors and add line

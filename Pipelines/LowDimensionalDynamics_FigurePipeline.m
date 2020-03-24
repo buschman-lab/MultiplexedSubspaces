@@ -1,5 +1,6 @@
-    %Saving Information
-savedir = 'C:\Users\macdo\OneDrive\Buschman Lab\AnalysisCode_Repository\Mesoscale Network Dynamics 2019 Analyses\Training and Testing Statistics\Revisions';
+%Saving Information
+% savedir = 'C:\Users\macdo\OneDrive\Buschman Lab\AnalysisCode_Repository\Mesoscale Network Dynamics 2019 Analyses\Training and Testing Statistics\Revisions';
+savedir = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\ManuscriptRevisionFigures_currentbio';
 if ~exist(savedir)
     mkdir(savedir)
 end
@@ -24,7 +25,7 @@ stnmf = CompileStats(GrabFiles('block',0,{[base 'SpaceTimeNMF_Comparison\SpaceTi
 %% Plot the comparison
 data = cat(1,arrayfun(@(x) x.fit_to_data.pev,stnmf),arrayfun(@(x) x.ExpVar_all, cnmf))*100;
 figure('position',[680  200  242   600]); hold on
-CompareViolins(data,fp,'label',{'stNMF','Motifs'},'col',{[0.4 0.4 0.4],fp.c_discovery});
+CompareViolins(data,fp,'label',{'stNMF','Motifs'},'col',{fp.c_spacetime,fp.c_discovery},'divfactor',1);
 set(gca,'XTickLabelRotation',45)
 ylim([50 100]);
 ylabel({'Percent Explained Variance'})
@@ -33,7 +34,7 @@ set(gca,'position',[2,4,4,8.5])
 signrank(data(1,:),data(2,:))
 [p, h] = signrank(data(1,:),data(2,:));
 AddSig(h,p,[1,2,100,100],2,5,1)
-
+%%
 if writestats
     stats.median_stnmf = nanmedian(data(1,:));
     stats.median_stnmf_ci = bootci(1000,@nanmedian, data(1,:));
@@ -48,15 +49,37 @@ if savefigs
 end
 
 %% Plot the motif decomposition
+s_dim = arrayfun(@(x) size(x.Ws,1), stnmf);
+t_dim = arrayfun(@(x) size(x.Wt,2), stnmf);
+dim_motif = arrayfun(@(x) x.numFactors{1}, cnmf);
+data = cat(1,s_dim,t_dim);
+figure('position',[680  200  242   600]); hold on
+CompareViolins(data(1,:),fp,'label',{'Space'},'col',{fp.c_spacetime,fp.c_spacetime},'xpos',1,'divfactor',1.5);
+CompareViolins(data(2,:),fp,'label',{'Time'},'col',{fp.c_spacetime,fp.c_spacetime},'xpos',2,'divfactor',.4);
+set(gca,'XTick',[1,2],'XTickLabel',{'Space','Time'});
+set(gca,'XTickLabelRotation',45)
+ylim([0 150]);
+line([0,3],[median(dim_motif),median(dim_motif)],'linestyle','--','color',fp.c_discovery,'Linewidth',fp.p_line_width*1.75);
+ylabel({'Dimensions'})
+setFigureDefaults;
+xlim([0.5 2.5])
+set(gca,'position',[2,4,4,8.5])
+[p, h] = signrank(data(1,:),median(dim_motif));
+AddSig(h,p,[1,1,max(data(1,:)),max(data(1,:))],1,14,1)
+[p, h] = signrank(data(2,:),median(dim_motif));
+AddSig(h,p,[2,2,max(data(2,:)),max(data(2,:))],1,12,1)
+
+
+%% plot as a ratio
 s_dim = arrayfun(@(x) size(x.Ws,1), stnmf)./arrayfun(@(x) x.numFactors{1}, cnmf);
 t_dim = arrayfun(@(x) size(x.Wt,2), stnmf)./arrayfun(@(x) x.numFactors{1}, cnmf);
 
 data = cat(1,s_dim,t_dim);
 figure('position',[680  200  242   600]); hold on
-CompareViolins(data,fp,'label',{'Space','Time'},'col',{[0.4 0.4 0.4],[0.4 0.4 0.4]});
+CompareViolins(data,fp,'label',{'Space','Time'},'col',{fp.c_spacetime,fp.c_spacetime});
 set(gca,'XTickLabelRotation',45)
 ylim([0 7]);
-line([0,3],[1,1],'linestyle','--','color','k','Linewidth',fp.p_line_width)
+line([0,3],[1,1],'linestyle','--','color',fp.c_discovery,'Linewidth',fp.p_line_width*1.75);
 ylabel({'Dimensions'})
 setFigureDefaults;
 set(gca,'position',[2,4,4,8.5])
@@ -64,7 +87,7 @@ set(gca,'position',[2,4,4,8.5])
 AddSig(h,p,[1,1,max(data(1,:)),max(data(1,:))],1,0.5,1)
 [p, h] = signrank(data(2,:),1);
 AddSig(h,p,[2,2,max(data(2,:)),max(data(2,:))],1,0.5,1)
-
+%%
 if writestats
     stats.median_s_dim = nanmedian(data(1,:));
     stats.median_s_dim_ci = bootci(1000,@nanmedian, data(1,:))
@@ -83,7 +106,7 @@ end
 %% Figure comparing cnmf to nmf and pca
 other_methods = CompileStats(GrabFiles('block',0,{[base 'TrainRepitoires\TrainingFit_CompareDiscoveryMethods_250Dimensions']}),{'nmf','spca'},0,group);
 %%
-stats = Plot_CompareDiscoveryMethods(other_methods,cnmf); 
+stats = Plot_CompareDiscoveryMethods(other_methods,cnmf,stnmf); 
 
 if writestats 
     save([savedir 'comparediscovermethodsstats.mat'],'stats');
@@ -555,7 +578,7 @@ data = data(idx,:)*100;
 data = cumsum(data,1,'omitnan');
 ci = NaN(size(data,1),2);
 for i = 1:size(data,1)
-    ci(i,:) = bootci(1000,@nanmedian,data(i,:));
+    ci(i,:) = bootci(1000,@nanmean,data(i,:));
 end
 %%
 figure('position',[680   558   422   420]); hold on;
