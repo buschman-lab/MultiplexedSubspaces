@@ -1,4 +1,4 @@
-function ClassifyBehavioralStates()
+function ClassifyBehavioralStates(rep)
 %Camden MacDowell - timeless
 %Load the processed weights from each animal (see BehavioralState_Analysis)
 if ispc
@@ -35,8 +35,10 @@ for i = 1:size(weight_norm,1)
     end         
 end
 
+%randomize rng. 
+state_rng = rng('shuffle'); 
+
 % organize data
-rng('default'); %for reproducibility
 inactive =  cat(1,weight_norm_state{:,1})'; %state 1
 inactive(any(isnan(inactive),2),:)=[]; %remove NaNs
 active =  cat(1,weight_norm_state{:,2})'; %state 2
@@ -46,47 +48,40 @@ num_sample = min(size(active,1),size(inactive,1));
 active = active(randperm(size(active,1),num_sample),:);
 inactive = inactive(randperm(size(inactive,1),num_sample),:);
 
-%classify by the full space
+%use same heldout validation for each classifier. 
+rng(state_rng);
+response = cat(1,ones(size(inactive,1),1),2*ones(size(active,1),1));
+cvp = cvpartition(response, 'Holdout', 0.10);
+
+%full space
 fprintf('\n\tClassifying by the full space\n');
-rng('default'); %for reproducibility
-data = [cat(1,inactive,active), cat(1,ones(size(inactive,1),1),2*ones(size(active,1),1))];
-[~, Observed, ~, ~] = SVMClassifier_Binary(data,[],'holdout',0.2,...
+data = [cat(1,inactive,active), response];
+[~, Observed, ~, ~] = SVMClassifier_Binary(data,cvp,...
     'nshuf',0,'pca',0,'solver',1,'kernel','rbf','numkfold',10,'featureselect','none',...
     'optimize',1,'optimize_maxiter',100);
 auc_full = Observed.AUC;
 
 %leave-one-out
+fprintf('\n\tLeave One Out Analysis\n');
 auc_leave = NaN(1,size(inactive,2));
-for cur_motif = 1:size(inactive,2)
-    rng('default'); %for reproducibility
+for cur_motif = 1:size(inactive,2)        
     idx = ones(1,size(inactive,2));
     idx(cur_motif)=0;
     fprintf('\n\tClassifying by the full space\n');
-    data = [cat(1,inactive(:,idx==1),active(:,idx==1)), cat(1,ones(size(inactive,1),1),2*ones(size(active,1),1))];
-    [~, Observed, ~, ~] = SVMClassifier_Binary(data,[],'holdout',0.2,...
+    data = [cat(1,inactive(:,idx==1),active(:,idx==1)), response];
+    [~, Observed, ~, ~] = SVMClassifier_Binary(data,cvp,...
         'nshuf',0,'pca',0,'solver',1,'kernel','rbf','numkfold',10,'featureselect','none',...
         'optimize',1,'optimize_maxiter',100);
     auc_leave(cur_motif) = Observed.AUC;
 end
 
-%classify by the full space again with multiple randomizations to get a distirbution of success rates
-fprintf('\n\t iterating classification\n');
-rng('default'); %for reproducibility
-auc_full_iter = NaN(1,100);
-for i = 1:100
-    data = [cat(1,inactive,active), cat(1,ones(size(inactive,1),1),2*ones(size(active,1),1))];
-    [~, Observed, ~, ~] = SVMClassifier_Binary(data,[],'holdout',0.2,...
-        'nshuf',0,'pca',0,'solver',1,'kernel','rbf','numkfold',10,'featureselect','none',...
-        'optimize',1,'optimize_maxiter',100);
-    auc_full_iter(i) = Observed.AUC;
-end
-
 %get the contibutions of each motif to classification accuracy
 if ~ispc
-    if ~exist('/jukebox/buschman/Rodent Data/Wide Field Microscopy/VPA Experiments_Spring2018/AnalyzedData_MesomappingManuscript_5_2019/DeepLabCut_BehavioralState_Analysis/LeaveOneOutClassification/')
+    if ~exist('/jukebox/buschman/Rodent Data/Wide Field Microscopy/VPA Experiments_Spring2018/AnalyzedData_MesomappingManuscript_5_2019/DeepLabCut_BehavioralState_Analysis/LeaveOneOutClassification/','dir')
         mkdir('/jukebox/buschman/Rodent Data/Wide Field Microscopy/VPA Experiments_Spring2018/AnalyzedData_MesomappingManuscript_5_2019/DeepLabCut_BehavioralState_Analysis/LeaveOneOutClassification/');
     end
-    save('/jukebox/buschman/Rodent Data/Wide Field Microscopy/VPA Experiments_Spring2018/AnalyzedData_MesomappingManuscript_5_2019/DeepLabCut_BehavioralState_Analysis/LeaveOneOutClassification/LeaveOneOut.mat','auc_leave','auc_full','auc_full_iter')
+    save(['/jukebox/buschman/Rodent Data/Wide Field Microscopy/VPA Experiments_Spring2018/AnalyzedData_MesomappingManuscript_5_2019/DeepLabCut_BehavioralState_Analysis/LeaveOneOutClassification/',...
+        sprintf('LeaveOneOut_holdout_10_replication_%d.mat',rep)],'auc_leave','auc_full')
 end
 
 end %function
@@ -124,9 +119,48 @@ end %function
 % end
 
 
-  
+%   %classify by the full space
+% fprintf('\n\tClassifying by the full space\n');
+% rng('default'); %for reproducibility
+% num_iter = 100;
+% auc_full = NaN(1,num_iter);
+% auc_leave = cell(1,num_iter);
+% for cur_iter = 1:num_iter
+%     data = [cat(1,inactive,active), cat(1,ones(size(inactive,1),1),2*ones(size(active,1),1))];
+%     [~, Observed, ~, ~] = SVMClassifier_Binary(data,[],'holdout',0.2,...
+%         'nshuf',0,'pca',0,'solver',1,'kernel','rbf','numkfold',10,'featureselect','none',...
+%         'optimize',1,'optimize_maxiter',50);
+%     auc_full(cur_iter) = Observed.AUC;
+% 
+%     %leave-one-out
+%     auc_leave_temp = NaN(1,size(inactive,2));
+%     for cur_motif = 1:size(inactive,2)
+%         rng('default'); %for reproducibility
+%         idx = ones(1,size(inactive,2));
+%         idx(cur_motif)=0;
+%         fprintf('\n\tClassifying by the full space\n');
+%         data = [cat(1,inactive(:,idx==1),active(:,idx==1)), cat(1,ones(size(inactive,1),1),2*ones(size(active,1),1))];
+%         [~, Observed, ~, ~] = SVMClassifier_Binary(data,[],'holdout',0.2,...
+%             'nshuf',0,'pca',0,'solver',1,'kernel','rbf','numkfold',10,'featureselect','none',...
+%             'optimize',1,'optimize_maxiter',50);
+%         auc_leave_temp(cur_motif) = Observed.AUC;
+%     end
+%     auc_leave{cur_iter} = auc_leave_temp;
+% end %iteration loop 
+% 
+% 
 
-
+% %classify by the full space again with multiple randomizations to get a distirbution of success rates
+% fprintf('\n\t iterating classification\n');
+% rng('default'); %for reproducibility
+% auc_full_iter = NaN(1,100);
+% for i = 1:100
+%     data = [cat(1,inactive,active), cat(1,ones(size(inactive,1),1),2*ones(size(active,1),1))];
+%     [~, Observed, ~, ~] = SVMClassifier_Binary(data,[],'holdout',0.2,...
+%         'nshuf',0,'pca',0,'solver',1,'kernel','rbf','numkfold',10,'featureselect','none',...
+%         'optimize',1,'optimize_maxiter',100);
+%     auc_full_iter(i) = Observed.AUC;
+% end
 
 
 

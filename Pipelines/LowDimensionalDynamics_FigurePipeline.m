@@ -4,6 +4,7 @@ savedir = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\Manus
 if ~exist(savedir)
     mkdir(savedir)
 end
+
 savefigs = 1;
 writestats = 0;  
 filename = [savedir 'FigureStatistics.csv'];
@@ -18,92 +19,22 @@ mouse_num = load('Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring201
 group = isVPA(mouse_num.mousenum); 
 mouse_num_sal = mouse_num.mousenum(group==0);
 
-%% Figure comparing cnmf to space-time nmf
+%% Compare cnmf, spca, snmf, and stnmf
+stnmf = struct();
+COUNT = 1;
+for i = 1:numel(group) %bad file structure remove the unessasy data=    
+    if group(i)==0
+        fprintf('\nloading file %d',COUNT);
+        temp = load([base 'SpaceTimeNMF_Comparison\SpaceTimeNMF_Sweep\block_' num2str(i) '.mat'],'fit_full');
+        stnmf(COUNT).pev = cat(1,temp.fit_full(:).pev);
+        stnmf(COUNT).dim = cat(1,temp.fit_full(:).dim);
+        COUNT = COUNT+1;
+    end
+end
+% stnmf = CompileStats(GrabFiles('block',0,{[base 'SpaceTimeNMF_Comparison\SpaceTimeNMF_Sweep']}),{'fit_full'},0,group);
+original_data = load('Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\DFF_Data\AllData_binned_SmallMask_3x_2minTraining.mat','data');
+original_data = original_data.data(group==0); %remove vpa;
 cnmf = CompileStats(GrabFiles('block',0,{[base 'TrainRepitoires\TrainingFit_Lambda4e-4_Kval28']}),{'ExpVar_all','numFactors'},0,group);
-stnmf = CompileStats(GrabFiles('block',0,{[base 'SpaceTimeNMF_Comparison\SpaceTimeNMF_xcorr_alligned_90expvar']}),{'Ws','Wt','A','fit_to_data'},0,group);
-
-%% Plot the comparison
-data = cat(1,arrayfun(@(x) x.fit_to_data.pev,stnmf),arrayfun(@(x) x.ExpVar_all, cnmf))*100;
-figure('position',[680  200  242   600]); hold on
-CompareViolins(data,fp,'label',{'stNMF','Motifs'},'col',{fp.c_spacetime,fp.c_discovery},'divfactor',1);
-set(gca,'XTickLabelRotation',45)
-ylim([50 100]);
-ylabel({'Percent Explained Variance'})
-setFigureDefaults;
-set(gca,'position',[2,4,4,8.5])
-signrank(data(1,:),data(2,:))
-[p, h] = signrank(data(1,:),data(2,:));
-AddSig(h,p,[1,2,100,100],2,5,1)
-%%
-if writestats
-    stats.median_stnmf = nanmedian(data(1,:));
-    stats.median_stnmf_ci = bootci(1000,@nanmedian, data(1,:));
-    stats.rankofA = arrayfun(@(x) rank(x.fit_to_data.A)/size(x.fit_to_data.A,2),stnmf,'UniformOutput',1);
-    save([savedir 'stnmfvscnmfstats.mat'],'stats');
-end
-
-if savefigs
-    handles = get(groot, 'Children');
-    saveCurFigs(handles,'-svg','stnmf_cnmf_pev',savedir,1);
-    close all;
-end
-
-%% Plot the motif decomposition
-s_dim = arrayfun(@(x) size(x.Ws,1), stnmf);
-t_dim = arrayfun(@(x) size(x.Wt,2), stnmf);
-dim_motif = arrayfun(@(x) x.numFactors{1}, cnmf);
-data = cat(1,s_dim,t_dim);
-figure('position',[680  200  242   600]); hold on
-CompareViolins(data(1,:),fp,'label',{'Space'},'col',{fp.c_spacetime,fp.c_spacetime},'xpos',1,'divfactor',1.5);
-CompareViolins(data(2,:),fp,'label',{'Time'},'col',{fp.c_spacetime,fp.c_spacetime},'xpos',2,'divfactor',.4);
-set(gca,'XTick',[1,2],'XTickLabel',{'Space','Time'});
-set(gca,'XTickLabelRotation',45)
-ylim([0 150]);
-line([0,3],[median(dim_motif),median(dim_motif)],'linestyle','--','color',fp.c_discovery,'Linewidth',fp.p_line_width*1.75);
-ylabel({'Dimensions'})
-setFigureDefaults;
-xlim([0.5 2.5])
-set(gca,'position',[2,4,4,8.5])
-[p, h] = signrank(data(1,:),median(dim_motif));
-AddSig(h,p,[1,1,max(data(1,:)),max(data(1,:))],1,14,1)
-[p, h] = signrank(data(2,:),median(dim_motif));
-AddSig(h,p,[2,2,max(data(2,:)),max(data(2,:))],1,12,1)
-
-
-%% plot as a ratio
-s_dim = arrayfun(@(x) size(x.Ws,1), stnmf)./arrayfun(@(x) x.numFactors{1}, cnmf);
-t_dim = arrayfun(@(x) size(x.Wt,2), stnmf)./arrayfun(@(x) x.numFactors{1}, cnmf);
-
-data = cat(1,s_dim,t_dim);
-figure('position',[680  200  242   600]); hold on
-CompareViolins(data,fp,'label',{'Space','Time'},'col',{fp.c_spacetime,fp.c_spacetime});
-set(gca,'XTickLabelRotation',45)
-ylim([0 7]);
-line([0,3],[1,1],'linestyle','--','color',fp.c_discovery,'Linewidth',fp.p_line_width*1.75);
-ylabel({'Dimensions'})
-setFigureDefaults;
-set(gca,'position',[2,4,4,8.5])
-[p, h] = signrank(data(1,:),1);
-AddSig(h,p,[1,1,max(data(1,:)),max(data(1,:))],1,0.5,1)
-[p, h] = signrank(data(2,:),1);
-AddSig(h,p,[2,2,max(data(2,:)),max(data(2,:))],1,0.5,1)
-%%
-if writestats
-    stats.median_s_dim = nanmedian(data(1,:));
-    stats.median_s_dim_ci = bootci(1000,@nanmedian, data(1,:))
-    stats.s_dim_pval = signrank(data(1,:),1);
-    stats.median_t_dim = nanmedian(data(2,:));
-    stats.median_t_dim_ci = bootci(1000,@nanmedian, data(2,:))
-    stats.t_dim_pval = signrank(data(2,:),1);    
-    save([savedir 'moitf_st_decomposition_stats.mat'],'stats');
-end
-if savefigs
-    handles = get(groot, 'Children');
-    saveCurFigs(handles,'-svg','motif_spacetime_decomposition',savedir,1);
-    close all;
-end
-
-%% Figure comparing cnmf to nmf and pca
 other_methods = CompileStats(GrabFiles('block',0,{[base 'TrainRepitoires\TrainingFit_CompareDiscoveryMethods_250Dimensions']}),{'nmf','spca'},0,group);
 %%
 stats = Plot_CompareDiscoveryMethods(other_methods,cnmf,stnmf); 
@@ -147,7 +78,7 @@ if writestats
    temp = sort([occurance{:}],'ascend');   
    temp = temp(floor(numel(temp)/2)-1);
    T = {'Variable','MotifOccurance_Fig1C';'Mean',u;'CI_l',ci(1);'CI_u',ci(2);'HalfOccurAtLeastPerMin',temp};
-   [T_new] = WriteStatToTable(T,filename,0);       
+   [T_new] = WriteStatToTable(T,filename,0);    
 end
 
 %% Motif frequency averaged by epoch
@@ -243,7 +174,9 @@ end
 %organize data
 data = CompileStats(GrabFiles('block',0,{[base 'TrainRepitoires\TrainingFit_Lambda4e-4_Kval28']}),{'ExpVarLoad'},0,group);
 data = {data(:).ExpVarLoad};
-data = MakeCellsEqual(data);
+data = cellfun(@(x) sort(x,'descend'),data,'UniformOutput',0);
+data = MakeCellsEqual(data,2,1);
+data = cat(1,data{:});
 data = cumsum(data*100,1,'omitnan');
 ci = NaN(size(data,1),2);
 for i = 1:size(data,1)
@@ -561,7 +494,7 @@ if writestats
     
     %by the animals
     [stats_tab, anova_tbl] = StatByAnimal(data(3,:),mouse_num_sal)    
-    save([savedir 'pev_clustered_splitbyanimal.mat'],'stats_tab','anova_tbl');      
+    save([savedir 'pev_basis_splitbyanimal.mat'],'stats_tab','anova_tbl');      
 end
 
 %% Figure 3D Exp Var Loadings 
@@ -573,8 +506,9 @@ maxlength = max(cellfun(@numel, data));
 data= cellfun(@(v) [v, nan(1, maxlength-numel(v))], data, 'UniformOutput', false);
 data = vertcat(data{:})';
 data(data==0)=NaN;
-[~, idx] = sort(nanmedian(data,2),'descend'); %reorder by explained variance
+[~, idx] = sort(nanmean(data,2),'descend'); %reorder by explained variance THIS NEEDS TO USE MEAN TO MATCH THE ORIGINAL DATA. YOU USED MEAN TO ORDER THE BASIS MOTIFS
 data = data(idx,:)*100;
+data_temp = data; %save for below
 data = cumsum(data,1,'omitnan');
 ci = NaN(size(data,1),2);
 for i = 1:size(data,1)
@@ -601,6 +535,19 @@ if savefigs
    close all
 end
 if writestats
+   %by the animals     
+   mean_load = nanmean(data_temp,2); 
+   load_ci = NaN(size(data,1),2);
+   for i = 1:size(data_temp,1)
+       load_ci(i,:) = bootci(1000,@nanmean,data_temp(i,:));
+   end
+   loadings_per_animal = cell(1,size(data,1));
+    for i = 1:size(data_temp,1)
+        [temp, ~] = StatByAnimal(data_temp(i,:),mouse_num_sal);  
+        loadings_per_animal{i} = temp;
+    end
+   
+   save([savedir 'loadings_basis_splitbyanimal.mat'],'loadings_per_animal','load_ci','mean_load'); 
    for i = 1:size(data,1)
        u = nanmean(data(i,:));       
        n = sum(~isnan(data(i,:)));

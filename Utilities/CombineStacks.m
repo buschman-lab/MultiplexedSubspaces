@@ -18,7 +18,7 @@ if num_files >1 %combine all the files in the folder
     file_list([indx{:}]==1)=[];
 
     %sort the remaining files according to their recording order
-    [~, reindex] = sort(str2double(regexp(file_list, ['(?<=_)\d+(?=',gp.dff_suffix,')'], 'match', 'once' ))); %Sort by block 
+    [~, reindex] = sort(str2double(regexp(file_list, ['(?<=_)\d+(?=',gp.dff_suffix,')'], 'match', 'once' ))); %Sort by chunk 
     file_list = file_list(reindex);
 
     %load all the files and compile
@@ -31,7 +31,10 @@ if num_files >1 %combine all the files in the folder
            temp = load(file_list{cur_file});
            stack = cat(3,stack,temp.dff);
        end 
-    end %cur_file loop 
+       if gp.delete_singledff %optionally delete the files
+          delete(file_list{cur_file});
+       end
+    end %cur_file loop        
 
     opts = temp.opts; %go ahead and carry along the preprocesing opts 
 else %just load and return the single file

@@ -1,4 +1,4 @@
-function RegisterReferenceImages(fixed,moving,opts)
+function opts = RegisterReferenceImages(fixed,moving,opts)
 %try different types of image registration to see which works. loop through
 %user attempts at manual registration if automated fails
 
@@ -25,9 +25,9 @@ end
 
 function ValidationImages(moving,opts)
     %Visualize outcome of registration
-    registered_img = PreProcessImage(moving,opts,{'spatial_bin_factor',1});
-    figure; hold on; imagesc(registered_img); colormap('gray'); axis off
-    set(gca,'ydir','reverse','xlim',[1,size(registered_img,1)],'ylim',[1,size(registered_img,2)]);
-    plot(prepro_log.bregma(1),opts.bregma(2),'x','markersize',10,'color','r','LineWidth',3);
+    registered_img = PreProcessImage(moving,opts,{'spatial_bin_factor',1});    
+    figure; hold on; imagesc(registered_img); colormap('gray'); axis off; axis equal
+    set(gca,'ydir','reverse','ylim',[1,size(registered_img,1)],'xlim',[1,size(registered_img,2)]);
+    plot(opts.bregma(1),opts.bregma(2),'x','markersize',10,'color','r','LineWidth',3);
 end   
  

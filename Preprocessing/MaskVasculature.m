@@ -18,8 +18,10 @@ if opts.mask_vasc %mask vasc
     %Add a premade mask to outline the brain.
     if opts.mask_brain_outline 
         temp = load(opts.mask_brain_outline_dir); 
+        %Crop the mask to the size of the image. Assumes top left alligned
+        temp.brainoutline = temp.brainoutline([1:opts.crop_h],[1:opts.crop_w]);
         mask = mask+temp.brainoutline;
-        mask = mask==2;
+        mask = mask==2;               
     end
     
     if opts.verbose || opts.manual_mask
@@ -38,7 +40,7 @@ if opts.mask_vasc %mask vasc
                 case 'Yes' %mask additional region
                     close all                
                     figure('name','Draw ROI around additional regions to NaN');
-                    imagesc(ref_img.*mask)
+                    imshowpair(ref_img,ref_img.*mask);
                     manual_mask = impoly;
                     wait(manual_mask);               
                     manual_mask = manual_mask.createMask();
@@ -59,7 +61,7 @@ if opts.mask_vasc %mask vasc
                 case 'Yes' %mask additional region
                     close all
                     figure('name','Draw ROI around additional regions to NaN');
-                    imagesc(ref_img.*mask)
+                    imshowpair(ref_img,ref_img.*mask);
                     manual_mask = impoly;
                     wait(manual_mask);               
                     manual_mask = manual_mask.createMask(); %his is 1 in the desired ROI          

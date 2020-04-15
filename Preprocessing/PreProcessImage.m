@@ -16,10 +16,10 @@ else %if angled left of yaxis
 end
 cur_img = padarray(cur_img,[60,60]); 
 cur_img = imcrop(cur_img,[opts.crop_cord(1),opts.crop_cord(2),...
-    opts.crop_h,opts.crop_w]);
+    opts.crop_w,opts.crop_h]);
 
 %confirm correct dimensions since imcrop is inconsistent (see imcrop)
-cur_img = double(cur_img([1:opts.crop_w],[1:opts.crop_h])); 
+cur_img = double(cur_img([1:opts.crop_h],[1:opts.crop_w])); 
 
 %Mask and spatial bin
 cur_img = SpatialBin(cur_img,opts.spatial_bin_factor,opts.mask,1);

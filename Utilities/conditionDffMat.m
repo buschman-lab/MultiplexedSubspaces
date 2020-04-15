@@ -3,12 +3,12 @@ function [dffmat,badcols,badrows] = conditionDffMat(dff,badcols,badrows,imsize3)
 % [dffmat,badcols,badrows] = conditionDffMat(dff,badcols,badrows,imsize3) 
 % converts to 3D (image format) from time x pxls format or vice-versa
 % accoridng to input dff dimensions. badcols and barows are list of indices
-% of cols and rows removed from time x pxls format (e.g. nan from vasculature
+% of cols and rows removed from time x pxls format (e.g. nan or zero from vasculature
 % and mask), in case npxl ~= nX*nY
 % imsize3 is a 3-element vector specifying the dimensions of the desired
 % output image in case of 2d to 3d conversion
 %
-% LP sep 2016
+% LP sep 2016 - modified by CM in 2020
 
 if nargin < 2
     badcols = [];
@@ -24,10 +24,10 @@ end
     
 if size(dff,3) > 1
     dffmat            = reshape(dff,[],size(dff,3))';
-    badcols           = find(sum(isnan(dffmat))==size(dffmat,1));
+    badcols           = find(sum(isnan(dffmat))==size(dffmat,1) | nanvar(dffmat,[],1)<=eps);
     dffmat(:,badcols) = [];
-    badrows           = find(sum(isnan(dffmat),2)==size(dffmat,2));
-    dffmat(badrows,:) = [];
+    badrows           = find(sum(isnan(dffmat),2)==size(dffmat,2) | nanvar(dffmat,[],1)<=eps);
+    dffmat(badrows,:) = []; 
 else
     nZ     = imsize3(3);
     npxl   = imsize3(1)*imsize3(2);

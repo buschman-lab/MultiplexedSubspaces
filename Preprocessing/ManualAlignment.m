@@ -11,7 +11,7 @@ set(gcf,'Position',[pos(1)-200, pos(2)-200, size(ref_img,2), size(ref_img,1)]);
 hold on
 
 %cropping rectangle
-rect = imrect(gca,[0 0 opts.crop_h opts.crop_w]);
+rect = imrect(gca,[0 0 opts.crop_w opts.crop_h]);
 fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
 setPositionConstraintFcn(rect,fcn); 
 setFixedAspectRatioMode(rect,1);
@@ -47,7 +47,7 @@ cropped_alligned_img = double(imcrop(alligned_img,[x_crop_cord,y_crop_cord,...
     opts.crop_w,opts.crop_h]));
 
 %crop can lead to inconsistent # of pixels. Make equal. 
-cropped_alligned_img = cropped_alligned_img([1:opts.crop_w],[1:opts.crop_h]); 
+cropped_alligned_img = cropped_alligned_img([1:opts.crop_h],[1:opts.crop_w]); 
 
 %shift bregma to new coords in cropped image
 bregma = [bregma(1)-x_crop_cord,bregma(2)-y_crop_cord];

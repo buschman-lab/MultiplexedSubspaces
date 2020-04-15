@@ -2,6 +2,7 @@
 #SBATCH -o out/dynomitescript_output_%j.out
 #SBATCH -p all
 #SBATCH -t 59
+#SBATCH --exclude=redshirt-n[12-49]
 #SBATCH --mem-per-cpu=16G  
 #SBATCH --mail-type=END                     # Event(s) that triggers email notification (BEGIN,END,FAIL,ALL)
 #SBATCH --mail-user=<temp@princeton.edu>    # Destination email address

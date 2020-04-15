@@ -1,19 +1,43 @@
-function Plot_BehavioralStateDecoder(data)
+function Plot_BehavioralStateDecoder()
+%Camden MacDowell - timeless
+%contrib is a motif x replication matrix of contributions of each motif to
+%the decoding accuracy on withheld data
 
-if nargin <1 
-   data = load('Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\DeepLabCut_BehavioralState_Analysis\LeaveOneOutClassification\LeaveOneOut.mat');   
-end
+fn = GrabFiles('LeaveOneOut_holdout_20_replication_',0,{'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\DeepLabCut_BehavioralState_Analysis\LeaveOneOutClassification'}); 
+data_full = cellfun(@(x) load(x,'auc_full'),fn,'UniformOutput',1);
+data_leave = cellfun(@(x) load(x,'auc_leave'),fn,'UniformOutput',1);
+data_full = cat(1,data_full(:).auc_full);
+data_leave = cat(1,data_leave(:).auc_leave);
+contrib_temp = arrayfun(@(n) (data_full(n)-data_leave(n,:))*100,1:numel(data_full),'UniformOutput',0);   
+contrib_temp = cat(1,contrib_temp{:});
+contrib = nanmean(contrib_temp);
+contrib_ci = bootci(100,@nanmean,contrib_temp);
 
-fp = fig_params;
+motif_id = 1:14;
+[~,idx] = sort(contrib,'ascend');
+motif_id = motif_id(idx);
+contrib = contrib(idx);
+contrib_ci =contrib_ci(:,idx); 
 
-%get the contribution of each motif (full - leave-one-out)
-contrib = (data.auc_full - data.auc_leave)*100;
+%% Plot a line
+figure; hold on;
+line([0,0],[0 14],'linestyle','--','color',[0.5 0.5 0.5],'linewidth',2)
+plot(contrib,1:numel(contrib),'o','color','k','linewidth',2)
+errorbar(contrib,1:numel(contrib),[],[],contrib-contrib_ci(1,:),contrib_ci(2,:)-contrib,'color','k','linewidth',1.5,'linestyle','none')
+xlabel({'Contibution';'(AUC)'})
+ylabel('Basis Motif (Sorted)');
+set(gca,'ytick',1:numel(contrib),'yticklabel',motif_id);
+setFigureDefaults
+set(gca,'Units','centimeters','Position',[2 3 3 9.5]); 
+set(gcf,'position',[680   400  722   600]);
 
 %%
-close all
+
+%% Plot as a tree
+fp = fig_params;
 figure('Position',[95   137   972   398]); hold on; 
-yvals = [-2, 0, 8];
-yvals_norm = 1-(yvals-min(yvals))/(max(yvals)-min(yvals));
+yvals = [-1, 0, 3];
+yvals_norm = 1-(yvals-min(yvals))/(max(yvals)-min(yvals));f
 imagesc(contrib,[yvals(1),yvals(end)])
 cmap = customcolormap(yvals_norm,{'#00d5ff','#000000','#ff00bb'});
 colormap(cmap)
@@ -39,3 +63,12 @@ savedir = 'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\Manus
 handles = get(groot, 'Children');
 saveCurFigs(handles,'-svg','behavioraldecoder',savedir,1);
 close all;
+% yvals = [-2, 0, 8];
+% yvals_norm = 1-(yvals-min(yvals))/(max(yvals)-min(yvals));
+% imagesc(contrib,[yvals(1),yvals(end)])
+% cmap = customcolormap(yvals_norm,{'#00d5ff','#000000','#ff00bb'});
+
+% yvals = [0, 4.5];
+% yvals_norm = 1-(yvals-min(yvals))/(max(yvals)-min(yvals));
+% imagesc(contrib,[yvals(1),yvals(end)])
+% cmap = customcolormap(yvals_norm,{'#00d5ff','#000000'});%'#00d5ff'

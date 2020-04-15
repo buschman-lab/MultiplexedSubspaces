@@ -55,7 +55,7 @@ if nargin<9 || isempty(display_iter)
     display_iter=false; % Display or not some information at each iteration
 end
 if nargin<10 || isempty(n_stops)
-    n_stops=5; % Number of steps for the stopping criterion
+    n_stops=1; % Number of steps for the stopping criterion
 end
 
 Mb = X';
@@ -95,6 +95,7 @@ it=0;
 % Main iterative loop of the algorithm  
 % N.B.: we decompose the data as Mi=Wi*A*Wb (for each sample)
 while count<n_stops && it<max_iter
+    fprintf('\n\tstNMF iter %d',it)
     it=it+1; 
     % Clean the Output, by reordering or rescaling etc.
     % May improve the robustness & convergence

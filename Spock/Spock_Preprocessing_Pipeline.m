@@ -6,7 +6,7 @@ if ~ispc
 end
 
 opts = load(opts_path);
-opts = opts.prepro_log; 
+opts = opts.prepro_log;
 
 fprintf('\nPreprocessing...')
 stack = PreProcess(in_fn,opts);

@@ -19,4 +19,5 @@ opts.wavelength_pattern = [1,2]; %excitation wavelength sequence used
 opts.correction_wavelength = 2; %wavelength to be used for correction
 opts.detrend = 1; %also include linear detrending 
 
+opts = ParseOptionalInputs(opts,varargin);
 end

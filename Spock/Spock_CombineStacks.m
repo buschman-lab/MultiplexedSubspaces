@@ -12,3 +12,4 @@ function Spock_CombineStacks(folder_path,save_dir)
         warning('\nNo dffs with suffix %s were combined in %s',gp.dff_suffix, folder_path);
     end
 end
+

@@ -1,5 +1,5 @@
 %PREPROCESSING PIPELINE
-
+% Camden MacDowell 2020
 % User selects folders of recordings for one animal and does manual steps
 % Then automatically generates spock bash scripts to run and
 % send a dependency to spock to combined all dffs in each folder
@@ -16,7 +16,7 @@ end
 
 %% Manual Configure Preprocessing
 %configure preprocessing options
-opts = ConfigurePreProcessing();
+opts = ConfigurePreProcessing('crop_w',300,'vasc_std',2,'save_uncorrected',0);
  
 %Grab reference images for each. Preload so no delay between loop.
 ref_imgs = cellfun(@(x) GetReferenceImage(x,opts.fixed_image),...
@@ -38,9 +38,10 @@ for cur_fold = 1:numel(folder_list)
         prepro_log.output_size = [];
     else %new images
         %Register Reference Images to the first reference image          
-        [prepro_log.tform,prepro_log.output_size] = RegisterReferenceImages(ref_imgs{1},ref_imgs{cur_fold},'auto');               
+        prepro_log = RegisterReferenceImages(ref_imgs{1},ref_imgs{cur_fold},prepro_log);               
+        [~,fn] = fileparts(folder_list{cur_fold});
         saveCurFigs(gcf,'-dpng',sprintf('registration_%s',fn),[save_dir 'PreprocessingFigures'],0); %close all;       
-        
+        close all;
     end
     %save off the options to each folder
     save([folder_list{cur_fold} filesep 'prepro_log'],'prepro_log')
@@ -88,17 +89,6 @@ for cur_fold = 1:numel(folder_list)
         sprintf('sbatch --dependency=afterok:%s %s',[job_id{:}],script_name)]);
     
 end
-
-% Close the connection
-ssh2_close(s_conn);
-
-%clear personal information
-clear s_conn password username
-
-%%
-
-
-
 
 
 
