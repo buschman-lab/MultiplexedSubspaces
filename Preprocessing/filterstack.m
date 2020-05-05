@@ -1,6 +1,6 @@
 function fStack = filterstack(dff,fs, filtband,type, verbose, addDCFlag)
 
-%Can accept both 2D (all pixels vs time) and 3D (dff stack); 
+%Can accept both 2D (time x pixel matrix) and 3D (dff stack); 
 %Lucas pinto - modified by Camden MacDowell 2018
 
 if nargin < 2; fs = 13; end

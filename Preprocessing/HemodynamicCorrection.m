@@ -18,6 +18,11 @@ function [dff, dff_b, dff_v] = HemodynamicCorrection(stack, opts)
     stack_b = stack_b(:,:,1:min(cell2mat(min_length)));
     stack_v = stack_v(:,:,1:min(cell2mat(min_length)));
     
+    %remove the masked pixels by setting to NaN
+    masked_pxls = (stack_b==0);
+    stack_b(masked_pxls)=NaN;
+    stack_v(masked_pxls)=NaN;
+    
     %pixelwise hemodynamic correction   
     [nX,nY,nZ] = size(stack_b);
     [stack_b, bad_col] = conditionDffMat(stack_b);
@@ -33,20 +38,30 @@ function [dff, dff_b, dff_v] = HemodynamicCorrection(stack, opts)
     end
 
     %remake into full size
-    stack_b = conditionDffMat(stack_b,bad_col,[],[nX,nY,nZ]);
+    stack_b = conditionDffMat(stack_b,bad_col,[],[nX,nY,nZ]);    
     stack_v_corrected = conditionDffMat(stack_v_corrected,bad_col,[],[nX,nY,nZ]);
 
-%     %calculate the fractional dff (as in pinto et al., 2019). Seems less robust
+%     %calculate the fractional dff (as in pinto et al., 2019). Not finished
 %     [frac_v,~] = makeDFF(stack_v_corrected, opts,'fractional');
-%     [frac_b,~] = makeDFF(stack_b, opts,'fractional');
-%     dff_frac = frac_b./frac_v-1;
+%     [frac_b,~] = makeDFF(stack_b, opts,'fractional');    
+%     [frac_v,bad_col] = conditionDffMat(frac_v);
+%     frac_b = conditionDffMat(frac_b);
+%     dff_frac = frac_v;
+%     for i = 1:size(frac_v,2)
+%         dff_frac(:,i) = frac_b(:,i)./frac_v(:,i)-1;
+%     end
+%     dff_frac = conditionDffMat(dff_frac,bad_col,[],[nX,nY,nZ]);        
+% %     dff_frac = frac_b./frac_v-1;
     
-    %calculate the dff for each (as in mussal et al., 2019)
+    %calculate the dff for each (as in wekselblatt, 2017)
     [dff_v,~] = makeDFF(stack_v_corrected, opts);
     [dff_b,~] = makeDFF(stack_b, opts);
     
     %Subtraction correction DFF = dff_b-dff_v;
     dff = dff_b-dff_v;    
+    
+%     %calculate the dff for each (as in mussal et al., 2019/sexena 2020)
+%     [dff,~] = makeDFF(stack_b-stack_v_corrected, opts);
        
 end
 

@@ -1,5 +1,5 @@
 function opts = ConfigurePreProcessing(varargin)
-opts.fixed_image = 0; %image to use as reference. 0=first, 1, middle, 2=mean
+opts.fixed_image = 'mean'; %image to use as reference. first, middle, mean, variance, max
 opts.crop_h = 540; %height of croped image in pixels. 
 opts.crop_w = 540; %width of cropped image in pixels.
 opts.x_bregma_margin = 280;  %For outlininign brain: Number of pixels to anterior to bregma (default = 280)
@@ -11,13 +11,13 @@ opts.close_disk_size = 2; %pixel size of disk used to remove salt/pepper noise o
 opts.verbose = 1; %how chatty do we want to be
 opts.mask_brain_outline = 1; %Create mask for outside of brain (manually made). 
 opts.mask_brain_outline_dir = [fileparts(which('ConfigurePreProcessing.m')) filesep 'brainoutline_hemi.mat']; 
-opts.save_uncorrected = 1; %save the uncorrected stacks? 
-opts.spatial_bin_factor = 4;
+opts.save_uncorrected = 0; %save the uncorrected stacks? 
+opts.spatial_bin_factor = 8;
 opts.method = 'movingavg'; %'movingavg','mean','median','mode'
 opts.fps = 15; %the frame rate of each wavelength (integer)
 opts.wavelength_pattern = [1,2]; %excitation wavelength sequence used
 opts.correction_wavelength = 2; %wavelength to be used for correction
-opts.detrend = 1; %also include linear detrending 
+opts.detrend = 0; %also include linear detrending(not needed if DFF)
 
 opts = ParseOptionalInputs(opts,varargin);
 end

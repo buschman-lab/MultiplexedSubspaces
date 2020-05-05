@@ -5,7 +5,16 @@
 % send a dependency to spock to combined all dffs in each folder
 % in order. 
 
+
+%% THINGS TO ADD:
+%overwrite/don't overright (so you can rerun from the top). 
+%ability to run from start to finish
+%combine with analysis pipeline
+
 %% Manual steps
+%Add path to TIFFStack Module. This *must* be local. Unable to be on bucket
+%due to permissions
+
 save_dir = 'Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\Widefield_Preprocessed\'; %Final target save directory for the preprocesssed and combined files
 if ~exist(save_dir)
     mkdir(save_dir);
@@ -48,7 +57,9 @@ for cur_fold = 1:numel(folder_list)
 end
 
 
-%% Spock Preprocessing 
+%Future addition: Remove recordings flagged with artifacts
+
+%% Spock Preprocessing: results in the concatenated files per day
 % Open ssh connection
 username = input(' Spock Username: ', 's');
 password = passcode();
@@ -86,9 +97,12 @@ for cur_fold = 1:numel(folder_list)
     % Run job with dependency
     response = ssh2_command(s_conn,...
         ['cd /jukebox/buschman/Rodent\ Data/Wide\ Field\ Microscopy/Widefield_Imaging_Analysis/Spock/DynamicScripts/ ;',... %cd to directory
-        sprintf('sbatch --dependency=afterok:%s %s',[job_id{:}],script_name)]);
-    
+        sprintf('sbatch --dependency=afterok:%s %s',[job_id{:}],script_name)]);    
 end
+
+ssh2_close(s_conn);
+clear username password sconn
+%%
 
 
 

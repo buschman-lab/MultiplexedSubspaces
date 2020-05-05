@@ -1,29 +1,31 @@
-function [ExpVar_frame,ExpVar_all,Xhat,...
-    Residuals,H,cost,loadings,power,numFactors,W,w,opts] = Discover_Motifs(varargin)
+function [w, cost, loadings, power, numFactors,...
+    Xhat, Residuals, W, H, ExpVar_all, ExpVar_frame] = Discover_Motifs(X,varargin)
 
+%THIS IS NOW DEPRECIATED AS OF 4/20/2020
 %Set options
-opts = SetAnalysisOptions();
+opts = general_params;
 opts = ParseOptionalInputs(opts,varargin); 
-
-%Load the preprocessed data. Must be 1 x #rec cell arrays of data & nanpxs 
-load([opts.bucket opts.base opts.data_file_name],'data','nanpxs');
-
-fprintf('\nDiscovering Motifs Using Kval of %d \n',opts.K)
-
-%Get current data block
-X = data{opts.block};
-fprintf('\tDiscovering Motifs for data group %d of %d...\n',opts.block,size(data,2))
 
 %for reproducibility
 rng('default'); 
 
+
+%Run seqNMF for short snippet
+w = seqNMF(X(:,1:10000), ...    
+  'K', opts.K, 'L',opts.L, 'lambda',opts.lambda,...        
+  'showPlot', 0, 'maxiter', 50,'tolerance',opts.tolerance,...
+  'SortFactors',0,'lambdaL1H',opts.lambdaL1H,...
+  'lambdaOrthoH',opts.lambdaOrthoH,'useWupdate',0,'Shift',opts.shift);
+toc
+
+tic
 %Run seqNMF
 [w, h, cost, loadings, power] = seqNMF(X, ...    
   'K', opts.K, 'L',opts.L, 'lambda',opts.lambda,...        
-  'showPlot', opts.showPlot, 'maxiter', opts.maxiter,'tolerance',opts.tolerance,...
-  'SortFactors',1,'lambdaL1H',opts.lambdaL1H,...
-  'lambdaOrthoH',opts.lambdaOrthoH,'useWupdate',1,'Shift',opts.shift);
-
+  'showPlot', 0, 'maxiter',2,'tolerance',opts.tolerance,...
+  'SortFactors',0,'lambdaL1H',opts.lambdaL1H,...
+  'lambdaOrthoH',opts.lambdaOrthoH,'useWupdate',0,'Shift',opts.shift);
+toc
 %Gather and organize seqNMF outputs 
 [w, cost, loadings, power, numFactors, Xhat, Residuals, W, H] = ...
     CollectNMFOutputs(w, h, cost, loadings, power, nanpxs, opts.block, X);
@@ -31,6 +33,10 @@ rng('default');
 %Get Explained variance
 ExpVar_all = CalculateExplainedVariance(X,Residuals);
 ExpVar_frame = CalculateExplainedVarianceFrameWise(X,Residuals);
+
+
+
+
 
 end %end function loop
 

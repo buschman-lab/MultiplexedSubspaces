@@ -63,8 +63,7 @@ for cur_rec = 1:size(dffarray,2)
         dff(:,px) = temp';
     end
     dff = conditionDffMat(dff, nanpxs);
-   
-    
+       
     %Spatial bin
     if ~isempty(opts.spatialbin)
         dff = SpatialBin(dff,opts.spatialbin);

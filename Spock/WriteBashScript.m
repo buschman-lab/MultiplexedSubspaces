@@ -1,12 +1,12 @@
-function script_name = WriteBashScript(uniqID,func_name,input_val,input_type)
+function script_name = WriteBashScript(uniqID,func_name,input_val,input_type,varargin)
 %Writes a spock bash script that will run func_name with variables defined
 %by input_val. 
 %input_val and input_type are equal length cell arrays. 
 %example: input_type = {'"%s"'}; sprintf(input_type{1},'$SLURM_ARRAY_TASK_ID'); 
 
+%parse optional inputs to change defaults
 gp = general_params;
-%Get the text from the base
-text = fileread('spock_base.sh');
+gp = ParseOptionalInputs(gp,varargin);
 
 %keep this local for right now;
 script_name = sprintf('run_%s.sh',uniqID);
@@ -16,15 +16,25 @@ if ~exist(file_path)
 end
 fid = fopen([file_path script_name], 'wt');
 
+% write the bash file
 fprintf(fid,'%s','#!/usr/bin/env bash'); %add the first line of the header
-
-%give the script a funny name
-temp = EntertainingSpockNames;
-fprintf(fid,"\n%s'%s'",'#SBATCH -J ',temp);
-
-%Add the base script
-fprintf(fid,'%s',text);
-
+if isempty(gp.sbatch_name) %give the script a funny name
+    temp = EntertainingSpockNames;
+    fprintf(fid,"\n%s'%s'",'#SBATCH -J ',temp);
+else
+    fprintf(fid,"\n%s'%s'",'#SBATCH -J ',gp.sbatch_name);
+end
+fprintf(fid,"\n%s",'#SBATCH -o out/dynamicscript_output_%j.out ');
+fprintf(fid,"\n%s",'#SBATCH -p all');
+fprintf(fid,"\n%s%d",'#SBATCH -t ',gp.sbatch_time);
+fprintf(fid,"\n%s%s",'#SBATCH --exclude=',gp.sbatch_exclude);
+fprintf(fid,"\n%s%dG",'#SBATCH --mem-per-cpu=',gp.sbatch_memory);
+fprintf(fid,"\n%s",'#SBATCH --mail-type=END'); %just set the email and type
+fprintf(fid,"\n%s",'#SBATCH --mail-user=<temp@princeton.edu>'); %just set the email and type
+fprintf(fid,"\n%s%s",'module load matlab/',gp.sbatch_matlabversion); 
+fprintf(fid,'\n%s"%s"\n','cd ',gp.sbatch_path); %path of the matlab script
+    
+  
 %Add the specific function call
 try %make sure to close the fid even if crash
     %Create the variable lengthed inputs

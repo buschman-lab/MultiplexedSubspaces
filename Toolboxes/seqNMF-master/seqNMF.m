@@ -106,6 +106,7 @@ if isa(X,'gpuArray'); cost = gpuArray(cost); end
 cost(1) = sqrt(mean((X(:)-Xhat(:)).^2));
 
 for iter = 1 : params.maxiter
+    fprintf('\n Fitting iteration %d...',iter);
     % Stopping criteria... Stop if reach maxiter or if change in cost function is less than the tolerance
     if (iter == params.maxiter) || ((iter>5) && (cost(iter+1)+params.tolerance)>mean(cost((iter-5):iter)))
         cost = cost(1 : iter+1);  % trim vector
