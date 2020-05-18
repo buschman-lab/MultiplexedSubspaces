@@ -1,21 +1,18 @@
-function FitMotifs(fn,save_fn,chunk,varargin)
+function [stats_test, stats_train, w, h, gp, fh] = FitMotifs(data_train,data_test,varargin)
 %Camden MacDowell - timeless
-if ~ispc
-    addpath(genpath('/jukebox/buschman/Rodent Data/Wide Field Microscopy/Widefield_Imaging_Analysis/'))
-end
+
 rng('default'); %for reproducibility
 
 %parse optional inputs
 gp = general_params;
 gp = ParseOptionalInputs(gp,varargin);
 
-%load the training data
-temp = load(fn,'data_train','data_test');
-data_train = squeeze(temp.data_train(:,chunk,:));
-data_test = squeeze(temp.data_test(:,chunk,:));
-
-%fit lambda. don't need as many iterations 
-lambda = FitLambda(data_train,gp);
+%Optionally Fit Lambda (slow, but best practice).
+if gp.lambda == -1 %fit lambda
+    [lambda, fh] = FitLambda(data_train,gp,1);    
+else %use input value 
+    lambda = gp.lambda; 
+end
 
 %fit motifs 
 fprintf('\n\n\nFitting Motifs')
@@ -28,6 +25,7 @@ fprintf('\n\n\nFitting Motifs')
 %gather data
 stats_train = CNMFStats(w,h,data_train);
 stats_train.cost = cost;
+stats_train.lambda = lambda;
 
 %cross validate
 fprintf('\n\n\nCrossvalidating Motifs')
@@ -41,13 +39,9 @@ fprintf('\n\n\nCrossvalidating Motifs')
 %gather data
 stats_test = CNMFStats(w_test,h_test,data_test);
 
-%save off the data in the scratch directory and the nanpxs
-fprintf('\n\tSaving data')
+%option to only keep motifs that contribute to cross validation and also to
+%do the reverse fit
 
-%save off the information in the scratch directory
-save(save_fn,'stats_test','stats_train','w','-v7.3')
-
-fprintf('\n\tDONE')
 
 end
 

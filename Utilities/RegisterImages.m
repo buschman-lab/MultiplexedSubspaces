@@ -3,8 +3,8 @@ function [tform,output_size]= RegisterImages(fixed,moving,type)
 %toolbox of different registration methods
 
 %first preprocess image
-fixed = imadjust(fixed);
-moving = imadjust(moving);
+fixed = (imadjust(uint16(fixed)));
+moving = (imadjust(uint16(moving)));
 
 switch type
     case 'auto'

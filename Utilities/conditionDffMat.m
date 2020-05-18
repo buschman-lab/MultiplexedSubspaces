@@ -24,9 +24,11 @@ end
     
 if size(dff,3) > 1
     dffmat            = reshape(dff,[],size(dff,3))';
-    badcols           = find(sum(isnan(dffmat))==size(dffmat,1) | nanvar(dffmat,[],1)<=eps);
+    badcols           = find(sum(isnan(dffmat))==size(dffmat,1));    
+%     badcols           = find(sum(isnan(dffmat))==size(dffmat,1) | nanvar(dffmat,[],1)<=eps);
     dffmat(:,badcols) = [];
-    badrows           = find(sum(isnan(dffmat),2)==size(dffmat,2) | nanvar(dffmat,[],1)<=eps);
+    badrows           = find(sum(isnan(dffmat),2)==size(dffmat,2));
+%     badrows           = find(sum(isnan(dffmat),2)==size(dffmat,2) | nanvar(dffmat,[],2)<=eps);
     dffmat(badrows,:) = []; 
 else
     nZ     = imsize3(3);

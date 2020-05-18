@@ -15,7 +15,7 @@ opts = temp.opts;
 clear temp;
 
 %condition data and remove nan pxls
-[~,~,z] = size(data);   
+[x,y,z] = size(data);   
 [data,nanpxs] = conditionDffMat(data); %nanpxs are the same on each iteration so fine to overwrite
 
 %filter data
@@ -23,26 +23,34 @@ switch gp.w_deconvolution
     case 'simple_filter'
         fprintf('\n\tFiltering data')
         data = filterstack(data, opts.fps, gp.w_filter_freq, gp.w_filter_type, 1, 1);
-        %Remove negative component of signal as in MacDowell 2020. Legacy. %Deconvolution with non-negative output is preferred (maintains more data, comes with own caveats). 
+        %Remove negative component of signal as in MacDowell 2020. Legacy. %Deconvolution with non-negative output is preferred (maintains more data, comes with own assumptions). 
         data(data<0)=0;
     case 'lucric'
         fprintf('\n\tPerforming a Lucy-Goosey Deconvolution (Lucy-Richardson)\n')
         data = lucric(data,gp.d_gamma,gp.d_smooth,gp.d_kernel);
 end
 
-%normalize to 0 to 1 and make nonnegative
+%Denoise with PCA (removed banded pixels)
+data = conditionDffMat(data,nanpxs,[], [x,y,z]);
+data = DenoisePCA(data);
+[data,~] = conditionDffMat(data);
+
+%normalize to 0 to 1 
+fprintf('\n\tPerforming %s normalization to %d value', gp.w_normalization_method, gp.w_norm_val);
 switch gp.w_normalization_method
     case 'pixelwise' %each between x and xth pixel intensity
         data_norm = NaN(size(data));
         for px = 1:size(data,2)
-            data_norm(:,px) = (data(:,px)-prctile(data(:,px),gp.w_norm_val(1)))/(prctile(data(:,px),gp.w_norm_val(2))-prctile(data(:,px),gp.w_norm_val(1)));
+            data_norm(:,px) = (data(:,px))/(prctile(data(:,px),gp.w_norm_val));
         end             
-    case 'full'
-        data_norm = (data-prctile(data(:),gp.w_norm_val(1)))/(prctile(data(:),gp.w_norm_val(2))-prctile(data(:),gp.w_norm_val(1)));  
+    case 'full' %normalize using the percentile of the maximum value per pixe. Use max for each pixel instead of all pixels because noise/artifact pixels may be continuously high throughout and warp distribution
+        data_norm = data/prctile(max(data,[],1),gp.w_norm_val);          
     case 'bounded'
         data_norm = (data)/(gp.w_norm_val(2)); %normalize between zero and the upper bound     
+    case 'none'
+        data_norm = data;
     otherwise
-        error('Unknown normalization methods. Check general params')
+        error('Unknown normalization method. Check general params')
 end
 
 %transpose (seqNMF operates rowwise)
@@ -66,6 +74,12 @@ data_test = data_trim(:,2:2:num_chunks,:);
 fprintf('\n\tSaving data')
 save(save_fn,'data_norm','data_test','data_train','nanpxs','opts','gp','num_chunks','-v7.3')
 fprintf('\n\tDONE')
+
+
+%% for saveing off figure use; 
+% [path, name] = fileparts(save_fn);
+% saveCurFigs(gcf,'-dpng',sprintf('registration_%s',fn),[path filesep name, '_ProcessAndSplitFigures'],0); %close all;
+
 
 end
 

@@ -4,7 +4,11 @@ function opts = RegisterReferenceImages(fixed,moving,opts)
 
 %%
 %first try to autoregistration (fast)
-[opts.tform,opts.output_size] = RegisterImages(fixed,moving,'auto'); 
+try
+    [opts.tform,opts.output_size] = RegisterImages(fixed,moving,'auto'); 
+catch
+    [opts.tform,opts.output_size] = RegisterImages(fixed,moving,'manual'); 
+end
 ValidationImages(moving,opts);
 %%
 %ask if okay, otherwise do manual registration
