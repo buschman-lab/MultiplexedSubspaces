@@ -12,18 +12,18 @@ function diss = DISSX(H1,W1,H2,W2)
 % Emily Mackevicius and Andrew Bahle
 % adapted from Wu et al 2016
 
-    [K,~] = size(H1);
-    for i = 1:K
-        for j = 1:K
-        Xhat1 = helper.reconstruct(W1(:,i,:),H1(i,:));
-        Xhat2 = helper.reconstruct(W2(:,j,:),H2(j,:));
-        C(i,j) = (Xhat1(:)'*Xhat2(:))/((sqrt(Xhat1(:)'*Xhat1(:))*sqrt(Xhat2(:)'*Xhat2(:)))+eps);
-        end
+[K,~] = size(H1);
+for i = 1:K
+    for j = 1:K
+    Xhat1 = helper.reconstruct(W1(:,i,:),H1(i,:));
+    Xhat2 = helper.reconstruct(W2(:,j,:),H2(j,:));
+    C(i,j) = (Xhat1(:)'*Xhat2(:))/((sqrt(Xhat1(:)'*Xhat1(:))*sqrt(Xhat2(:)'*Xhat2(:)))+eps);
     end
-    maxrow = max(C,[],1); 
-    maxcol = max(C,[],2); 
-    maxrow(isnan(maxrow)) = 0;
-    maxcol(isnan(maxcol)) = 0;
-    diss = 1/2/K*(2*K - sum(maxrow) -sum(maxcol)); 
+end
+maxrow = max(C,[],1); 
+maxcol = max(C,[],2); 
+maxrow(isnan(maxrow)) = 0;
+maxcol(isnan(maxcol)) = 0;
+diss = 1/2/K*(2*K - sum(maxrow) -sum(maxcol)); 
 
 end

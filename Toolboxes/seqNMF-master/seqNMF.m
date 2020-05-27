@@ -140,7 +140,7 @@ for iter = 1 : params.maxiter
     dRdH = dRdH + params.lambdaL1H + dHHdH; % include L1 sparsity, if specified
     
     % Update H
-    H = H .* WTX ./ (WTXhat + dRdH +eps);
+    H = H .* WTX ./ (WTXhat + dRdH + eps);
         
     % Shift to center factors
     if params.shift

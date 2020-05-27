@@ -50,7 +50,7 @@ if ~isempty(gp.m_smooth_kernel)
     end 
 end
 
-%could include an optional renomalization
+%could include an optional renormalization
 
 %compute maximum temporal xcorrelation between motifs
 [tcorr_mat, lag_mat, lags] = TemporalXCorrTensor(motifs,gp.m_maxshift);

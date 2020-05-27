@@ -42,6 +42,9 @@ stats.loadings = stats.loadings/sum(stats.loadings);
 
 %final cost
 stats.rmse = {sqrt(mean((X(:)-Xhat(:)).^2))};
+
+%loss
+stats.loss = norm(X-Xhat,'fro')/norm(X,'fro');
     
     
     

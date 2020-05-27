@@ -7,4 +7,4 @@ SeqNoiseNeuron = [1,1]; % the probability that a neuron participates in a given 
 T = 10000;
 shared  = 1;
 %%
-V = data.sequences(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,shared);
+V = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,shared);

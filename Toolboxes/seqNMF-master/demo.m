@@ -8,13 +8,13 @@
 % See paper: 
 % https://www.biorxiv.org/content/early/2018/03/02/273128
 %% Generate some synthetic data
-number_of_seqences = 3;
+number_of_seqences = 15;
 T = 3000; % length of data to generate
-Nneurons = 10*ones(number_of_seqences,1); % number of neurons in each sequence
+Nneurons = 250*ones(number_of_seqences,1); % number of neurons in each sequence
 Dt = 3.*ones(number_of_seqences,1); % gap between each member of the sequence
 NeuronNoise = 0.001; % probability of added noise in each bin
 SeqNoiseTime = zeros(number_of_seqences,1); % Jitter parameter = 0%
-SeqNoiseNeuron = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
+SeqNoiseNeuron = 10.*ones(number_of_seqences,1); % Participation parameter = 100%
 X = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,0,0,0,0,0);
 
 %% Fit with seqNMF
