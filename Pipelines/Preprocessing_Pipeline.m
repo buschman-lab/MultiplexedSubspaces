@@ -99,7 +99,7 @@ for cur_fold = 1:numel(folder_list_raw)
         end
     end    
        
-    %Once each folder is done, combine all the dffs in that folder
+    %Once each folder is done, combine all the stacks and do hemocorrection
     [~,header] = fileparts(ConvertToBucketPath(folder_list_raw{cur_fold}));
     file_list_preprocessed{cur_fold} = [save_dir_preprocessed header 'dff_combined.mat']; 
     script_name = WriteBashScript(sprintf('%d_%d_combine',cur_fold,cur_file),'Spock_CombineStacks',{ConvertToBucketPath(folder_list_raw{cur_fold}),ConvertToBucketPath(file_list_preprocessed{cur_fold})},{"'%s'","'%s'"});    
@@ -150,9 +150,9 @@ end
 header = file_header_motifs(1:regexp(file_header_motifs,'_','start','once'));
 
 %Find Basis Motifs and Refit to the entire data set
-script_name = WriteBashScript(sprintf('%d',1),'FitBasisMotifs_Spock',{ConvertToBucketPath(file_path_motifs),header,ConvertToBucketPath(save_dir_motif_fits)},...
+script_name = WriteBashScript(sprintf('%d',1),'ClusterW_Spock',{ConvertToBucketPath(file_path_motifs),header,ConvertToBucketPath(save_dir_motif_fits)},...
     {"'%s'","'%s'","'%s'"},...
-    'sbatch_time',5,'sbatch_memory',12,...
+    'sbatch_time',600,'sbatch_memory',24,...
     'sbatch_path',"/jukebox/buschman/Rodent Data/Wide Field Microscopy/Widefield_Imaging_Analysis/Spock/");
 
 if ~isempty(swarm_id) % Run job with dependency

@@ -4,8 +4,6 @@ function [swarm_id,save_fn] = FitMotifs_SpockSwarm(fn,dependency_id,s_conn,gp)
 %chunk in fn
     
 num_chunks = gp.w_approx_chunk_num;
-% temp = load(fn,'num_chunks');
-% num_chunks = temp.num_chunks/2; %since chunks is both training and testing
 
 %generate swarm
 swarm_id = cell(1,num_chunks);
@@ -15,7 +13,7 @@ for i = 1:num_chunks
     save_fn{i} = [gp.local_bucket gp.processing_intermediates fn_temp sprintf('_fit_chunk%d.mat',i)];
         
     script_name = WriteBashScript(sprintf('motifchunk%d',i),'FitMotifs_Spock',{ConvertToBucketPath(fn),ConvertToBucketPath(save_fn{i}),i},{"'%s'","'%s'","%d"},...
-        'sbatch_time',2800,'sbatch_memory',12,...
+        'sbatch_time',480,'sbatch_memory',12,...
         'sbatch_path',"/jukebox/buschman/Rodent Data/Wide Field Microscopy/Widefield_Imaging_Analysis/Spock/"); %cutoff for spock priority is 4hrs (240s), then 48 hours 
     
     response = ssh2_command(s_conn,...

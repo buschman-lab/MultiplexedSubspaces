@@ -13,7 +13,7 @@ function [dff, dff_b, dff_v] = HemodynamicCorrection(stack, opts)
     stack(opts.correction_wavelength) = [];
     stack_b = stack{1};  
     
-    %Trim until both the same length (may be one frame discrepancy
+    %Trim until both the same length (may be one frame discrepancy)
     min_length = cellfun(@(x) size(x,3), {stack_b,stack_v},'UniformOutput',0);
     stack_b = stack_b(:,:,1:min(cell2mat(min_length)));
     stack_v = stack_v(:,:,1:min(cell2mat(min_length)));
