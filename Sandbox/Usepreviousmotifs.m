@@ -4,7 +4,8 @@ addpath('Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\
 addpath('Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\GitHub_repository\Ephys_Imaging\FunctionsForLFP');
 addpath('Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\GitHub_repository\Ephys_Imaging\Plotting');
 addpath(genpath('Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\GitHub_repository\Ephys_Imaging\Toolboxes\TDTSDK'));
-
+addpath(genpath('Z:\Rodent Data\Wide Field Microscopy\fpCNMF'));
+addpath(genpath('Z:\Rodent Data\Wide Field Microscopy\Widefield_Imaging_Analysis'));
 
 %load previous motifs
 motifs = load('Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\TrainRepitoires\TrainingFit_Lambda4e-4_Kval28\AverageDPs_1.mat','W_clust_smooth');

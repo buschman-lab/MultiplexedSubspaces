@@ -12,10 +12,11 @@ if nargin <3
 end
 
 if ischar(fn) %load data
+    warning('Camden you may want to check how things are transposed')
     fprintf('\n\tLoading data')
     %load data
     temp = load(fn);
-    data = temp.dff;
+    data = temp.dff';
     opts = temp.opts;
     clear temp;
 elseif isstruct(fn)
@@ -34,9 +35,15 @@ end
 switch gp.w_deconvolution
     case 'simple_filter'
         fprintf('\n\tFiltering data')
-        data = filterstack(data, opts.fps, gp.w_filter_freq, gp.w_filter_type, 1, 1);
-        %Remove negative component of signal as in MacDowell 2020. Legacy. %Deconvolution with non-negative output is preferred (maintains more data, comes with own assumptions). 
-        data(data<(gp.w_nstd*nanstd(data(:))))=0;
+        data = filterstack(data, opts.fps, gp.w_filter_freq, gp.w_filter_type, 1, 0);
+        %Remove negative component of signal and find bursts as in MacDowell 2020. Legacy. %Deconvolution with non-negative output is preferred (maintains more data, comes with own assumptions). 
+        for px = 1:size(data,2)
+           temp = data(:,px);
+           temp(temp<=nanmean(temp(:))+gp.w_nstd*std(temp(:))) = 0;
+           data(:,px) = temp;
+        end
+        
+        data(data<(nanmean(data(:))+gp.w_nstd*nanstd(data(:))))=0;
     case 'lucric'
         fprintf('\n\tPerforming a Lucy-Goosey Deconvolution (Lucy-Richardson)\n')
         for px = 1:size(data,2)
@@ -59,8 +66,9 @@ switch gp.w_normalization_method
         for px = 1:size(data,2)
             data_norm(:,px) = (data(:,px))/(prctile(data(:,px),gp.w_norm_val));
         end             
-    case 'full' %normalize using the percentile of the maximum value per pixe. Use max for each pixel instead of all pixels because noise/artifact pixels may be continuously high throughout and warp distribution
-        data_norm = data/prctile(max(data,[],1),gp.w_norm_val);          
+    case 'full' %normalize using the percentile of the maximum 
+%         data_norm = data/prctile(max(data,[],1),gp.w_norm_val);          
+        data_norm = data/prctile(data(:),gp.w_norm_val);          
     case 'bounded'
         data_norm = (data)/(gp.w_norm_val(2)); %normalize between zero and the upper bound     
     case 'none'
@@ -80,11 +88,15 @@ end
 
 %remove the remainder and reshape into chunks
 data_trim = data_norm(:,1:end-mod(z,num_chunks*(gp.w_chunk_dur*opts.fps)));
-data_trim = reshape(data_trim,[size(data_trim,1),num_chunks,(gp.w_chunk_dur*opts.fps)]);
+
+data_chunked = cell(1,num_chunks);
+for i = 1:num_chunks %don't use reshape here, it gets wacky
+    data_chunked{i} = data_trim(:,1+(i-1)*(gp.w_chunk_dur*opts.fps):(i*(gp.w_chunk_dur*opts.fps)));
+end
 
 %alternate testing and training
-data_train = data_trim(:,1:2:num_chunks,:);
-data_test = data_trim(:,2:2:num_chunks,:);
+data_train = cat(3,data_chunked{1:2:num_chunks});
+data_test = cat(3,data_chunked{2:2:num_chunks});
 
 %save off the data in the scratch directory and the nanpxs
 if ~isempty(save_fn)

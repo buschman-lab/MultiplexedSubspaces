@@ -1,4 +1,4 @@
-w = W;
+% w = W;
 temp = NaN(numel(nanpxs)+size(w,1),size(w,2),size(w,3)); 
 goodpxl = 1:size(temp,1);
 temp(~ismember(goodpxl,nanpxs),:,:)=w;
@@ -8,12 +8,12 @@ figure;
 active = find(nanmean(squeeze(nanmean(w,3)),1)>0);
 for i = active
    motif = squeeze(temp(:,i,:));
-   motif = reshape(motif,[68,38,size(temp,3)]);
+   motif = reshape(motif,[68,68,size(temp,3)]);
    for j = 1:size(temp,3)
       imagesc(motif(:,:,j),[0 0.75]); colorbar     
       axis equal; axis off
       title(sprintf('motif %d, frame %d',i,j),'fontsize',12,'fontweight','normal');
-      pause(0.01);
+      pause();
    end      
 end
 
