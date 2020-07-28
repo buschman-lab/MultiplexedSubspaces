@@ -21,15 +21,15 @@ classdef general_params
         %widefield post-processing parameters     
         denoise_powerfrac = 0.5;
         denoise_pxlfrac = 0.01; %fraction of pixels to use. 1% seems good. Can gut check with ImpactOfPCADenoise function in gutcheck directory
-        w_deconvolution = 'simple_filter'; %type of deconvolution (if none, then will filter by below parameters)
-        w_nstd = 2; %number of standard deviations for thresholding if using w_deconvolution = 'simple_filter';
+        w_deconvolution = 'filter_thresh'; %type of deconvolution (if none, then will filter by below parameters)
+        w_nstd = 1; %number of standard deviations for thresholding if using w_deconvolution = 'simple_filter';
         w_filter_freq = [0.1 4]; %frequency range to filter widefield data if using no deconvolution
         w_filter_type = 'lowpass'; 
         w_normalization_method = 'full'; %pixelwise, full, or bounded
-        w_norm_val = 95; %either the precentile or the value (if bounded) to normalize to
+        w_norm_val = 100; %either the precentile or the value (if bounded) to normalize to
         w_chunk_dur = 150 %duration of training/testing chunks for fitting seqNMF in seconds
         w_approx_chunk_num = ceil(51926/(150*15)/2); %(total duration/w_chunk_dur*fps)/2 (for test and train split) This is used in pipeline to parallelize motifs fittings spock jobs without knowing the exact chunk number used. Unused will just fail as spock jobs.         
-        w_pca_denoise = 1; %boolean
+        w_pca_denoise = 0; %boolean
         
         %CNMF Defaults        
         K = 25;
@@ -49,6 +49,7 @@ classdef general_params
         sparse_W = 0;
       
         %General clustering Parameters
+        clust_nobleed = 1; %whether to allow smoothign to bleed into masked regions
         clust_method = 'PhenoCluster';
         clust_smooth_kernel = [5,5,1];
         clust_community_fraction = 0.5; 

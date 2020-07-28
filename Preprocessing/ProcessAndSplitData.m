@@ -16,7 +16,7 @@ if ischar(fn) %load data
     fprintf('\n\tLoading data')
     %load data
     temp = load(fn);
-    data = temp.dff';
+    data = temp.dff;
     opts = temp.opts;
     clear temp;
 elseif isstruct(fn)
@@ -33,8 +33,8 @@ end
 
 %filter data
 switch gp.w_deconvolution
-    case 'simple_filter'
-        fprintf('\n\tFiltering data')
+    case 'filter_thresh'
+        fprintf('\n\tFiltering and thresholding data')
         data = filterstack(data, opts.fps, gp.w_filter_freq, gp.w_filter_type, 1, 0);
         %Remove negative component of signal and find bursts as in MacDowell 2020. Legacy. %Deconvolution with non-negative output is preferred (maintains more data, comes with own assumptions). 
         for px = 1:size(data,2)
@@ -49,6 +49,12 @@ switch gp.w_deconvolution
         for px = 1:size(data,2)
            data(:,px) = lucric(data(:,px),gp.d_gamma,gp.d_smooth,gp.d_kernel);
         end
+    case 'only_filter'
+        fprintf('\n\tFiltering data')
+        data = filterstack(data, opts.fps, gp.w_filter_freq, gp.w_filter_type, 1, 0);
+        
+    otherwise
+        error('unknown w_deconvolution option. Check general parameters'); 
 end
 
 %Denoise with PCA (removed banded pixels)
@@ -66,9 +72,8 @@ switch gp.w_normalization_method
         for px = 1:size(data,2)
             data_norm(:,px) = (data(:,px))/(prctile(data(:,px),gp.w_norm_val));
         end             
-    case 'full' %normalize using the percentile of the maximum 
-%         data_norm = data/prctile(max(data,[],1),gp.w_norm_val);          
-        data_norm = data/prctile(data(:),gp.w_norm_val);          
+    case 'full' %normalize using the percentile of the maximum         
+        data_norm = data/prctile(data(data>eps),gp.w_norm_val);          
     case 'bounded'
         data_norm = (data)/(gp.w_norm_val(2)); %normalize between zero and the upper bound     
     case 'none'

@@ -14,9 +14,11 @@ function [features, Observed, Shuffled, TrainAUC] = SVMClassifier_Binary(Data,cv
 % (currently only supports ANOVA feature selection). 
 % 
 % @INPUTS
-% Data: observations x features matrix. (i.e. trials x pixels for imaging data).
+% @Data: observations x features matrix. (i.e. trials x pixels for imaging data).
 % Final column contains the response variable with the class identify of
 % each row. 
+%
+% @cvp: option prepartioning of data
 %
 % @varargin: see opts structure below
 %
@@ -43,7 +45,7 @@ opts.pca = 0;  %First perform dimensionality reduction. Uses #PCs to explain 99%
 opts.solver = 1; %SVM solver to use: 1=SMO,2=ISDA,3=L1QP
 opts.numkfold = 10;
 opts.kernel = 'rbf'; 
-opts.optimize = 1; %auto, all, or none
+opts.optimize = 1; %boolean
 opts.optimize_maxiter = 50; 
 opts.usepar = 0; %use parallel with optimizing
 
@@ -141,10 +143,10 @@ isMissing = isnan(validationResponse);
 correctPredictions = correctPredictions(~isMissing);
 
 %Save off all desired information 
-Observed.AUC = mean([Outstats(:).AUC]);
-Observed.X = [cat(1,Outstats(:).X),cat(1,Outstats(:).Y)];
-Observed.Y = [cat(1,Outstats(:).Y),cat(1,Outstats(:).Y)];
-Observed.T = [cat(1,Outstats(:).T),cat(1,Outstats(:).T)];
+Observed.AUC = mean([Outstats(:).AUC]); 
+Observed.X = cat(2,Outstats(:).X);
+Observed.Y = cat(2,Outstats(:).Y);
+Observed.T = cat(2,Outstats(:).T);
 Observed.Accurary = sum(correctPredictions)/length(correctPredictions);
 Observed.Predictions = validationPredictions;
 Observed.CorrectResponse = validationResponse;
@@ -173,9 +175,9 @@ for shuf = 1:opts.nshuf
     validationAccuracy = sum(correctPredictions)/length(correctPredictions);
 
     Shuffled(shuf).AUC = mean([Outstats(:).AUC]);
-    Shuffled(shuf).X = [cat(1,Outstats(:).X),cat(1,Outstats(:).X)];
-    Shuffled(shuf).Y = [cat(1,Outstats(:).Y),cat(1,Outstats(:).Y)];
-    Shuffled(shuf).T = [cat(1,Outstats(:).T),cat(1,Outstats(:).T)];
+    Shuffled(shuf).X = cat(2,Outstats(:).X);
+    Shuffled(shuf).Y = cat(2,Outstats(:).Y);
+    Shuffled(shuf).T = cat(2,Outstats(:).T);
     Shuffled(shuf).Accurary = validationAccuracy;
     Shuffled(shuf).Predictions = validationPredictions;
     Shuffled(shuf).CorrectResponse =  validationResponse_shuf;

@@ -12,9 +12,9 @@ motifs = load('Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\A
 motifs = motifs.W_clust_smooth;
 
 %load new data; 
-[data_norm,nanpxs] = ProcessAndSplitData('Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\Widefield_Preprocessed\501_11_21_2019_1dff_combined.mat',[]);
+[data_norm,nanpxs,data_train, data_test] = ProcessAndSplitData('Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\Widefield_Preprocessed\501_11_21_2019_1dff_combined.mat',[]);
 data = conditionDffMat(data_norm',nanpxs,[],[68 38,size(data_norm,2)]);
-data = SpatialGaussian(data,[5 5]);
+data = SpatialGaussian(data,[3 3]);
 
 %reformat to the same size at motifs
 temp = NaN(68,68,size(data,3));
@@ -49,26 +49,399 @@ for i = 1:10
 end
 H_orig = H;
 
-%reconvolve
-for K = 1:size(H,1)
-    H(K,:) = tensor_convolve(nanmean(motifs(:,K,:),1),H(K,:));
-end
-% save('PreviousMotifFit.mat','H_orig','allstats','-v7.3');
-%where motifs is a pixel x K x L tensor and H is a K x T matrix
 
-%threshold the H values with moving standard deviation
-H_thresh=H;
-Onset_times = cell(size(H,1),1);
-for i =1:size(H,1)   
-   temp = H(i,:);
-   threshval = 2*movstd(temp,15*30,'omitnan');
-   temp(temp<threshval)=0;
-   H_thresh(i,:)=temp;
-   temp(temp~=0)=1;
-   Onset_times{i} = find(diff(temp)==1);    
+%% IF RELOADING DATA
+addpath('Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\GitHub_repository\Ephys_Imaging\Ephys_Processing');
+addpath('Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\GitHub_repository\Ephys_Imaging\FunctionsForLFP');
+addpath('Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\GitHub_repository\Ephys_Imaging\Plotting');
+addpath(genpath('Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\GitHub_repository\Ephys_Imaging\Toolboxes\TDTSDK'));
+addpath(genpath('Z:\Rodent Data\Wide Field Microscopy\fpCNMF'));
+addpath(genpath('Z:\Rodent Data\Wide Field Microscopy\Widefield_Imaging_Analysis'));
+
+motifs = load('Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\AnalyzedData_MesomappingManuscript_5_2019\TrainRepitoires\TrainingFit_Lambda4e-4_Kval28\AverageDPs_1.mat','W_clust_smooth');
+motifs = motifs.W_clust_smooth;
+
+load('PreviousMotifFit.mat','H_orig','data_norm','nanpxs')
+
+data = conditionDffMat(data_norm',nanpxs,[],[68 38,size(data_norm,2)]);
+data = SpatialGaussian(data,[3 3],'kernel');
+
+%reformat to the same size at motifs
+temp = NaN(68,68,size(data,3));
+temp(:,1:38,:)=data;
+data = temp; clear temp;
+data_flat = reshape(data,68*68,size(data,3));
+data_flat(isnan(data_flat))=0;
+
+%get only the pixels that are non masked in each
+bad_pxl = (nanvar(data_flat,[],2)<=eps) + (nanvar(reshape(motifs,68*68,14*26),[],2)<=eps) >= 1;
+data_flat(bad_pxl,:) = [];
+motifs(bad_pxl,:,:) = [];
+
+% H = H_orig([1,3,4,5,8,11],:);
+H = H_orig; 
+% labels = {'1','3','4','5','8','11'};
+labels = {'1','2','3','4','5','6','7','8','9','10','11','12','13','14'};
+% motifs = motifs(:,[1,3,4,5,8,11],:);
+data = data_flat;
+%Get the H onsets
+Onset_times = cell(1,size(H,1));
+Activity = H;
+for j = 1:size(H,1)
+   XHat = tensor_convolve(motifs(:,j,:),H(j,:));
+   rho_frame = zeros(1,size(XHat,2));
+   for i = 1:size(XHat,2)    
+      rho_frame(i) = corr(XHat(:,i),data(:,i));
+   end 
+%     figure; hold on; plot(rho_frame); 
+%     plot(H(j,:))
+   [pks,locs] = findpeaks(rho_frame,'MinPeakHeight',0.4,'MinPeakDistance',1*15);
+   Activity(j,:) = zeros(size(H(j,:)));
+   Activity(j,locs) = pks;
+   Onset_times{j} = locs;
+end
+set(gca,'xtick',(1:(10*60*15):size(H,2)))
+set(gca,'xticklabel',floor(get(gca,'xtick')/15))
+xlabel('Time (s)')
+ylabel('Rho or Intensity')
+fp.FormatAxes(gca)
+handles = get(groot, 'Children');
+fp.SaveFigs(handles,'-svg','ExampleCorrelation','Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\Figures\LabMeeting7_2_2020',1); close all
+
+%%
+%compare with firing rates
+temp  = load('firing_rate.mat','firing_rate_all');
+fr = temp.firing_rate_all([1,2,4,5,6,7],:);
+for i = 1:size(fr,1)
+    fr(i,:) = smooth(fr(i,:),50);
+end
+fr = zscore(fr,0,2);%zscore
+[coef, score, latent, ~, explained, mu] = pca(fr');
+score = score';
+cf = size(fr,2)/size(H,2);
+data = cell(1,numel(Onset_times));
+data_pc = cell(1,numel(Onset_times));
+for i = 1:numel(Onset_times)
+   temp = Onset_times{i};
+   dur = floor(30*cf);
+   snippet = NaN(size(fr,1),dur,numel(Onset_times));
+   snippet_pc = NaN(size(score,1),dur,numel(Onset_times));
+   for j = 1:numel(temp)
+       try %avoid the end
+          start = floor(temp(j)*cf-(15*cf));
+          snippet(:,:,j) = fr(:,start:start+dur-1); 
+          snippet_pc(:,:,j) = score(:,start:start+dur-1); 
+       catch
+       end
+   end
+   data{i} = snippet;
+   data_pc{i} = snippet_pc;
 end
 
-%other ideas is to take it by the STD across all of them
+%plot the average between the two
+col = getColorPalet(size(fr,1));
+figure('position',[28         558        1808         420]); hold on;
+for i = 1:numel(data)
+    subplot(1,numel(data),i); hold on; 
+    x = 1:size(data{i},2);
+    y = nanmean(data{i},3);
+    err = nanstd(data{i},[],3)/sqrt(size(data{i},3));
+    for j = 1:size(y,1)
+        shadedErrorBar(x,y(j,:),err(j,:),'lineprops',{'color',col(j,:)});
+    end
+    title(sprintf('Motif %s',labels{i}),'FontWeight','normal');
+    ylim([-0.7 1.3])    
+    set(gca,'xticklabels',(-1:1:1))
+    xlabel('time (s)')
+    ylabel('Firing Rate (zscore)');
+    fp.FormatAxes(gca);
+end
+handles = get(groot, 'Children');
+fp.SaveFigs(handles,'-svg','FR','Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\Figures\LabMeeting7_2_2020',1); close all
+
+%PC Space
+num_pcs = 3;
+col = getColorPalet(size(fr,1));
+figure('position',[28         558        1808         420]); hold on;
+for i = 1:numel(data_pc)
+    subplot(1,7,i); hold on; 
+    x = 1:size(data_pc{i}(1:num_pcs,:,:),2);
+    y = nanmean(data_pc{i}(1:num_pcs,:,:),3);
+    err = nanstd(data_pc{i}(1:num_pcs,:,:),[],3)/sqrt(size(data_pc{i}(1:num_pcs,:,:),3));
+    for j = 1:size(y,1)
+        shadedErrorBar(x,y(j,:),err(j,:),'lineprops',{'color',col(j,:)});
+    end
+    title(sprintf('Motif %s',labels{i}),'FontWeight','normal');
+    ylim([-0.7 1.3])    
+    set(gca,'xticklabels',(-1:1:1))
+    xlabel('time (s)')
+    ylabel('Firing Rate (zscore)');
+    fp.FormatAxes(gca);
+end
+handles = get(groot, 'Children');
+fp.SaveFigs(handles,'-svg','PC_FR','Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\Figures\LabMeeting7_2_2020',1); close all
+
+
+%% Plot the average trajectory
+fp = fig_params;
+col = distinguishable_colors(14);
+figure; hold on;
+for i = 1:numel(data_pc)         
+    pc_space = coef(:, 1:num_pcs)'*nanmean(data_pc{i}(:,:,:),3);    
+      
+%     pc_space_avg = movmean(pc_space_avg,10,2);
+
+    a = linspace(75,255,size(pc_space,2));
+    N = size(pc_space,2);      
+    cdmap = uint8([repmat(col(i,:),size(pc_space,2),1)*255,a'])';
+    
+    if num_pcs ==3 
+        p = plot3(pc_space(1,:),pc_space(2,:),pc_space(3,:),'linewidth',5);
+    else
+        p = plot(pc_space(1,:),pc_space(2,:),'linewidth',5);    
+    end
+    p.Color =[col(i,:),0.95]; drawnow;    
+    set(p.Edge, 'ColorBinding','interpolated', 'ColorData',cdmap); drawnow;
+    
+end
+xlabel('PC1'); ylabel('PC2'); zlabel('PC3')
+legend(labels{:});
+grid on
+fp.FormatAxes(gca);
+handles = get(groot, 'Children');
+fp.SaveFigs(handles,'-svg','PC Trajectory','Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\Figures\LabMeeting7_2_2020',1); close all
+
+
+% Simply plot an ANOVA comparing the average neuron activity at the center
+cf = size(fr,2)/size(H,2);
+data = cell(1,numel(Onset_times));
+for i = 1:numel(Onset_times)
+   temp = Onset_times{i};
+   dur = floor(1*cf);
+   snippet = NaN(size(fr,1),numel(Onset_times));
+   for j = 1:numel(temp)
+       try %avoid the end
+          start = floor(temp(j)*cf-(0.5*cf));
+          snippet(:,j) = nanmean(fr(:,start:start+dur-1),2); 
+       catch
+       end
+   end
+   data{i} = snippet;
+end
+data = cellfun(@(x) x(:,~isnan(sum(x))),data,'UniformOutput',0);
+grp = cell(1,numel(data));
+for i =1:numel(data)    
+    grp{i} = ones(1,size(data{i},2))*str2num(labels{i});
+end
+grp = cat(2,grp{:});
+temp = cat(2,data{:});
+
+%Loop through the neurons 
+figure('position',[28         558        1808         420]); hold on;
+for i = 1:size(temp,1)
+   p = anovan(temp(i,:)',{grp},'display','off');
+   subplot(1,7,i); hold on; 
+   boxplot(temp(i,:)',grp,'OutlierSize',0.1,'PlotStyle','compact')    
+   title(sprintf('Neuron %d\np = %0.2g',i,p),'fontsize',14,'fontweight','normal');
+   ylim([-2,4])
+   fp.FormatAxes(gca);
+end
+
+handles = get(groot, 'Children');
+fp.SaveFigs(handles,'-svg','FR_BoxPlotAnova','Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\Figures\LabMeeting7_2_2020',1); close all
+
+%% Now do the same thing for the power spectrums
+%Get the one second of LFP for one channel after a given motif
+for chan = [4,10,26,30]
+%     chan = 4;
+lfp = load('Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\Preprocessed\Rec_Mouse501_112119\lfp.mat');
+lfp = lfp.lfp(:,chan)';
+cam = load('Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\Preprocessed\Rec_Mouse501_112119\camera_signal.mat');
+params = processing_params;
+params.morlet_width = 5; %increase
+params.mortlet_timepadding = 3;
+params.morlet_fq = 2.^[1.5:0.1:6];
+lfp_trim = AllignEphysToImaging(lfp,cam.camera_signal,[1,size(H,2)*2]);
+lfp_wavelet = abs((MorletTransform(lfp_trim',params))').^2;
+
+
+%not split into onset times
+conversionfactor = size(lfp_trim,2)/size(H,2);
+snippet = cell(max(cellfun(@(x) numel(x),Onset_times)),numel(Onset_times));
+sample_freq = 1000;
+L = 999;
+for M =1:numel(Onset_times)
+    M
+    for i = 1:max(cellfun(@(x) numel(x),Onset_times))
+        try %runs into issues if near end
+            frames = floor(Onset_times{M}(i)*conversionfactor);
+            snippet{i,M} = lfp_wavelet(:,frames-L:frames+L+1);
+
+            lfp_temp = lfp_trim(1,frames-L:frames+L+1);
+            N = length(lfp_temp);
+            xdft = pmtm(lfp_temp); %pmtm used to be fft
+            xdft = xdft(1:N/2+1);
+            psdx = (1/(sample_freq*N)) * abs(xdft).^2;
+            psdx(2:end-1) = 2*psdx(2:end-1);
+            freq = 0:sample_freq/length(lfp_temp):sample_freq/2;
+            pwr{i,M} = psdx';
+        catch
+            snippet{i,M} = NaN(46,L*2+2);
+            pwr{i,M} = NaN(1,L+2);
+        end
+    end
+end
+
+avg_trace = {};
+avg_freq = {};
+for i = 1:numel(Onset_times)    
+    avg_trace{i} = nanmean(cat(3,snippet{:,i}),3);
+    avg_freq{i} = nanmean(cat(3,pwr{:,i}),3);
+end
+avg_trace = nanmean(cat(3,avg_trace{:}),3);
+avg_freq = nanmean(cat(3,avg_freq{:}),3);
+
+
+val = [-1, 1];
+val2 = [0.33, 3];
+for M = 1:numel(Onset_times)
+    temp = nanmean(cat(3,snippet{:,M}),3).*params.morlet_fq';
+%     temp = nanmean(cat(3,snippet{:,M}),3);
+    
+    %visualize average lfp for motif 1
+    figure('position',[259 558 1278 420]) ; hold on;  
+    subplot(1,2,1); axis square;
+    sgtitle(sprintf('motif %s',labels{M}));
+%     imagesc(log(temp),val); c=colorbar;
+    imagesc(temp); c=colorbar;
+    set(gca,'YDir','normal')
+    ylabel(c,' power')
+    ylim([0.5,numel(params.morlet_fq)+0.5]);
+    xlim([0,size(temp,2)]);
+    set(gca,'ytick',1:5:numel(params.morlet_fq),'yticklabel',round(params.morlet_fq(1:5:end),2))
+    set(gca,'xtick',0:500:L*2+2,'xticklabel',0-(L+1):500:L+1);
+    ylabel('frequency (Hz)');
+    xlabel('time (ms)')
+    axis square;
+
+    colormap magma        
+    %frequency spectrum
+    temp = cellfun(@(x) smooth(x,5),pwr(:,M),'UniformOutput',0);
+    temp_avg = nanmean(cat(3,temp{:}),3).*freq';
+    temp_sem = nanstd(cat(3,temp{:}),[],3)/sqrt(numel(temp)).*freq';    
+    subplot(1,2,2); axis square; hold on;    
+    shadedErrorBar(freq,temp_avg,temp_sem,'lineprops',{'r','markerfacecolor','r'});
+    plot(freq,temp_avg,'color',[0.75 0 0],'linewidth',2);
+%     ylim(val2)
+    xlim([0 75])
+    grid on
+    xlabel('Frequency (Hz)')
+    ylabel('Power (dB)')
+    axis square;
+    drawnow
+ 
+end
+fp = fig_params;
+
+figure('position',[680   770   560   208]); hold on; 
+plot(lfp_temp,'linewidth',2,'color','k')
+xlabel('time (ms)');
+ylabel('Amplitude (V)');
+fp.FormatAxes(gca);
+handles = get(groot, 'Children');
+fp.SaveFigs(handles,'-svg',sprintf('chan%doscillation_newnormalization',chan),'Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\Figures\LabMeeting7_2_2020',1); close all
+
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%% Plot the average fr during the peak
+%compare with firing rates
+temp  = load('firing_rate.mat','firing_rate_smooth');
+fr = temp.firing_rate_smooth;
+fr = zscore(fr,0,2); %zscore
+[coef, score, latent, ~, explained, mu] = pca(fr');
+score = score';
+cf = size(fr,2)/size(H,2);
+data = cell(1,numel(Onset_times));
+data_pc = cell(1,numel(Onset_times));
+for i = 1:numel(Onset_times)
+   temp = Onset_times{i};
+   dur = floor(1*cf);
+   snippet = NaN(size(fr,1),numel(Onset_times));
+   snippet_pc = NaN(size(score,1),numel(Onset_times));
+   for j = 1:numel(temp)
+       try %avoid the end
+          start = floor(temp(j)*cf-(15*cf));
+          snippet(:,j) = nanmean(fr(:,start:start+dur-1),2); 
+          snippet_pc(:,j) = nanmean(score(:,start:start+dur-1),2); 
+       catch
+       end
+   end
+   data{i} = snippet;
+   data_pc{i} = snippet_pc;
+end
+
+%remove empty 
+num_pcs = 2;
+data_pc = cellfun(@(x) x(:,~isnan(sum(x))),data_pc,'UniformOutput',0);
+data = cellfun(@(x) x(:,~isnan(sum(x))),data,'UniformOutput',0);
+grp = cell(1,numel(data));
+for i =1:numel(data)    
+    grp{i} = ones(1,size(data_pc{i},2))*i;
+end
+grp = cat(2,grp{:});
+temp = cat(2,data{:});
+[Y,loss] = tsne(temp');
+
+
+pc = coef'*temp; 
+
+gscatter(pc(1,:),pc(2,:),grp)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%
 
 %Get the one second of LFP for one channel after a given motif
 lfp = load('Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\Preprocessed\Rec_Mouse501_112119\lfp.mat');
@@ -195,6 +568,7 @@ cam = load('Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynami
 chan = [10,12,14,2,8,4,4];
 shank = [1,1,2,2,1,2,1];
 firing_rate_smooth = [];
+firing_rate_all = [];
 for i = 1:size(chan,2)%compile known good channels
     fprintf('\n working on %d',i);
     raw = TDTbin2mat('Z:\Rodent Data\Wide Field Microscopy\ParietalCortex_Ephys_Widefield\Mouse501_11_21_2019\Rec_Mouse501_112119\Block-1\','STORE',['RAW',num2str(shank(i))],'CHANNEL',chan(i));
@@ -219,8 +593,9 @@ for i = 1:size(chan,2)%compile known good channels
     end
     firing_rate(isnan(firing_rate))=0;
     firing_rate_smooth(i,:) = smooth(firing_rate,100);
+    firing_rate_all(i,:) = firing_rate;
 end
-save('firing_rate.mat','firing_rate_smooth','chan','shank','-v7.3')
+save('firing_rate.mat','firing_rate_smooth','firing_rate_all','chan','shank','-v7.3')
 
 
 % firing_rate_smooth = movmean(firing_rate_smooth,100,2);
