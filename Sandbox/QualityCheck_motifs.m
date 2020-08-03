@@ -24,7 +24,8 @@ for i = 1:size(temp,2)
    motif = squeeze(temp(:,i,:));
    motif = reshape(motif,[68,68,size(temp,3)]);
    for j = 1:size(temp,3)
-      imagesc(motif(:,:,j),[0 0.5]); colorbar     
+      imagesc(motif(:,:,j),[0 0.4]); colorbar     
+      colormap magma
       axis equal; axis off
       title(sprintf('motif %d, frame %d',i,j),'fontsize',12,'fontweight','normal');
       pause();
@@ -35,7 +36,8 @@ W_basis = W;
 temp = NaN(numel(nanpxs)+size(W_basis,1),size(W_basis,2),size(W_basis,3)); 
 goodpxl = 1:size(temp,1);
 temp(~ismember(goodpxl,nanpxs),:,:)=W_basis;
-
+% 
+% temp = W_basis;
 figure; 
 active = find(nanmean(squeeze(nanmean(W_basis,3)),1)>0);
 for i = active
@@ -85,15 +87,16 @@ end
 
 %%
 figure;
+temp = clip; 
 % temp = data_norm;
 % temp = conditionDffMat(data_norm,nanpxs,[],[68,38,z]);
 % temp = dff_frac;
 % vals = [prctile(temp(:),2.5),prctile(temp(:),97.5)];
 % temp = dff;
-for j = 7000:size(temp,3)
+for j = 1:size(temp,3)
   imagesc(temp(:,:,j),[0,0.5]);      
   axis equal; axis off
   colormap magma
-  title(sprintf('motif %d, frame %d',i,j),'fontsize',12,'fontweight','normal');
+  title(sprintf('frame %d',j),'fontsize',12,'fontweight','normal');
   pause(0.001);
 end      
