@@ -13,7 +13,8 @@
 %Future addition: Remove recordings flagged with artifacts
 
 %% Manual steps
-save_dir_preprocessed = 'Z:\Projects\Cortical Dynamics\Control Experiments\PreprocessedData\'; %Final target save directory for the preprocesssed and combined files
+save_dir_preprocessed = 'Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\Widefield_Preprocessed\'; %Final target save directory for the preprocesssed and combined files
+save_dir_preprocessed = 'Z:\Projects\Cortical Dynamics\Parietal Cortex and Cortex Wide Dynamics\Widefield_Preprocessed\'; %Final target save directory for the preprocesssed and combined files
 if ~exist(save_dir_preprocessed)
     mkdir(save_dir_preprocessed);
 end
@@ -37,7 +38,7 @@ s_conn = ssh2_config('spock.princeton.edu',username,password);
 [file_list_first_block,folder_list_raw] = GrabFiles('Pos0.ome.tif');
 
 %configure preprocessing options
-opts = ConfigurePreProcessing('crop_w',540,'vasc_std',2,'save_uncorrected',0);
+opts = ConfigurePreProcessing('crop_w',300,'vasc_std',2,'save_uncorrected',0);
 %load general params (this is for anything after preprocessing)
 gp = general_params;
 
@@ -78,7 +79,7 @@ end
 file_list_preprocessed = cell(1,numel(folder_list_raw));
 for cur_fold = 1:numel(folder_list_raw)
     [file_list_raw,~] = GrabFiles('.tif',0,folder_list_raw(cur_fold));
-    [opts_list,~] = GrabFiles('prepro_log.m',0,folder_list_raw(cur_fold)); 
+    [opts_list,~] = GrabFiles('prepro_log.mat',0,folder_list_raw(cur_fold)); 
     
     %Create spock bash script for each file and run it
     job_id = cell(1,numel(file_list_raw));
@@ -86,7 +87,7 @@ for cur_fold = 1:numel(folder_list_raw)
     for cur_file = 1:numel(file_list_raw)
         input_val = {ConvertToBucketPath(file_list_raw{cur_file}), ConvertToBucketPath(opts_list{1})};
         script_name = WriteBashScript(sprintf('%d_%d',cur_fold,cur_file),'Spock_Preprocessing_Pipeline',input_val,input_type,...
-            'sbatch_time',15,'sbatch_memory',8);
+            'sbatch_time',15,'sbatch_memory',10);
         
         %Run job
         response = ssh2_command(s_conn,...

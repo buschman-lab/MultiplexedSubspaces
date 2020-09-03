@@ -17,8 +17,8 @@ temp = load(fn,'data_train','data_test','nanpxs');
 nanpxs = temp.nanpxs; %store to save off for easier access later
 
 if ~isempty(chunk)
-    data_train = squeeze(temp.data_train(:,chunk,:));
-    data_test = squeeze(temp.data_test(:,chunk,:));
+    data_train = squeeze(temp.data_train(:,:,chunk));
+    data_test = squeeze(temp.data_test(:,:,chunk));
 else
     data_train = temp.data_train;
     data_test = temp.data_test;

@@ -11,12 +11,12 @@ classdef general_params
         %dynamic script options
         sbatch_time = 59;
         sbatch_exclude = 'redshirt-n[12-49]';
-        sbatch_memory = 24;
+        sbatch_memory = 12;
         sbatch_matlabversion = 'R2018a';
         sbatch_path = "/jukebox/buschman/Rodent Data/Wide Field Microscopy/Widefield_Imaging_Analysis/Spock/";
         sbatch_name = [];               
         stack_suffix = '.ome_stack.mat' %the suffix used to take individual dff and ID for combining e.g. '_dff.mat' for corrected recs and '_dff_uncorrected.mat' for uncorrected recs
-        delete_singlefiles = 0; %flag to delete individual recording sections after done concatenating
+        delete_singlefiles = 1; %flag to delete individual recording sections after done concatenating
         
         %widefield post-processing parameters     
         denoise_powerfrac = 0.5;
@@ -72,8 +72,8 @@ classdef general_params
         d_kernel = 50;
         
         %miscellaneous additions
-        pixel_dim = [68,68];        
-        originaldimensions = [68,68];        
+        pixel_dim = [68,38];        
+        originaldimensions = [68,38];        
         verbose = 1;       
         smt_kernel = []; %default is [1,1]       
         

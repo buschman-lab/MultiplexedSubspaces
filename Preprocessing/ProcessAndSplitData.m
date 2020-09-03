@@ -48,6 +48,7 @@ switch gp.w_deconvolution
         fprintf('\n\tPerforming a Lucy-Goosey Deconvolution (Lucy-Richardson)\n')
         for px = 1:size(data,2)
            data(:,px) = lucric(data(:,px),gp.d_gamma,gp.d_smooth,gp.d_kernel);
+%             data(:,px) = lucyrichardson(data(:,px),gp.fps,gp.d_rise,gp.d_decay,gp.d_smooth_kernel);
         end
     case 'only_filter'
         fprintf('\n\tFiltering data')

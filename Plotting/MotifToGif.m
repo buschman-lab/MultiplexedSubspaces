@@ -14,7 +14,7 @@ switch opts.type
         for i = 1:size(W,3)
             cla
             imagesc(W(:,:,i),[0 prctile(W(:),opts.limit)]);
-            colormap magma
+            colormap magma; axis equal;
             im{i} = frame2im(getframe(gcf));            
         end
     case 'fancy'

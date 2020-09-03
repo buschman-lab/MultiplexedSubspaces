@@ -25,7 +25,7 @@ for cur_img_ind = 1:img_count
     
     %Chatty 
     if opts.verbose
-        if mod(cur_img_ind,round(0.02*img_count)) ==0
+        if mod(cur_img_ind,round(0.01*img_count)) ==0
             fprintf('\t%g%% Complete\n', round(cur_img_ind./img_count*100,2));
         end
     end
