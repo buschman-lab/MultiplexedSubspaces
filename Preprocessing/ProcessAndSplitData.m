@@ -1,4 +1,4 @@
-function [data_norm, nanpxs, data_train, data_test] = ProcessAndSplitData(fn,save_fn,gp)
+function [data_norm, nanpxs, data_train, data_test] = ProcessAndSplitData(fn,save_fn,parameter_class)
 %Camden MacDowell - timeless
 %filters, normalizes, and splits data in fn into training and test test
 %fn can be the full file path or a stack and opt structure. 
@@ -7,10 +7,9 @@ if ~ispc
     addpath(genpath('/jukebox/buschman/Rodent Data/Wide Field Microscopy/fpCNMF/'));
 end
 
-if nargin <3
-    gp = general_params;
-end
+gp = loadobj(feval(parameter_class)); 
 
+%% SUPER UGLY CONTIGENCIES DUE TO LEGACY DATA
 if ischar(fn) %load data
     warning('Camden you may want to check how things are transposed')
     fprintf('\n\tLoading data')
@@ -26,6 +25,7 @@ else
     data = fn;
     opts = gp;
 end
+%%
 
 %condition data and remove nan pxls
 [x,y,z] = size(data);   

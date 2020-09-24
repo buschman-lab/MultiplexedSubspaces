@@ -1,4 +1,4 @@
-function FitMotifs_Spock(fn,save_fn,chunk)
+function FitMotifs_Spock(fn,save_fn,chunk,parameter_class)
 %Camden MacDowell - timeless
 %Spock shell for calling the FitMotifs function and saving off the results.
 
@@ -12,7 +12,7 @@ if ~ispc
 end
 
 %load the training and test data
-gp = general_params;
+gp = loadobj(feval(parameter_class)); 
 temp = load(fn,'data_train','data_test','nanpxs');
 nanpxs = temp.nanpxs; %store to save off for easier access later
 

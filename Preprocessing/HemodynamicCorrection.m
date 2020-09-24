@@ -23,14 +23,22 @@ function [dff, dff_b, dff_v] = HemodynamicCorrection(stack, opts)
     stack_b(masked_pxls)=NaN;
     stack_v(masked_pxls)=NaN;
     
+    %there are large transients in both signals for the first 10 seconds of the recording, likely due to LED warm up (should add 'burn in' frames in the future); 
+    %this can effects downstream results so replace the first 10 seconds of both with the average of the first minute; You should remove these at the end of analysis (after timelocking to behavior/ephys)
+    stack_b(:,:,1:5*opts.fps) = repmat(nanmean(stack_b(:,:,1:30*opts.fps),3),1,1,5*opts.fps);
+    stack_v(:,:,1:5*opts.fps) = repmat(nanmean(stack_v(:,:,1:30*opts.fps),3),1,1,5*opts.fps);    
+    
     %pixelwise hemodynamic correction   
     [nX,nY,nZ] = size(stack_b);
     [stack_b, bad_col] = conditionDffMat(stack_b);
     [stack_v, ~] = conditionDffMat(stack_v);
     stack_v_corrected = NaN(size(stack_v));
-    for i = 1:size(stack_v_corrected,2)       
+    for i = 1:size(stack_v_corrected,2)  
+        temp = stack_v(:,i);
+%         temp(1:5*opts.fps)=nanmean(temp(1:60*opts.fps));
+                        
         %smooth with ~450ms gaussian
-        temp = smoothdata(stack_v(:,i),'gaussian',floor(opts.fps/2)); %opts.fps is per wavelength (if multiplexed)
+        temp = smoothdata(temp,'gaussian',floor(opts.fps/2)); %opts.fps is per wavelength (if multiplexed) 
         %least square linear regression to find scaling factor and intercept        
         coef = polyfit(temp,stack_b(:,i),1); 
         correction = @(x) coef(1)*x+coef(2);

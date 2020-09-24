@@ -14,9 +14,9 @@ W = cellfun(@(x) x.w, temp,'UniformOutput',0);
 nanpxs = cellfun(@(x) x.nanpxs, temp,'UniformOutput',0);
 gp=general_params; 
 fprintf('\n\t Generating Basis Motifs');
-[W_basis, kval, ovr_q, cluster_idx, idx_knn, tcorr_mat, handles] = ClusterW(W,gp,nanpxs{1});
+[W_basis, kval, ovr_q, cluster_idx, idx_knn, tcorr_mat, handles, lag_mat, lags, nanpxs] = ClusterW(W,gp,nanpxs{1});
 
-save([save_dir, filesep, file_name, '_basis_motifs.mat'],'W_basis', 'kval', 'ovr_q', 'cluster_idx', 'idx_knn', 'tcorr_mat','gp','-v7.3')
+save([save_dir, filesep, file_name, '_basis_motifs.mat'],'W_basis', 'kval', 'ovr_q', 'cluster_idx', 'idx_knn', 'tcorr_mat','lag_mat','lags','nanpxs','gp','-v7.3')
 saveCurFigs(handles,'-dpng',[file_name '_ClusteringMotifs'],save_dir,0); close all;
 
 fprintf('\n\t Done Saving Basis Motifs - Saved');

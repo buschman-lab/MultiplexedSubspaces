@@ -45,10 +45,10 @@ if exist('TIFFStack','class')==8
 
 %%%%LEGECY%%%%%
 
-else %LEGECY CODE: If not @TIFFStack Object oriented module
+else %LEGaCY CODE: If not @TIFFStack Object oriented module
     %Surpress warning regarding tag structure of tiff. 
     warning ('on','all');
-    warning('Using Legecy Code To Load Data (omg... so sloooow)')
+    warning('Using Legacy Code To Load Data (omg... so sloooow)')
     warning ('off','all');
     in_tiff = Tiff(in_fn, 'r');
 

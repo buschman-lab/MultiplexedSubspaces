@@ -1,9 +1,9 @@
-function Spock_CombineStacks(folder_path,save_fn)
+function Spock_CombineStacks(folder_path,save_fn,parameter_class)
     if ~ispc
         addpath(genpath('/jukebox/buschman/Rodent Data/Wide Field Microscopy/Widefield_Imaging_Analysis/'));
     end
     try
-        [stack, opts] = CombineStacks(folder_path);       
+        [stack, opts] = CombineStacks(folder_path,parameter_class);       
         %perform hemodynamic correction and make dff
         if numel(unique(opts.wavelength_pattern))>1 %if multiple wavelengths used
            [dff, dff_b, ~] = HemodynamicCorrection(stack, opts); 

@@ -1,6 +1,6 @@
-function [stack, opts] = CombineStacks(folder_path)
+function [stack, opts] = CombineStacks(folder_path,parameter_class)
 %use default gp.stack_suffix specified in general_params
-gp = general_params; 
+gp = loadobj(feval(parameter_class));
 [file_list,~] = GrabFiles(gp.stack_suffix,0,{folder_path});
 num_files = numel(file_list); 
 
