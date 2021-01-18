@@ -68,7 +68,7 @@ for cur_F = 1:size(data,2)
     cur_data = reshape(cur_data,nX,nY,size(cur_data,2));
     if ~isempty(opts.kernel)
         for i = 1:size(cur_data,3)
-            cur_data(:,:,i) =  imgaussfilt(cur_data(:,:,i),opts.kernel,'filterdomain','spatial');
+            cur_data(:,:,i) =  imgaussfilt(cur_data(:,:,i),opts.kernel,'filterdomain','spatial','FilterSize',5);
         end
     end
     cur_data(:,:,end+1) = zeros(nX,nY);

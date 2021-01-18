@@ -33,5 +33,8 @@ for i = 1:size(y,2)
     r_smoothed = smooth(r_long,smt,'moving');
     r_final(:,i) = r_smoothed(floor(smt/2)+1:end-floor(smt/2));
 end
+
+
 end
 
+      

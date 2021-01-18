@@ -1,5 +1,5 @@
 function opts = ConfigurePreProcessing(varargin)
-opts.fixed_image = 'mean'; %image to use as reference. first, middle, mean, variance, max
+opts.fixed_image = 'first'; %image to use as reference. first, middle, mean, variance, max
 opts.crop_h = 540; %height of croped image in pixels. 
 opts.crop_w = 540; %width of cropped image in pixels.
 opts.x_bregma_margin = 280;  %For outlininign brain: Number of pixels to anterior to bregma (default = 280)
@@ -14,6 +14,7 @@ opts.mask_brain_outline_dir = [fileparts(which('ConfigurePreProcessing.m')) file
 opts.save_uncorrected = 0; %save the uncorrected stacks? 
 opts.spatial_bin_factor = 8;
 opts.method = 'movingavg'; %'movingavg','mean','median','mode'
+opts.method_window = 30; %moving window duration (in s)
 opts.fps = 15; %the frame rate of each wavelength (integer)
 opts.wavelength_pattern = [1,2]; %excitation wavelength sequence used
 opts.correction_wavelength = 2; %wavelength to be used for correction

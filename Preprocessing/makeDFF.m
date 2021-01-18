@@ -1,7 +1,7 @@
 function [dff,avgproj] = makeDFF(stack, opts, type, w)
 %This function takes the imput raw stack and makes a dff along the third dimension. 
 if nargin <3; type = 'dff'; end
-if nargin <4; w = opts.fps*30; end
+if nargin <4; w = opts.fps*opts.method_window; end
 
 %Choose type of averaging
 if strcmp(opts.method,'mean')

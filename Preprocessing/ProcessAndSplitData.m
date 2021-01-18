@@ -48,7 +48,6 @@ switch gp.w_deconvolution
         fprintf('\n\tPerforming a Lucy-Goosey Deconvolution (Lucy-Richardson)\n')
         for px = 1:size(data,2)
            data(:,px) = lucric(data(:,px),gp.d_gamma,gp.d_smooth,gp.d_kernel);
-%             data(:,px) = lucyrichardson(data(:,px),gp.fps,gp.d_rise,gp.d_decay,gp.d_smooth_kernel);
         end
     case 'only_filter'
         fprintf('\n\tFiltering data')
@@ -96,7 +95,7 @@ end
 data_trim = data_norm(:,1:end-mod(z,num_chunks*(gp.w_chunk_dur*opts.fps)));
 
 data_chunked = cell(1,num_chunks);
-for i = 1:num_chunks %don't use reshape here, it gets wacky
+for i = 1:num_chunks 
     data_chunked{i} = data_trim(:,1+(i-1)*(gp.w_chunk_dur*opts.fps):(i*(gp.w_chunk_dur*opts.fps)));
 end
 

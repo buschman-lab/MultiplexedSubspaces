@@ -33,10 +33,10 @@ addpath(genpath('Z:\Rodent Data\Wide Field Microscopy\fpCNMF'));
 addpath(genpath('Z:\Rodent Data\Wide Field Microscopy\Widefield_Imaging_Analysis'));
 
 %configure preprocessing options
-opts = ConfigurePreProcessing('crop_w',540,'vasc_std',2,'save_uncorrected',0);
+opts = ConfigurePreProcessing('crop_w',540,'vasc_std',2,'save_uncorrected',1,'fixed_image','first','spatial_bin_factor',4,'method_window',15);
 
 %load general params (this is for anything after preprocessing)
-parameter_class = 'general_params_example';
+parameter_class = 'general_params_asdmodels';
 gp = loadobj(feval(parameter_class)); %this is not needed here, but demonstrates how I load this class in other functions by just passing the string. 
 
 %set up save directories
@@ -50,7 +50,7 @@ end
 
 %select folders to process and grab the first file from each rec.
 %EXAMPLE DATA: Select 'folders' and then select 'Z:\Rodent Data\WideField Microscopy\ExampleData\Mouse431_10_17_2019\431-10-17-2019_1'
-[file_list_first_stack,folder_list_raw] = GrabFiles('Pos0.ome.tif');
+[file_list_first_stack,folder_list_raw] = GrabFiles('Pos0.ome.tif',1,{'Z:\Rodent Data\Wide Field Microscopy\ASD Models_Widefield'});
 
 %Grab reference images for each. Preload so no delay between loop.
 ref_imgs = cellfun(@(x) GetReferenceImage(x,opts.fixed_image),...
@@ -74,7 +74,7 @@ for cur_fold = 1:numel(folder_list_raw)
         %Register Reference Images to the first reference image try to do it automatedly, but backs up with manual allignment if necessary        
         prepro_log = RegisterReferenceImages(ref_imgs{1},ref_imgs{cur_fold},prepro_log);               
         [~,fn] = fileparts(folder_list_raw{cur_fold});
-%         saveCurFigs(gcf,'-dpng',sprintf('registration_%s',fn),save_dir_figs,0); %close all;       
+        saveCurFigs(gcf,'-dpng',sprintf('registration_%s',fn),save_dir_processed,0); %close all;       
         close all;
     end
     %save off the options to each folder
@@ -94,7 +94,7 @@ for cur_fold = 1:numel(folder_list_raw)
     for cur_file = 1:numel(file_list_raw)
         input_val = {ConvertToBucketPath(file_list_raw{cur_file}), ConvertToBucketPath(opts_list{1})};
         script_name = WriteBashScript(sprintf('%d_%d',cur_fold,cur_file),'Spock_Preprocessing_Pipeline',input_val,{"'%s'","'%s'"},...
-            'sbatch_time',15,'sbatch_memory',8);  %
+            'sbatch_time',60,'sbatch_memory',16);  %
         
         %Run job
         response = ssh2_command(s_conn,...
@@ -111,12 +111,18 @@ for cur_fold = 1:numel(folder_list_raw)
     %Once each folder is done, combine all the stacks and do hemocorrection
     [~,header] = fileparts(ConvertToBucketPath(folder_list_raw{cur_fold}));
     file_list_preprocessed{cur_fold} = [save_dir_processed header 'dff_combined.mat']; 
-    script_name = WriteBashScript(sprintf('%d_combine',cur_fold),'Spock_CombineStacks',{ConvertToBucketPath(folder_list_raw{cur_fold}),ConvertToBucketPath(file_list_preprocessed{cur_fold}),parameter_class},{"'%s'","'%s'","'%s'"});    
+    script_name = WriteBashScript(sprintf('%d_combine',cur_fold),'Spock_CombineStacks',{ConvertToBucketPath(folder_list_raw{cur_fold}),ConvertToBucketPath(file_list_preprocessed{cur_fold}),parameter_class},{"'%s'","'%s'","'%s'"},...
+        'sbatch_time',300,'sbatch_memory',128);    
     
     % Run job with dependency
     response = ssh2_command(s_conn,...
         ['cd /jukebox/buschman/Rodent\ Data/Wide\ Field\ Microscopy/Widefield_Imaging_Analysis/Spock/DynamicScripts/ ;',... %cd to directory
-        sprintf('sbatch --dependency=afterok:%s %s',[job_id{:}],script_name)]);    
+        sprintf('sbatch --dependency=afterok:%s %s',[job_id{:}],script_name)]); 
+    
+%     % Run job with no dependency
+%     response = ssh2_command(s_conn,...
+%         ['cd /jukebox/buschman/Rodent\ Data/Wide\ Field\ Microscopy/Widefield_Imaging_Analysis/Spock/DynamicScripts/ ;',... %cd to directory
+%         sprintf('sbatch %s',script_name)]); 
 end
 
 %if you want to see what the preprocessed data looks like then run
@@ -124,7 +130,7 @@ end
 
 %% Deconvolution, chunking, and Motif Fitting. Results in cross validated motifs in the MotifFits folder and Deconvolved and chunked data in the Preprocessed
 %if you need to restart from this point: 
-% [file_list_preprocessed,~] = GrabFiles('*.mat'); %select the preprocessed data (not the '_processed');
+% [file_list_preprocessed,~] = GrabFiles('\w*combined.mat'); %select the preprocessed data (not the '_processed');
 
 % NEED TO WAIT FOR ABOVE TO COMPLETE
 job_id = cell(1,numel(file_list_preprocessed));
@@ -162,11 +168,8 @@ end
 
 %% Refit the motifs built from all the animals to the data
 job_id = [];
-motif_save_dir = 'Z:\Rodent Data\Wide Field Microscopy\ControlExperiments_WidefieldData\MotifFits';
-[file_list_processed,~] = GrabFiles('*.mat'); %select the deconvolved data
 % Spock_RefitBasisMotifs_Swarm(file_list_processed,'Z:\Rodent Data\Wide Field Microscopy\ExampleData\',job_id,s_conn,parameter_class);
-Spock_RefitBasisMotifs_Swarm(file_list_processed,'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\VPA_Mesomapping\FitMotifs_deconvolution\ALL',...
-    job_id,s_conn,parameter_class,motif_save_dir);
+Spock_RefitBasisMotifs_Swarm(file_list_processed,'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\VPA_Mesomapping\FitMotifs_deconvolution\ALL',job_id,s_conn,parameter_class);
 
 
 %%

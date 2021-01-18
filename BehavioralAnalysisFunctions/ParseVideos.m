@@ -1,4 +1,4 @@
-function [data_mean, data, roi] = ParseVideos(in_fn,bp,index,roi)
+function [data_mean, data, roi] = ParseVideos(in_fn,roi_names,index,roi)
 if nargin <3; index = []; end
 if nargin <4; roi = []; end
     
@@ -20,7 +20,7 @@ ref_img = read(vid,floor(img_count/2));
 
 %select the rois. 
 if isempty(roi)
-    roi = cellfun(@(x) SelectROI(ref_img,x), bp.roi_names{camera_idx},'UniformOutput',0);
+    roi = cellfun(@(x) SelectROI(ref_img,x), roi_names{camera_idx},'UniformOutput',0);
 end
     
 %show all rois

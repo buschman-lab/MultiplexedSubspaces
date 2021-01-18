@@ -56,16 +56,23 @@ W(bad_pxl,:,:) = [];
 stats_refit = CNMF_Stats(w,H,data_train,0);
 stats_refit.smoothingkernel = gp.smt_kernel;
 
+%get residuals
+residuals = data_train-tensor_convolve(w,H);
+
 %save off
-save([basis_dir filesep name 'train.mat'],'w','H','stats_refit','bad_pxl');
+save([save_dir filesep name 'train.mat'],'w','H','stats_refit','bad_pxl','residuals');
 
 [w,H] = fpCNMF(data_test,'non_penalized_iter',...
     gp.non_penalized_iter,'penalized_iter',gp.penalized_iter_refit,...
     'speed','fast','verbose',0,'lambda',0,'w_update_iter',0,...
     'ortho_H',gp.ortho_H,'W',W,'sparse_H',0);
 stats_refit = CNMF_Stats(w,H,data_test,0);
+stats_refit.smoothingkernel = gp.smt_kernel;
 
-save([basis_dir filesep name 'test.mat'],'w','H','stats_refit','bad_pxl');
+%get residuals
+residuals = data_test-tensor_convolve(w,H);
+
+save([save_dir filesep name 'test.mat'],'w','H','stats_refit','bad_pxl','residuals');
 
 
 %save off
