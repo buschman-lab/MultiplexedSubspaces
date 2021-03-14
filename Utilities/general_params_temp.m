@@ -1,4 +1,4 @@
-classdef general_params_asdmodels  
+classdef general_params_temp
     properties
         %Path Options
         local_bucket = 'Z:\';
@@ -27,7 +27,7 @@ classdef general_params_asdmodels
         w_filter_freq = [0.1 4]; %frequency range to filter widefield data if using no deconvolution
         w_filter_type = 'lowpass'; 
         w_normalization_method = 'full'; %pixelwise, full, or bounded
-        w_norm_val = 100; %either the precentile or the value (if bounded) to normalize to
+        w_norm_val = 98; %either the precentile or the value (if bounded) to normalize to
         w_chunk_dur = 120 %duration of training/testing chunks for fitting seqNMF in seconds
         w_approx_chunk_num = round(48000/(120*13)/2); %(total duration/w_chunk_dur*fps)/2 (for test and train split) This is used in pipeline to parallelize motifs fittings spock jobs without knowing the exact chunk number used. Unused will just fail as spock jobs.         
         w_pca_denoise = 1; %boolean

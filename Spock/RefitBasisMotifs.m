@@ -1,4 +1,4 @@
-function RefitBasisMotifs(fn, basis_dir,chunk,parameter_class)
+function RefitBasisMotifs(fn, basis_dir,chunk,parameter_class,save_dir)
 
 %Add paths
 if ispc
