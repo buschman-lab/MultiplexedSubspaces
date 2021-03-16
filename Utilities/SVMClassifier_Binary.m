@@ -39,7 +39,8 @@ function [features, Observed, Shuffled, TrainAUC] = SVMClassifier_Binary(Data,cv
 opts.verbose = 1;  %how chatty should we be? 
 opts.holdout = 0.25; %fraction hold out data for validation
 opts.nshuf = 1000; %Number of shuffles for shuffle test
-opts.featureselect  = 'anova'; %Options: 'none', 'anova': 
+opts.featureselect  = 'none'; %Options: 'none', 'anova': 
+opts.features = [];
 opts.numberfeatures = 100; %Number of features to select
 opts.pca = 0;  %First perform dimensionality reduction. Uses #PCs to explain 99% of variance. 
 opts.solver = 1; %SVM solver to use: 1=SMO,2=ISDA,3=L1QP
@@ -93,10 +94,12 @@ end
 
 %Optional feature selection on training data; 
 [features] = FeatureSelection(trainingPredictors,trainingResponse,opts.featureselect,opts.numberfeatures,opts.verbose);
-trainingPredictors(:,~features)=[];
-trainingResponse(~features) = [];
-validationPredictors(:,~features)=[];
-validationResponse(~features) = [];
+if ~isempty(opts.features)
+    fprintf('\n\n\t!!!! using given input features - overwriting any feature selection !!!!!!\n\n');
+    features = opts.features;
+end
+trainingPredictors(:,~ismember(1:size(trainingPredictors,2),features))=[];
+validationPredictors(:,~ismember(1:size(validationPredictors,2),features))=[];
 
 % Optionally tune classifier hyperparameters using cross validation: Only use the training data for this.
 if opts.optimize %slow
@@ -132,22 +135,24 @@ end
 
 % Compute validation predictions
 [validationPredictions, validationScores] = validationPredictFcn(validationPredictors);
-Outstats = [];
-for i = 1:numel(unique(response))
-    [Outstats(i).X,Outstats(i).Y,Outstats(i).T,Outstats(i).AUC,~,~] = perfcurve(validationResponse,validationScores(:,i),i);
-end
-
 % Compute validation accuracy
 correctPredictions = (validationPredictions == validationResponse);
 isMissing = isnan(validationResponse);
 correctPredictions = correctPredictions(~isMissing);
+Outstats = [];
+if numel(unique(validationResponse))>1    
+    for i = 1:numel(unique(response))
+        [Outstats(i).X,Outstats(i).Y,Outstats(i).T,Outstats(i).AUC,~,~] = perfcurve(validationResponse,validationScores(:,i),i);
+    end
 
-%Save off all desired information 
-Observed.AUC = mean([Outstats(:).AUC]); 
-Observed.X = cat(2,Outstats(:).X);
-Observed.Y = cat(2,Outstats(:).Y);
-Observed.T = cat(2,Outstats(:).T);
-Observed.Accurary = sum(correctPredictions)/length(correctPredictions);
+    %Save off all desired information 
+    Observed.AUC = mean([Outstats(:).AUC]); 
+    Observed.X = cat(2,Outstats(:).X);
+    Observed.Y = cat(2,Outstats(:).Y);
+    Observed.T = cat(2,Outstats(:).T);
+    
+end
+Observed.Accuracy = sum(correctPredictions)/length(correctPredictions);
 Observed.Predictions = validationPredictions;
 Observed.CorrectResponse = validationResponse;
 Observed.Scores = validationScores;
@@ -155,6 +160,7 @@ Observed.Classifier = classificationSVM;
 Observed.trainingResponse = trainingResponse;
 Observed.trainingPredictors = trainingPredictors;
 Observed.validationPredictors = validationPredictors;
+
 
 % Now randomly shuffle the held out labels and use the same classifier 
 % Compute validation predictions
@@ -178,7 +184,7 @@ for shuf = 1:opts.nshuf
     Shuffled(shuf).X = cat(2,Outstats(:).X);
     Shuffled(shuf).Y = cat(2,Outstats(:).Y);
     Shuffled(shuf).T = cat(2,Outstats(:).T);
-    Shuffled(shuf).Accurary = validationAccuracy;
+    Shuffled(shuf).Accuracy = validationAccuracy;
     Shuffled(shuf).Predictions = validationPredictions;
     Shuffled(shuf).CorrectResponse =  validationResponse_shuf;
     Shuffled(shuf).Scores = validationScores;
