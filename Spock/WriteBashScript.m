@@ -1,11 +1,11 @@
-function script_name = WriteBashScript(uniqID,func_name,input_val,input_type,varargin)
+function script_name = WriteBashScript(parameter_class,uniqID,func_name,input_val,input_type,varargin)
 %Writes a spock bash script that will run func_name with variables defined
 %by input_val. 
 %input_val and input_type are equal length cell arrays. 
 %example: input_type = {'"%s"'}; sprintf(input_type{1},'$SLURM_ARRAY_TASK_ID'); 
 
 %parse optional inputs to change defaults
-gp = general_params;
+gp = loadobj(feval(parameter_class));
 gp = ParseOptionalInputs(gp,varargin);
 
 %keep this local for right now;

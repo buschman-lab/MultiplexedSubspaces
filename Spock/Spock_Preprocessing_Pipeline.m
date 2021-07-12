@@ -1,7 +1,7 @@
 function Spock_Preprocessing_Pipeline(in_fn,opts_path)
 %% Add repository paths (you stark in dynamic scripts)
 if ~ispc
-    addpath(genpath('/jukebox/buschman/Rodent Data/Wide Field Microscopy/Widefield_Imaging_Analysis/'));
+    addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis'));
 end
 
 opts = load(opts_path);

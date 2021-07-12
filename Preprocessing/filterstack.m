@@ -3,9 +3,9 @@ function fStack = filterstack(dff,fs, filtband,type, verbose, addDCFlag)
 %Can accept both 2D (time x pixel matrix) and 3D (dff stack); 
 %Lucas pinto - modified by Camden MacDowell 2018
 
-if nargin < 2; fs = 13; end
-if nargin < 3; filtband = [1 3]; end
-if nargin < 4; type = 'bandpass'; end
+if nargin < 2; fs = 15; end
+if nargin < 3; filtband = [1 2]; end
+if nargin < 4; type = 'lowpass'; end
 if nargin < 5; verbose = 1; end
 if nargin <6; addDCFlag = 0; end
 

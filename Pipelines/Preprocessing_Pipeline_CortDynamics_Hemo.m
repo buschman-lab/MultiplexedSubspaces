@@ -30,17 +30,20 @@ s_conn = ssh2_config('spock.princeton.edu',username,password);
 
 %Add paths
 addpath(genpath('Z:\Rodent Data\Wide Field Microscopy\fpCNMF'));
-addpath(genpath('Z:\Rodent Data\Wide Field Microscopy\Widefield_Imaging_Analysis'));
+addpath(genpath('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\GithubRepo\Widefield_Imaging_Analysis'));
 
 %configure preprocessing options
-opts = ConfigurePreProcessing('crop_w',540,'vasc_std',1,'save_uncorrected',1,'fixed_image','first','method_window',15,'wavelength_pattern',[1],'fps',30);
+%hemo
+% opts = ConfigurePreProcessing('crop_w',540,'vasc_std',0.25,'save_uncorrected',0,'fixed_image','first','method_window',30,'wavelength_pattern',[1,2],'fps',15);
+%reg
+opts = ConfigurePreProcessing('crop_w',540,'vasc_std',0.25,'save_uncorrected',0,'fixed_image','first','method_window',30,'wavelength_pattern',1,'fps',30);
 
 %load general params (this is for anything after preprocessing)
-parameter_class = 'general_params_asdmodels';
+parameter_class = 'general_params_corticaldynamics';
 gp = loadobj(feval(parameter_class)); %this is not needed here, but demonstrates how I load this class in other functions by just passing the string. 
 
 %set up save directories
-save_dir_processed = 'Z:\Projects\Cortical Dynamics\TestingNeuropixels\Processed\'; %target savedirector
+save_dir_processed = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging\'; %target savedirector
 if ~exist(save_dir_processed,'dir')
     mkdir(save_dir_processed);
 end
@@ -86,7 +89,7 @@ end
 %gather recordings
 file_list_preprocessed = cell(1,numel(folder_list_raw));
 for cur_fold = 1:numel(folder_list_raw)
-    [file_list_raw,~] = GrabFiles('.tif',0,folder_list_raw(cur_fold));
+    [file_list_raw,~] = GrabFiles('.tif',0,folder_list_raw(cur_fold)); 
     [opts_list,~] = GrabFiles('prepro_log.m',0,folder_list_raw(cur_fold)); 
     
     %Create spock bash script for each file and run it
@@ -111,7 +114,7 @@ for cur_fold = 1:numel(folder_list_raw)
     %Once each folder is done, combine all the stacks and do hemocorrection
     [~,header] = fileparts(ConvertToBucketPath(folder_list_raw{cur_fold}));
     file_list_preprocessed{cur_fold} = [save_dir_processed header 'dff_combined.mat']; 
-    script_name = WriteBashScript(sprintf('%d_combine',cur_fold),'Spock_CombineStacks',{ConvertToBucketPath(folder_list_raw{cur_fold}),ConvertToBucketPath(file_list_preprocessed{cur_fold}),parameter_class},{"'%s'","'%s'","'%s'"},...
+    script_name = WriteBashScript(parameter_class,sprintf('%d_combine',cur_fold),'Spock_CombineStacks',{ConvertToBucketPath(folder_list_raw{cur_fold}),ConvertToBucketPath(file_list_preprocessed{cur_fold})},{"'%s'","'%s'","'%s'"},...
         'sbatch_time',15,'sbatch_memory',8);    
     
     % Run job with dependency
