@@ -3,9 +3,8 @@ function Spock_CombineStacks(folder_path,save_fn,parameter_class)
         addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis'));
     end
     warning('Camden you need to make sure spock is working for this code'); 
-     try
+%      try       
         [stack, opts] = CombineStacks(folder_path,parameter_class);
-        sprintf('test')
         %perform hemodynamic correction and make dff
         if numel(unique(opts.wavelength_pattern))>1 %if multiple wavelengths used
            [dff, dff_b, ~] = HemodynamicCorrection(stack, opts); 
@@ -21,6 +20,9 @@ function Spock_CombineStacks(folder_path,save_fn,parameter_class)
         if ~isempty(dff)
             %save dff
             save(save_fn,'dff','opts','-v7.3');
+        else %save off the blue
+            dff = dff_b;
+            save(save_fn,'dff','opts','-v7.3');
         end
             
         %save off the uncorrected if desired
@@ -33,9 +35,9 @@ function Spock_CombineStacks(folder_path,save_fn,parameter_class)
         
         %make figures
 %         fh = DetectDictalEvents(save_fn);
-    catch
-        gp = general_params; 
-        warning('\nNo dffs with suffix %s were combined in %s',gp.stack_suffix, folder_path);
-    end
+%     catch
+%         gp = general_params; 
+%         warning('\nNo dffs with suffix %s were combined in %s',gp.stack_suffix, folder_path);
+%     end
 end
 

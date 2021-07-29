@@ -36,7 +36,7 @@ addpath(genpath('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dyn
 %hemo
 % opts = ConfigurePreProcessing('crop_w',540,'vasc_std',0.25,'save_uncorrected',0,'fixed_image','first','method_window',30,'wavelength_pattern',[1,2],'fps',15);
 %reg
-opts = ConfigurePreProcessing('crop_w',540,'vasc_std',0.25,'save_uncorrected',0,'fixed_image','first','method_window',30,'wavelength_pattern',1,'fps',30);
+opts = ConfigurePreProcessing('crop_w',540,'vasc_std',0.5,'save_uncorrected',0,'fixed_image','first','method_window',30,'wavelength_pattern',1,'fps',30);
 
 %load general params (this is for anything after preprocessing)
 parameter_class = 'general_params_corticaldynamics';
@@ -59,31 +59,39 @@ end
 ref_imgs = cellfun(@(x) GetReferenceImage(x,opts.fixed_image),...
     file_list_first_stack, 'UniformOutput',0);
 
-%loop through reference images, register, and apply manual changes
-for cur_fold = 1:numel(folder_list_raw)
-    if cur_fold ==1
-        %manual allignment 
-        prepro_log = ManualAlignment(ref_imgs{cur_fold},opts);
+%get mouse numbers so tha you only register within mice
+mouse_num = MouseNumFromPath(folder_list_raw,'Mouse_');
+mice = unique(mouse_num);
 
-        %mask vasculature and manual cleanup (optional)
-        prepro_log = MaskVasculature(...
-            prepro_log.cropped_alligned_img,prepro_log);
-        
-        close
-        %no transformation
-        prepro_log.tform = []; 
-        prepro_log.output_size = [];
-    else %new images
-        %Register Reference Images to the first reference image try to do it automatedly, but backs up with manual allignment if necessary        
-        prepro_log = RegisterReferenceImages(ref_imgs{1},ref_imgs{cur_fold},prepro_log);               
-        [~,fn] = fileparts(folder_list_raw{cur_fold});
-        saveCurFigs(gcf,'-dpng',sprintf('registration_%s',fn),save_dir_processed,0); %close all;       
-        close all;
+%loop through mice
+for cur_mouse = 1:numel(mice)   
+    %get folders from this one mouse
+    mouse_folder = folder_list_raw(mouse_num==mice(cur_mouse));
+    ref_imgs_mouse = ref_imgs(mouse_num==mice(cur_mouse));
+    
+    for cur_fold = 1:numel(mouse_folder)%loop through reference images, register, and apply manual changes for that mouse
+        if cur_fold ==1
+            %manual allignment 
+            prepro_log = ManualAlignment(ref_imgs_mouse{cur_fold},opts);
+            %mask vasculature and manual cleanup (optional)
+            prepro_log = MaskVasculature(...
+                prepro_log.cropped_alligned_img,prepro_log);
+
+            close
+            %no transformation
+            prepro_log.tform = []; 
+            prepro_log.output_size = [];
+        else %new images
+            %Register Reference Images to the first reference image try to do it automatedly, but backs up with manual allignment if necessary        
+            prepro_log = RegisterReferenceImages(ref_imgs_mouse{1},ref_imgs_mouse{cur_fold},prepro_log);               
+            [~,fn] = fileparts(mouse_folder{cur_fold});
+            saveCurFigs(gcf,'-dpng',sprintf('registration_%s',fn),save_dir_processed,0); %close all;       
+            close all;
+        end
+        %save off the options to each folder
+        save([mouse_folder{cur_fold} filesep 'prepro_log'],'prepro_log')
     end
-    %save off the options to each folder
-    save([folder_list_raw{cur_fold} filesep 'prepro_log'],'prepro_log')
 end
-
 
 %% Preprocessing. Results in a single hemo corrected, masked recording for each day in the 'preprocessed' folder
 %gather recordings
@@ -96,8 +104,8 @@ for cur_fold = 1:numel(folder_list_raw)
     job_id = cell(1,numel(file_list_raw));
     for cur_file = 1:numel(file_list_raw)
         input_val = {ConvertToBucketPath(file_list_raw{cur_file}), ConvertToBucketPath(opts_list{1})};
-        script_name = WriteBashScript(sprintf('%d_%d',cur_fold,cur_file),'Spock_Preprocessing_Pipeline',input_val,{"'%s'","'%s'"},...
-            'sbatch_time',15,'sbatch_memory',8);  %
+        script_name = WriteBashScript(parameter_class,sprintf('%d_%d',cur_fold,cur_file),'Spock_Preprocessing_Pipeline',input_val,{"'%s'","'%s'"},...
+            'sbatch_time',60,'sbatch_memory',8);  %
         
         %Run job
         response = ssh2_command(s_conn,...
@@ -114,8 +122,8 @@ for cur_fold = 1:numel(folder_list_raw)
     %Once each folder is done, combine all the stacks and do hemocorrection
     [~,header] = fileparts(ConvertToBucketPath(folder_list_raw{cur_fold}));
     file_list_preprocessed{cur_fold} = [save_dir_processed header 'dff_combined.mat']; 
-    script_name = WriteBashScript(parameter_class,sprintf('%d_combine',cur_fold),'Spock_CombineStacks',{ConvertToBucketPath(folder_list_raw{cur_fold}),ConvertToBucketPath(file_list_preprocessed{cur_fold})},{"'%s'","'%s'","'%s'"},...
-        'sbatch_time',15,'sbatch_memory',8);    
+    script_name = WriteBashScript(parameter_class,sprintf('%d_combine',cur_fold),'Spock_CombineStacks',{ConvertToBucketPath(folder_list_raw{cur_fold}),ConvertToBucketPath(file_list_preprocessed{cur_fold}),parameter_class},{"'%s'","'%s'","'%s'"},...
+        'sbatch_time',60,'sbatch_memory',64);    
     
     % Run job with dependency
     response = ssh2_command(s_conn,...

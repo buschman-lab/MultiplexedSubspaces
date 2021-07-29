@@ -4,32 +4,51 @@ if opts.mask_vasc %mask vasc
     %Indentify vasculature by subtracting a large median filter  (e.g. smoothed image
     %form the base image. This excentuates dark areas that are surrounded by
     %light areas (e.g. vasculature). 
-    smoothed = medfilt2(ref_img,[125 125]); %Use large neighboorhood e.g. 1/4 of size
-    mask = ref_img-smoothed; 
+    count=1;
+    while 1 %user defined threshold
+        if count==1 %use the starting value
+            vasc_std = opts.vasc_std;
+            neigh = 40; 
+            count=count+1;
+        else            
+            in_vals = inputdlg({'Number of Standard Deviations','Neighboorhood size'},'Manual Threshold',[1,35],{num2str(vasc_std),num2str(neigh)}); %User defined cortical surface
+            vasc_std = str2num(in_vals{1});
+            neigh = str2num(in_vals{2});
+        end
+        smoothed = medfilt2(ref_img,[neigh neigh]); %Use large neighboorhood e.g. 1/4 of size
+        mask = ref_img-smoothed; 
 
-    %threshold to remove pxs lower that 'x' standard deviations below mean
-    %of Vascmask (e.g. the vasculature and other dark blemishes). 
-    mask = mask>=(nanmean(nanmean(mask))-(opts.vasc_std*nanstd(nanstd(mask))));
+        %threshold to remove pxs lower that 'x' standard deviations below mean
+        %of Vascmask (e.g. the vasculature and other dark blemishes). 
+        mask = mask>=(nanmean(nanmean(mask))-(vasc_std*nanstd(nanstd(mask))));
 
-    %close the image to clean up noise
-    se = strel('disk',opts.close_disk_size);
-    mask = imclose(mask,se); 
+        %close the image to clean up noise
+        se = strel('disk',opts.close_disk_size);
+        mask = imclose(mask,se); 
 
-    %Add a premade mask to outline the brain.
-    if opts.mask_brain_outline 
-        temp = load(opts.mask_brain_outline_dir); 
-        %Crop the mask to the size of the image. Assumes top left alligned
-        temp.brainoutline = temp.brainoutline([1:opts.crop_h],[1:opts.crop_w]);
-        mask = mask+temp.brainoutline;
-        mask = mask==2;               
-    end
+        %Add a premade mask to outline the brain.
+        if opts.mask_brain_outline 
+            temp = load(opts.mask_brain_outline_dir); 
+            %Crop the mask to the size of the image. Assumes top left alligned
+            temp.brainoutline = temp.brainoutline([1:opts.crop_h],[1:opts.crop_w]);
+            mask = mask+temp.brainoutline;
+            mask = mask==2;               
+        end
+
+        if opts.verbose || opts.manual_mask
+            imshowpair(ref_img,ref_img.*mask);
+            set(gcf,'units','normalized','position',[0.01 0.04 0.8 0.8]);
+            hold on; 
+            scatter(opts.bregma(1),opts.bregma(2),'*');
+            title(sprintf('Vascmask: nstd = %.2f, neigh = %0.2f',vasc_std,neigh));
+        end
+        
+        temp = questdlg('Threshold look okay?','threshold confirmation');
+        if strcmp(temp,'Yes')
+            break
+        end    
+    end %vascular mask threshold
     
-    if opts.verbose || opts.manual_mask
-        imshowpair(ref_img,ref_img.*mask);
-        hold on; 
-        scatter(opts.bregma(1),opts.bregma(2),'*');
-        title('Cropped Img with Vascmask overlay');
-    end
 
     %Manually Nan regions and unmask others 
     if opts.manual_mask
