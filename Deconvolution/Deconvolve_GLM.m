@@ -8,7 +8,7 @@ function  [stPred,stTrue]=Deconvolve_GLM(dff,st,method,train_idx)
 
 if nargin <4
     train_idx = false(n,1);
-    train_idx(1:floor(n*0.7),:) = true;
+    train_idx(1:floor(n*0.5),:) = true;
 end
 
 if isempty(train_idx) %no comparisons 

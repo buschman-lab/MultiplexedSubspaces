@@ -788,7 +788,7 @@ if opt.addSpread
         % add spread
         try
             sh = plotSpread(ah,data,'xValues',opt.xValues,'xyOri',opt.xyOri);
-            set(sh{1}(ishandle(sh{1})),'color',[0,128,255]/255);
+            set(sh{1}(ishandle(sh{1})),'color',[0.5 0.5 0.5]);%[0,128,255]/255
         catch me
             if strcmp(me.identifier,'MATLAB:UndefinedFunction')
                 error('plotSpread not found. Please download it from the Matlab File Exchange')

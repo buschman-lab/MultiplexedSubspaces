@@ -8,8 +8,15 @@ if nargin <2
 end
 
 for cur_fn = 1:numel(opts_fn) %file loop
-    opts = load(opts_fn{cur_fn},'opts');
-    opts = opts.opts;   
+    opts = load(opts_fn{cur_fn},'opts','prepro_log');
+    if isfield(opts,'opts') %will either be prepro or opts depending on where in pipeline
+        opts = opts.opts;  
+    elseif isfield(opts,'prepro_log')
+        opts = opts.prepro_log; 
+    else
+        error('no options or prepro_log'); 
+    end
+    
     while 1 %redo loop
         dlg = 'Yes';       
         position = [];

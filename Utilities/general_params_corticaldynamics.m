@@ -16,7 +16,7 @@ classdef general_params_corticaldynamics
         sbatch_path = "/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis/Spock";
         sbatch_name = [];               
         stack_suffix = '.ome_stack.mat' %the suffix used to take individual dff and ID for combining e.g. '_dff.mat' for corrected recs and '_dff_uncorrected.mat' for uncorrected recs
-        delete_singlefiles = 1; %flag to delete individual recording sections after done concatenating
+        delete_singlefiles = 0; %flag to delete individual recording sections after done concatenating
         
         %widefield post-processing parameters
         fps = 15;

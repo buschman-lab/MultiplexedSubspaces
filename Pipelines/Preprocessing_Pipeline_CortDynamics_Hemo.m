@@ -33,10 +33,9 @@ addpath(genpath('Z:\Rodent Data\Wide Field Microscopy\fpCNMF'));
 addpath(genpath('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\GithubRepo\Widefield_Imaging_Analysis'));
 
 %configure preprocessing options
-%hemo
-% opts = ConfigurePreProcessing('crop_w',540,'vasc_std',0.25,'save_uncorrected',0,'fixed_image','first','method_window',30,'wavelength_pattern',[1,2],'fps',15);
-%reg
-opts = ConfigurePreProcessing('crop_w',540,'vasc_std',0.5,'save_uncorrected',0,'fixed_image','first','method_window',30,'wavelength_pattern',1,'fps',30);
+opts = ConfigurePreProcessing('crop_w',540,'vasc_std',0.5,'save_uncorrected',0,...
+    'fixed_image','first','method_window',30,'wavelength_pattern',1,'fps',30,'savecompressed',1,...
+    'mask_brain_outline_dir',[fileparts(which('ConfigurePreProcessing.m')) filesep 'brainoutline_small.mat']);
 
 %load general params (this is for anything after preprocessing)
 parameter_class = 'general_params_corticaldynamics';
@@ -87,11 +86,14 @@ for cur_mouse = 1:numel(mice)
             [~,fn] = fileparts(mouse_folder{cur_fold});
             saveCurFigs(gcf,'-dpng',sprintf('registration_%s',fn),save_dir_processed,0); %close all;       
             close all;
-        end
+        end       
         %save off the options to each folder
-        save([mouse_folder{cur_fold} filesep 'prepro_log'],'prepro_log')
+        prepro_fn = [mouse_folder{cur_fold} filesep 'prepro_log.mat'];
+        save(prepro_fn,'prepro_log')                
     end
 end
+
+
 
 %% Preprocessing. Results in a single hemo corrected, masked recording for each day in the 'preprocessed' folder
 %gather recordings
@@ -130,7 +132,7 @@ for cur_fold = 1:numel(folder_list_raw)
         ['cd /jukebox/buschman/Rodent\ Data/Wide\ Field\ Microscopy/Widefield_Imaging_Analysis/Spock/DynamicScripts/ ;',... %cd to directory
         sprintf('sbatch --dependency=afterok:%s %s',[job_id{:}],script_name)]); 
     
-%     % Run job with no dependency
+% %     % Run job with no dependency
 %     response = ssh2_command(s_conn,...
 %         ['cd /jukebox/buschman/Rodent\ Data/Wide\ Field\ Microscopy/Widefield_Imaging_Analysis/Spock/DynamicScripts/ ;',... %cd to directory
 %         sprintf('sbatch %s',script_name)]); 
@@ -138,6 +140,12 @@ end
 
 %if you want to see what the preprocessed data looks like then run
 % InspectPreprocessedData(PreprocessedDataFilepath,'preprocessed')
+
+%% Now manually track the probes (AFTER REGISTRATION)
+for cur_fold = 5:numel(folder_list_raw)
+   MarkProbe({file_list_preprocessed{cur_fold}});
+end
+
 
 %% Deconvolution, chunking, and Motif Fitting. Results in cross validated motifs in the MotifFits folder and Deconvolved and chunked data in the Preprocessed
 %if you need to restart from this point: 

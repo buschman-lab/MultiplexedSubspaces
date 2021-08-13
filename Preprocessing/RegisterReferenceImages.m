@@ -19,7 +19,7 @@ while 1
         case 'No' %try manual registration
             close all                
             [opts.tform,opts.output_size] = RegisterImages(fixed,moving,'manual'); 
-            ValidationImages(moving,opts);
+            opts.registered_img=ValidationImages(moving,opts);            
        case 'Yes'; break %end dlg
     end
 end
@@ -27,7 +27,7 @@ end
 end
 
 
-function ValidationImages(moving,opts)
+function registered_img=ValidationImages(moving,opts)
     %Visualize outcome of registration
     registered_img = PreProcessImage(moving,opts,{'spatial_bin_factor',1});    
     figure; hold on; imagesc(registered_img); colormap('gray'); axis off; axis equal

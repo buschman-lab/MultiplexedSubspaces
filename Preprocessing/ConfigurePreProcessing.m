@@ -19,6 +19,7 @@ opts.fps = 15; %the frame rate of each wavelength (integer)
 opts.wavelength_pattern = [1,2]; %excitation wavelength sequence used
 opts.correction_wavelength = 2; %wavelength to be used for correction
 opts.detrend = 0; %also include linear detrending(not needed if DFF)
+opts.savecompressed = 0; %flattens and saves as nan and X x Y matrix
 
 opts = ParseOptionalInputs(opts,varargin);
 end
