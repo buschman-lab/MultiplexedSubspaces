@@ -46,12 +46,13 @@ for cur_rec = 1:n_rec
                     trained_opts_cur_rec(cur_probe).closedloopnetwork = net;
                     trained_opts_cur_rec(cur_probe).narxparams = params;
                     %to test: stPred{i}(:,j) = cell2mat(netc(dff_test,xic,aic));
-                case 'glm' %linear deconvolution using glm kernel
+                case 'glm' %linear deconvolution using glm kernel ... this is least squares... can test by comparing kernel of fitlm with glmfit
                     winglm = win+1; %size of the kernel window in frames +1(def = 1 sec=30)
                     predictors = createRollingWindow(trace_probe, winglm); %t-n:t-1
                     response =  spikes_probe(ceil(winglm/2):end-floor(winglm/2)); % get the middle timepoint in window  
                     kernel = glmfit(predictors,response); %mean centering not needed here since you don't care about intercept
                     trained_opts_cur_rec(cur_probe).glmkernel = kernel(2:end); %remove intercept  
+                    trained_opts_cur_rec(cur_probe).glmkernelintercept = kernel(1);
                     %to test: stPred = {convn(padarray(dff',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid')'};   
                 case 'feedforward' %linear deconvolution using glm kernel
                     params = [];
@@ -94,6 +95,7 @@ for cur_rec = 1:n_rec
                     response =  spikes_probe(ceil(winglm/2):end-floor(winglm/2)); % get the middle timepoint in window  
                     kernel = glmfit(predictors,response); %mean centering not needed here since you don't care about intercept
                     trained_opts_cur_rec(cur_probe).glmkernel = kernel(2:end); %remove intercept  
+                    trained_opts_cur_rec(cur_probe).glmkernelintercept = kernel(1);
 
                     %shallow feedforward
                     fprintf('\n\t feedforward')
@@ -107,6 +109,14 @@ for cur_rec = 1:n_rec
                     net = train_feedforward_nn(trace_probe',spikes_probe',params); %train 
                     trained_opts_cur_rec(cur_probe).shallowfeedforward = net;
                     trained_opts_cur_rec(cur_probe).feedforwardparams = params;
+
+                    %lucrid
+                    if bindata ==1 %0.95 if 15fps, 0.96 if 30
+                        trained_opts_cur_rec(cur_probe).LRgamma = 0.80; %predicted is 0.95
+                    else
+                        trained_opts_cur_rec(cur_probe).LRgamma = 0.89; %predicted is 0.96
+                    end
+                    trained_opts_cur_rec(cur_probe).LRwin = win;
                 otherwise 
                     error('unknown method');
             end %method switch

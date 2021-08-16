@@ -10,7 +10,7 @@ function vp = CompareViolins(data,fp,varargin)
     
     %optionally add pairwise line in background
     if ~isempty(opts.connectline)
-        plot(1:size(data,1),nanmedian(data,2),'color',opts.connectline,'linewidth',fp.line_width,'linestyle','-')
+        plot(1:size(data,1),nanmedian(data,2),'color',opts.connectline,'linewidth',1.5,'linestyle','-')
     end
     
     %Make plot

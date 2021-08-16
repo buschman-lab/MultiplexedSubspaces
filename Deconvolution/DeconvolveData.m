@@ -32,11 +32,12 @@ for cur_trace = 1:n %trace loop
         case 'lr_gcamp' %lucy richarson deconvolution with gcamp kernel
             win = trained_opts.LRwin;
             gamma = trained_opts.LRgamma;
-            stPred = lucric(trace_probe-min(trace_probe),gamma,1,win); 
+            ypred_temp = lucric(y-min(y),gamma,1,win); 
             timepoints(1:end)=1;           
         case 'glm'
             kernel = flipud(trained_opts.glmkernel);
-            ypred_temp = convn(padarray(y',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid');  
+%             ypred_temp = convn(padarray(y',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid');
+            ypred_temp = convn(padarray(y',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid')+trained_opts.glmkernelintercept; 
             timepoints(1:end)=1;
         case 'none'
             ypred_temp = y;

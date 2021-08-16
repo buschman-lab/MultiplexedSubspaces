@@ -8,6 +8,36 @@
 %also compare max xcorrs
 
 
+%% look at drift
+load('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\analysisplayground\full_deconvolutiondata.mat')
+norm_method = 'std';
+params.bindata = 0; %temporally bin the data?
+params.radius = 2; %pixel radius around probe tip    
+params.offset = {[2,0],[0,-1],[1,-1],[0 0]}; %moves center of DFF circle for probes at angles. [x,y]
+params.mua = 1; %1= use both 'good' and 'mua' units. 0 = just 'good'
+params.depth = [0 600]; %depth from surface of probe
+[~,st] = CompileData_deconvolution([],spike_opts_list,params);
+
+%loop through each and get the magnitude of drift
+b=[];
+a=[];
+for i = 1:numel(st)
+    for j = 1:4
+        temp = st{i}(30*60*60:end,j);        
+        coef = polyfit(1:numel(temp),temp,1); 
+        b(i,j) = coef(2);
+        temp = xcorr(temp-nanmean(temp),600,'normalized');
+        a(i,j) = temp(1);
+    end
+end
+
+
+
+
+%%
+
+
+
 %look at stats and switch to median 
 %write the sophisticated figure code (treat each depth as a single figure)
 
@@ -45,8 +75,8 @@ end
 
 %% scratch code for plotting the deconvolve comparisons with nonparameteric !!!!!!!!!!!!!!!!!!!!!!!!!!
 % fn = GrabFiles('within_compare\w*mapminmax\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
-% fn = GrabFiles('within_compare\w*std\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
-fn = GrabFiles('within_compare\w*std\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution\timebinned'});
+fn = GrabFiles('within_compare\w*std\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
+% fn = GrabFiles('within_compare\w*std\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution\timebinned'});
 rng('default') % For reproducibility
 %loop through depths and get the average correlation
 rho_avg = cell(1,numel(fn));
@@ -493,21 +523,22 @@ dff_list = dff_list(4);
 
 %compile imaging data
 fprintf('\n\t Compiling Imaging Data')
-params.bindata = 1; %temporally bin the data?
+params.bindata = 0; %temporally bin the data?
 params.radius = 2; %pixel radius around probe tip    
 params.offset = {[2,0],[0,-1],[1,-1],[0 0]}; %m
 
 %run for a given block (depth). Takes about 4-12 hours per depth so do this way
 params.mua = 1; %1= use both 'good' and 'mua' units. 0 = just 'good'
-params.depth = [0 500]; %depth from surface of probe
+params.depth = [0 600]; %depth from surface of probe
 %compile spiking data
-[dff,st] = CompileData_deconvolution(dff_list,spike_opts_list,params);
+dff = dff(4);
+[~,st] = CompileData_deconvolution([],spike_opts_list,params);
 n = floor(size(dff{1},1)*3/4);
 dff_train = cellfun(@(x) mapstd(x(1:n,:)')',dff,'UniformOutput',0);
 dff_test = cellfun(@(x) mapstd(x(n+1:end,:)')',dff,'UniformOutput',0);            
 st_train = cellfun(@(x) mapstd(x(1:n,:)')',st,'UniformOutput',0);
 st_test = cellfun(@(x) mapstd(x(n+1:end,:)')',st,'UniformOutput',0);  
-trained_opts = Deconvolve_Train(dff_train,st_train,'lr_gcamp',2500,params.bindata);
+trained_opts = Deconvolve_Train(dff_train,st_train,'glm',100,params.bindata);
 
 n_rec=6;
 cur_rec = 1;
@@ -560,8 +591,9 @@ response =  spikes_probe(ceil(win/2):end-floor(win/2)); % get the middle timepoi
 %         response = response/std(response);
 kernel = glmfit(predictors,response); %mean centering not needed here since you don't care about intercept
 glmkernel = kernel(2:end); %remove intercept  
+inter=kernel(1);
 
-
+stPred = convn(padarray(trace_probe',[0,floor(length(glmkernel)/2)],'replicate','both')',glmkernel,'valid')+inter; 
 stPred = convn(padarray(trace_probe',[0,floor(length(glmkernel)/2)],'replicate','both')',flipud(glmkernel),'valid');  
 % stPred(1)=[];
 %test on the training data

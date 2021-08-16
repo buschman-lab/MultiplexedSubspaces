@@ -32,7 +32,8 @@ switch method
         timepoints(1:end)=1;         
     case 'glm'
         kernel = flipud(trained_opts.glmkernel);
-        stPred = convn(padarray(trace_probe',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid');  
+%         stPred = convn(padarray(trace_probe',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid'); 
+        stPred = convn(padarray(trace_probe',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid')+trained_opts.glmkernelintercept; 
         timepoints(1:end)=1;
     case 'none'
         stPred = trace_probe;

@@ -123,12 +123,18 @@ if ~isempty(spike_opts_list)
             %things that the camera does (i.e. frame one is all the
             %exposure between first edge and second edge)
             st = [histcounts(st,im_times),0]; %since k=nedges-1
-                        
-            %temporall bin
+               
+%             %remove slow fluctuations (This makes no sense, don't do
+%             this. only keeping for th efiltering code
+%             d = designfilt('highpassiir','FilterOrder',4,'PassbandFrequency',0.02,'PassbandRipple',...
+%                 0.1,'Samplerate',floor(nanmedian(diff(im_times))*1000),'DesignMethod','cheby1');
+%             st = filtfilt(d,st)+nanmean(st);                
+            
+            %temporally bin
             if params.bindata ==1  
                 st = st(1:2:end)+st(2:2:end);
-            end
-
+            end           
+            
             %pad with single sample at end to match for ease
             st_probe{cur_file}(:,cur_probe) = st';            
         end

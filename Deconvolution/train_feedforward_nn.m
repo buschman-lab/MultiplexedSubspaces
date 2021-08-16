@@ -47,9 +47,9 @@ end
 % For a list of all data division functions type: help nndivision
 net.divideFcn = 'divideblock';  % Divide data maintaining temporal relationships
 net.divideMode = 'sample';  % Divide up every sample
-net.divideParam.trainRatio = 0.7;
-net.divideParam.valRatio = 0.2; %this is to prevent overfitting
-net.divideParam.testRatio = 0.1; %doing this outside of this function
+net.divideParam.trainRatio = 0.90; %0.7
+net.divideParam.valRatio = 0.1; %0.2 %this is to prevent overfitting
+net.divideParam.testRatio = 0.0; %0.1 %doing this outside of this function
 
 % Choose a Performance Function
 % For a list of all performance functions type: help nnperformance
