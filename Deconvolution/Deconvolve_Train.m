@@ -73,20 +73,20 @@ for cur_rec = 1:n_rec
                     end
                     trained_opts_cur_rec(cur_probe).LRwin = win;
                 case 'all'
-                    %narx
-                    fprintf('\n\t narx')
-                    params = [];
-                    params.n_hiddenlayer = 20; %neurons in hidden layer
-                    params.trainFcn = 'trainlm'; % 'trainlm' is usually fastest.
-                    params.inputdelay = win; %number of timepoints for prediction
-                    params.feedbackdelay = 3; %number of timepoints for prediction
-                    params.verbose = 0; 
-                    params.hiddenfnc = 'tansig';
-                    params.outputfnc = 'purelin';
-                    [~,~,net,~,~,~] = train_narx_nn(trace_probe',spikes_probe',params);
-                    %save off needed variables
-                    trained_opts_cur_rec(cur_probe).closedloopnetwork = net;
-                    trained_opts_cur_rec(cur_probe).narxparams = params;
+%                     %narx
+%                     fprintf('\n\t narx')
+%                     params = [];
+%                     params.n_hiddenlayer = 20; %neurons in hidden layer
+%                     params.trainFcn = 'trainlm'; % 'trainlm' is usually fastest.
+%                     params.inputdelay = win; %number of timepoints for prediction
+%                     params.feedbackdelay = 3; %number of timepoints for prediction
+%                     params.verbose = 0; 
+%                     params.hiddenfnc = 'tansig';
+%                     params.outputfnc = 'purelin';
+%                     [~,~,net,~,~,~] = train_narx_nn(trace_probe',spikes_probe',params);
+%                     %save off needed variables
+%                     trained_opts_cur_rec(cur_probe).closedloopnetwork = net;
+%                     trained_opts_cur_rec(cur_probe).narxparams = params;
 
                     %glm
                     fprintf('\n\t glm')
