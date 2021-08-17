@@ -209,6 +209,108 @@ sz = {[2 2 8 8],[2 2 4 4]};
 fh_xcorr = makeXcorrPlots(xcorr_trace,fp,sz,col,labels);
 saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('xcorr'),savedir,0); close all
 
+%% train Across sites eval on testing data
+savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\train_xsite';
+fp = fig_params_deconvolutionpaper; 
+col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
+%load example traces and plot
+
+%load fit Across Sites uM 
+fn = GrabFiles('train_xsites\w*std\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
+[data,lags,xcorr_trace,type] = LoadResults(fn{1},{'lr_gcamp','glm','feedforward','none'});%get the desired depth 
+labels = {'None','LR','GLM','fNN'};
+
+%reverse skew
+data{3} = -1*data{3};
+
+%make plots for rho, err, and skew
+sz = [2 2 6 8];
+fh_stats = makeViolinPlots(data,1,fp,sz,col,labels);
+% saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('stats'),savedir,0); close all
+% 
+% %plot small plots of the xcross correlation
+% sz = {[2 2 8 8],[2 2 4 4]};
+% fh_xcorr = makeXcorrPlots(xcorr_trace,fp,sz,col,labels);
+% saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('xcorr'),savedir,0); close all
+
+
+%% train Across sites eval on training data
+savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\train_xsite_evaltrain';
+fp = fig_params_deconvolutionpaper; 
+col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
+%load example traces and plot
+
+%load fit Across Sites uM 
+% fn = GrabFiles('train_xsites\w*std\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
+[data,lags,xcorr_trace,type] = LoadResults(fn{1},{'lr_gcamp','glm','feedforward','none'});%get the desired depth 
+labels = {'None','LR','GLM','fNN'};
+
+%reverse skew
+data{3} = -1*data{3};
+
+%make plots for rho, err, and skew
+sz = [2 2 6 8];
+fh_stats = makeViolinPlots(data,1,fp,sz,col,labels);
+% saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('stats'),savedir,0); close all
+
+%plot small plots of the xcross correlation
+sz = {[2 2 8 8],[2 2 4 4]};
+fh_xcorr = makeXcorrPlots(xcorr_trace,fp,sz,col,labels);
+% saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('xcorr'),savedir,0); close all
+
+%% train everything eval testing data
+savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\train_all';
+fp = fig_params_deconvolutionpaper; 
+col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
+%load example traces and plot
+
+%load fit Across Sites uM 
+% fn = GrabFiles('train_xsites\w*std\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
+[data,lags,xcorr_trace,type] = LoadResults(fn{1},{'lr_gcamp','glm','feedforward','none'});%get the desired depth 
+labels = {'None','LR','GLM','fNN'};
+
+%reverse skew
+data{3} = -1*data{3};
+
+%make plots for rho, err, and skew
+sz = [2 2 6 8];
+fh_stats = makeViolinPlots(data,1,fp,sz,col,labels);
+% saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('stats'),savedir,0); close all
+
+%plot small plots of the xcross correlation
+sz = {[2 2 8 8],[2 2 4 4]};
+fh_xcorr = makeXcorrPlots(xcorr_trace,fp,sz,col,labels);
+% saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('xcorr'),savedir,0); close all
+
+%% train everything evalu testing data
+savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\train_all_evaltrain';
+fp = fig_params_deconvolutionpaper; 
+col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
+%load example traces and plot
+
+%load fit Across Sites uM 
+% fn = GrabFiles('train_xsites\w*std\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
+[data,lags,xcorr_trace,type] = LoadResults(fn{1},{'lr_gcamp','glm','feedforward','none'});%get the desired depth 
+labels = {'None','LR','GLM','fNN'};
+
+%reverse skew
+data{3} = -1*data{3};
+
+%make plots for rho, err, and skew
+sz = [2 2 6 8];
+fh_stats = makeViolinPlots(data,1,fp,sz,col,labels);
+% saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('stats'),savedir,0); close all
+
+%plot small plots of the xcross correlation
+sz = {[2 2 8 8],[2 2 4 4]};
+fh_xcorr = makeXcorrPlots(xcorr_trace,fp,sz,col,labels);
+% saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('xcorr'),savedir,0); close all
+
+%% plot the training across depths
+
+
+
+
 %% Compare within methods, across train/fit types
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\methods_acrosscomparisons';
 fp = fig_params_deconvolutionpaper; 
@@ -267,10 +369,13 @@ saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('stats'),savedir,0); close al
 function data = LoadResultsByType(fn,comptype,statname)
 %each cell is a different method, each column is a different statistic
 %input type allows either multiple method or multiple
+    
 temp = cell(1,numel(fn));
 for i = 1:numel(fn)
     res = load(fn{i});
-    deconv_type = {'narx','lr_gcamp','lr_glm','glm','feedforward','none'}; 
+    if nargin <4
+       deconv_type = {'narx','lr_gcamp','lr_glm','glm','feedforward','none'}; 
+    end
     deconv_type = repmat(deconv_type,size(res.test_idx,1),1);
     deconv_type = cat(1,deconv_type(:));
     %split into the data of the types that you want    
@@ -291,11 +396,13 @@ data = cat(1,temp{:});
 end %function
 
 %% gather data but split by methods
-function [data,lags,xcorr_trace,type] = LoadResults(fn)
+function [data,lags,xcorr_trace,type] = LoadResults(fn,deconv_type)
 %each cell of data is a different measure, column within cell is deconv
 %type
 res = load(fn);
-deconv_type = {'narx','lr_gcamp','lr_glm','glm','feedforward','none'}; 
+if nargin <2
+   deconv_type = {'narx','lr_gcamp','lr_glm','glm','feedforward','none'}; 
+end
 deconv_type = repmat(deconv_type,size(res.test_idx,1),1);
 deconv_type = cat(1,deconv_type(:));
 %split into the data of the types that you want

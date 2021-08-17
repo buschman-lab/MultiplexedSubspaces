@@ -11,4 +11,4 @@
 
 cd "/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis/Deconvolution"
 module load matlab/R2019b
-matlab -batch "CompareDeconvolutionMethods(5,$SLURM_ARRAY_TASK_ID)"
+matlab -batch "CompareDeconvolutionMethods(9,$SLURM_ARRAY_TASK_ID)"
