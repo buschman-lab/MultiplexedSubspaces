@@ -1,9 +1,10 @@
-function ClusterW_Spock(file_path,file_name, save_dir)
+function ClusterW_Spock(file_path,file_name, save_dir,parameter_class)
 %Camden MacDowell - timeless
 %spock shell to run motif clustering. 
 % Add repository paths (you stark in dynamic scripts)
 if ~ispc
-    addpath(genpath('/jukebox/buschman/Rodent Data/Wide Field Microscopy/Widefield_Imaging_Analysis/'));
+    addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/GenUtils'))
+    addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis'))
     addpath(genpath('/jukebox/buschman/Rodent Data/Wide Field Microscopy/fpCNMF/'));
 end
 
@@ -12,7 +13,7 @@ file_list = GrabFiles([file_name, '\w*chunk\w*.mat'],0,{file_path});
 temp = cellfun(@(x) load(x,'w','nanpxs'),file_list,'UniformOutput',0);
 W = cellfun(@(x) x.w, temp,'UniformOutput',0);
 nanpxs = cellfun(@(x) x.nanpxs, temp,'UniformOutput',0);
-gp=general_params; 
+gp = loadobj(feval(parameter_class)); 
 fprintf('\n\t Generating Basis Motifs');
 [W_basis, kval, ovr_q, cluster_idx, idx_knn, tcorr_mat, handles, lag_mat, lags, nanpxs] = ClusterW(W,gp,nanpxs{1});
 

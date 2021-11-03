@@ -147,9 +147,9 @@ if numel(unique(validationResponse))>1
 
     %Save off all desired information 
     Observed.AUC = mean([Outstats(:).AUC]); 
-    Observed.X = cat(2,Outstats(:).X);
-    Observed.Y = cat(2,Outstats(:).Y);
-    Observed.T = cat(2,Outstats(:).T);
+%     Observed.X = cat(2,Outstats(:).X);
+%     Observed.Y = cat(2,Outstats(:).Y);
+%     Observed.T = cat(2,Outstats(:).T);
     
 end
 Observed.Accuracy = sum(correctPredictions)/length(correctPredictions);
@@ -181,9 +181,9 @@ for shuf = 1:opts.nshuf
     validationAccuracy = sum(correctPredictions)/length(correctPredictions);
 
     Shuffled(shuf).AUC = mean([Outstats(:).AUC]);
-    Shuffled(shuf).X = cat(2,Outstats(:).X);
-    Shuffled(shuf).Y = cat(2,Outstats(:).Y);
-    Shuffled(shuf).T = cat(2,Outstats(:).T);
+%     Shuffled(shuf).X = cat(2,Outstats(:).X);
+%     Shuffled(shuf).Y = cat(2,Outstats(:).Y);
+%     Shuffled(shuf).T = cat(2,Outstats(:).T);
     Shuffled(shuf).Accuracy = validationAccuracy;
     Shuffled(shuf).Predictions = validationPredictions;
     Shuffled(shuf).CorrectResponse =  validationResponse_shuf;

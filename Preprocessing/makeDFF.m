@@ -10,9 +10,12 @@ elseif strcmp(opts.method,'median')
     avgproj  = nanmedian(stack,3);
 elseif strcmp(opts.method,'mode')
     avgproj  = mode(stack,3);
-elseif strcmp(opts.method,'movingavg') %30 second moving average window (since opts.fps is multiplexed
+elseif strcmp(opts.method,'movingavg') 
+    avgproj = movmean(stack,w,3,'Endpoints','shrink');    
+elseif strcmp(opts.method,'zscore') %divide by moving standard deviation
     avgproj = movmean(stack,w,3,'Endpoints','shrink');
-else
+    stdproj = movstd(stack,w,0,3,'Endpoints','shrink');
+else    
     error('unknown dff method');
 end
 
@@ -24,7 +27,14 @@ for i = 1:size(stack,3)
             dff(:,:,i) = ((double(stack(:,:,i)))./avgproj(:,:,i));
         else %get dff
             dff(:,:,i) = ((double(stack(:,:,i))-avgproj(:,:,i))./avgproj(:,:,i))*100;
+%             dff(:,:,i) = ((double(stack(:,:,i))-avgproj(:,:,i)));
         end
+    elseif strcmp(opts.method,'zscore')
+        if strcmp(type,'fractional')%get fractional 
+            error('fractional dfs not support when zscoring')
+        else %get dff
+            dff(:,:,i) = ((double(stack(:,:,i))-avgproj(:,:,i))./stdproj(:,:,i));
+        end        
     else
         if strcmp(type,'fractional')%get fractional 
             dff(:,:,i) = (double(stack(:,:,i))./avgproj);

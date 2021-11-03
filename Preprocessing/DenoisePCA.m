@@ -1,4 +1,4 @@
-function [stack_denoise,handles] = DenoisePCA(stack,denoise_powerfrac,denoise_pxlfrac)
+function [stack_denoise,handles] = DenoisePCA(stack,denoise_powerfrac,denoise_pxlfrac,renormalize)
 %Camden MacDowell. Initially denoise imaging data with PCA. This is best
 %used to remove single spot noise pixels but can also be used to manually
 %remove artifacts. 
@@ -8,6 +8,9 @@ if nargin <2
 end
 if nargin <3
     denoise_pxlfrac = 0.01; %default is 0.001 (2pxls)
+end
+if nargin <4
+    re_normalize = 1; 
 end
 
 [x,y,z] = size(stack);
@@ -39,7 +42,9 @@ handles = get(groot, 'Children');
 fprintf('\n\t PCA Denoising Removed %d Components',sum(bad_comp));
 
 %This can lead to a small number of frames (<1%) to contain negative values. Set those to zero 
-% stack_denoise(stack_denoise<0)=0;
+if renormalize
+    stack_denoise(stack_denoise<0)=0;
+end
 
 %recondition
 stack_denoise = conditionDffMat(stack_denoise',nanpxs,[],[x,y,z]);

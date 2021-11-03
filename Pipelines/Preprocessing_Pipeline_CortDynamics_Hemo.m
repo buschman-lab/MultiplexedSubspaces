@@ -80,6 +80,10 @@ for cur_mouse = 1:numel(mice)
             %no transformation
             prepro_log.tform = []; 
             prepro_log.output_size = [];
+            temp = prepro_log.cropped_alligned_img;
+            imagesc(prepro_log.cropped_alligned_img,[prctile(prepro_log.cropped_alligned_img(:),2.5),prctile(prepro_log.cropped_alligned_img(:),97.5)]); colormap gray
+            axis off; axis square
+            saveas(gcf,[mouse_folder{cur_fold}, filesep,'ReferenceImage.png']); close all; 
         else %new images
             %Register Reference Images to the first reference image try to do it automatedly, but backs up with manual allignment if necessary        
             prepro_log = RegisterReferenceImages(ref_imgs_mouse{1},ref_imgs_mouse{cur_fold},prepro_log);               
@@ -146,10 +150,12 @@ for cur_fold = 5:numel(folder_list_raw)
    MarkProbe({file_list_preprocessed{cur_fold}});
 end
 
+%% Allign across animals, load data and resave
+
 
 %% Deconvolution, chunking, and Motif Fitting. Results in cross validated motifs in the MotifFits folder and Deconvolved and chunked data in the Preprocessed
 %if you need to restart from this point: 
-% [file_list_preprocessed,~] = GrabFiles('\w*combined.mat'); %select the preprocessed data (not the '_processed');
+[file_list_preprocessed,~] = GrabFiles('\w*combined.mat'); %select the preprocessed data (not the '_processed');
 
 % NEED TO WAIT FOR ABOVE TO COMPLETE
 job_id = cell(1,numel(file_list_preprocessed));
@@ -160,11 +166,11 @@ for cur_file = 1:numel(file_list_preprocessed)
     file_list_processed{cur_file} = [save_dir_processed fn_temp '_processed.mat']; %path in temporary folder with the train/test split data
     
     %deconvolve and split the data    
-    script_name = WriteBashScript(sprintf('%d',cur_file),'ProcessAndSplitData',{ConvertToBucketPath(file_list_preprocessed{cur_file}),...
+    script_name = WriteBashScript(parameter_class,sprintf('%d',cur_file),'ProcessAndSplitData',{ConvertToBucketPath(file_list_preprocessed{cur_file}),...
         ConvertToBucketPath(file_list_processed{cur_file}),parameter_class},...
         {"'%s'","'%s'","'%s'"},...
-        'sbatch_time',5,'sbatch_memory',16,...
-        'sbatch_path',"/jukebox/buschman/Rodent Data/Wide Field Microscopy/Widefield_Imaging_Analysis/Preprocessing/");
+        'sbatch_time',259,'sbatch_memory',64,...
+        'sbatch_path',"/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis/Preprocessing/");
     %Run job
     response = ssh2_command(s_conn,...
         ['cd /jukebox/buschman/Rodent\ Data/Wide\ Field\ Microscopy/Widefield_Imaging_Analysis/Spock/DynamicScripts/ ;',... %cd to directory
@@ -172,23 +178,47 @@ for cur_file = 1:numel(file_list_preprocessed)
     %get job id
     temp_job_id = erase(response.command_result{1},'Submitted batch job ');
     
-%     %Fit motifs and cross-validate (parallellize by chunk)
-%     [swarm_id, swarm_motifs] = FitMotifs_SpockSwarm(file_list_processed{cur_file},temp_job_id,s_conn,parameter_class);
-%     job_id{cur_file} = [swarm_id{:}]; 
-%     file_list_motifs{cur_file} = swarm_motifs;
+    %Fit motifs and cross-validate (parallellize by chunk)
+    [swarm_id, swarm_motifs] = FitMotifs_SpockSwarm(file_list_processed{cur_file},temp_job_id,s_conn,parameter_class);
+    job_id{cur_file} = [swarm_id{:}]; 
+    file_list_motifs{cur_file} = swarm_motifs;
 end
 
 %if you want to see what the postprocessed data looks like then run
 %InspectPreprocessedData(PreprocessedDataFilepath,'postprocessed')
 
 %% Cluster Motifs
+save_dir_motif_fits = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging\MotifFits\';
+[file_path_motifs, file_header_motifs] = fileparts(file_list_motifs{1}(1));
+header = 'Mouse332_RestingState_NP_06_07_2021'; %file_header_motifs(1:regexp(file_header_motifs,'_','start','once'));%to do by recording
 
-%% Refit Clustered Motifs to the data
+%Find Basis Motifs and Refit to the entire data set
+script_name = WriteBashScript(parameter_class,sprintf('%d',1),'ClusterW_Spock',{ConvertToBucketPath(file_path_motifs),header,ConvertToBucketPath(save_dir_motif_fits),parameter_class},...
+    {"'%s'","'%s'","'%s'","'%s'"},...
+    'sbatch_time',2879,'sbatch_memory',64,...
+    'sbatch_path',"/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis/Spock/");
+
+if ~isempty(swarm_id) % Run job with dependency
+    response = ssh2_command(s_conn,...
+        ['cd /jukebox/buschman/Rodent\ Data/Wide\ Field\ Microscopy/Widefield_Imaging_Analysis/Spock/DynamicScripts/ ;',... %cd to directory
+        sprintf('sbatch --dependency=afterok:%s %s',[swarm_id{:}],script_name)]);    
+else
+   response = ssh2_command(s_conn,...
+        ['cd /jukebox/buschman/Rodent\ Data/Wide\ Field\ Microscopy/Widefield_Imaging_Analysis/Spock/DynamicScripts/ ;',... %cd to directory
+        sprintf('sbatch %s',script_name)]); 
+end
+
 
 %% Refit the motifs built from all the animals to the data
 job_id = [];
 % Spock_RefitBasisMotifs_Swarm(file_list_processed,'Z:\Rodent Data\Wide Field Microscopy\ExampleData\',job_id,s_conn,parameter_class);
-Spock_RefitBasisMotifs_Swarm(file_list_processed,'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\VPA_Mesomapping\FitMotifs_deconvolution\ALL',job_id,s_conn,parameter_class);
+%set up save directories
+save_dir_motifs = 'Z:\Projects\Cortical Dynamics\Mouse Models of Autism\SHANK Cohort 2020\RefitVPABasisMotifs\'; %target savedirector
+if ~exist(save_dir_motifs,'dir')
+    mkdir(save_dir_motifs);
+end
+Spock_RefitBasisMotifs_Swarm(file_list_processed,'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\VPA_Mesomapping\FitMotifs_deconvolution\ALL',job_id,s_conn,parameter_class,save_dir_motifs);
+
 
 
 %%

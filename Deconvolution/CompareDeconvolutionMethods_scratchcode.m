@@ -32,8 +32,6 @@ for i = 1:numel(st)
 end
 
 
-
-
 %%
 
 

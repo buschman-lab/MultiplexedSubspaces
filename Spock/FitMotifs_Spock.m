@@ -7,7 +7,8 @@ if nargin <3
 end
 
 if ~ispc
-    addpath(genpath('/jukebox/buschman/Rodent Data/Wide Field Microscopy/Widefield_Imaging_Analysis/'))
+    addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/GenUtils'))
+    addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis'))
     addpath(genpath('/jukebox/buschman/Rodent Data/Wide Field Microscopy/fpCNMF/'));
 end
 
@@ -24,6 +25,9 @@ else
     data_test = temp.data_test;
 end
 
+data_train(data_train<0)=0;
+data_test(data_test<0)=0;
+
 if chunk == 1 %make some example figures
     [w, h, stats_train, stats_test] = FitandValidateMotifs(data_train,data_test,gp,1);
     %get figure names 
@@ -36,6 +40,9 @@ if chunk == 1 %make some example figures
 
 else %no figures
     [w, h, stats_train, stats_test] = FitandValidateMotifs(data_train,data_test,gp,0);
+    [fig_path, fig_name] = fileparts(save_fn);
+    handles = get(groot, 'Children');
+    saveCurFigs(handles,'-dpng',[fig_name sprintf('_examplefit_chunk%d',chunk)],fig_path,0); close all;
 end  
 
 %save off the data in the scratch directory and the nanpxs

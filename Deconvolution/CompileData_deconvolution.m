@@ -1,4 +1,4 @@
-function [dff_probe,st_probe] = CompileData_deconvolution(dff_list,spike_opts_list,params,verbose)
+function [dff_probe,st_probe,n_neurons] = CompileData_deconvolution(dff_list,spike_opts_list,params,verbose)
 %Camden MacDowell - timeless
 %takes lits of files and folders and pcompile the data needed for
 %deconvolution
@@ -79,6 +79,7 @@ end
 %compile spikeing data
 if ~isempty(spike_opts_list)    
     st_probe = cell(1,numel(spike_opts_list));
+    n_neurons = [];
 
     for cur_file = 1:numel(spike_opts_list)    
         fprintf('\n\t working on ephys data for file %d of %d',cur_file, numel(spike_opts_list));
@@ -112,6 +113,7 @@ if ~isempty(spike_opts_list)
             %use vertical depth
             IDs = spikes.clust_info.id(spikes.clust_info.vert_depth>params.depth(1) & spikes.clust_info.vert_depth<params.depth(2));  
             st = spikes.clust_info.spike_times(ismember(spikes.clust_info.spike_cluster,IDs)); 
+            n_neurons(cur_file,cur_probe) = numel(IDs);
 
             %bin to the framerate of the imaging
             fileID = fopen([spike_opts.nidaq_path,'CameraFrameFrontEdgeTimes.txt'],'r');

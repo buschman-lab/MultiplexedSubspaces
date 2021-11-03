@@ -1,4 +1,4 @@
-function CompareDeconvolutionMethods(type,block)
+function CompareDeconvolutionMethods(type,block,norm_method)
 %Camden MacDowell - timeless
 %Compares the efficacy and generalizatbily of multiple deconovlution
 %methods
@@ -16,9 +16,9 @@ else
    spike_opts_list = spike_opts_list_bucket;
 end   
 
-%normalization method (so consistent across all) options =
-%mapminmax, std, or none
-norm_method = 'std';
+%normalization method of spiking data options =
+%mapminmax, std, or none, or mean
+% norm_method = 'mean';
 
 %compile imaging data
 fprintf('\n\t Compiling Imaging Data')
@@ -47,28 +47,28 @@ end
 switch type %different comparisons to run 
     case 1 %generalizability within recording, within site across depths
         fprintf('\n\t Comparing within rec/mouse/site across depths')
-        depths = [100:200:900; 200:200:1000]';
-        depths = cat(1,depths,[0 600],[600 1000]);
+        depths = [0:200:1300; 200:200:1500]';
+        depths = cat(1,depths,[0 600],[600 1500]);
         
         %run for a given block (depth). Takes about 4-12 hours per depth so do this way
         params.mua = 1; %1= use both 'good' and 'mua' units. 0 = just 'good'
         params.depth = depths(block,:); %depth from surface of probe
         %compile spiking data
-        [~,st] = CompileData_deconvolution([],spike_opts_list,params);   
+        [~,st,n_neurons] = CompileData_deconvolution([],spike_opts_list,params);   
 
         %split train/test (additional train,validation,test occurs within train)
         n = floor(size(dff{1},1)*3/4);
         switch norm_method
             case 'mapminmax'
-                dff_train = cellfun(@(x) mapminmax(x(1:n,:)',0,1)',dff,'UniformOutput',0);
-                dff_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',dff,'UniformOutput',0);            
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) mapminmax(x(1:n,:)',0,1)',st,'UniformOutput',0);
                 st_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',st,'UniformOutput',0);   
                 %train all methods - optionally can adjust num neurons to mapmin
                 trained_opts = Deconvolve_Train(dff_train,st_train,'all',1000,params.bindata);                 
             case 'std'
-                dff_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),dff,'UniformOutput',0);
-                dff_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),dff,'UniformOutput',0);            
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),st,'UniformOutput',0);
                 st_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),st,'UniformOutput',0);  
                 %train all methods - optionally can adjust num neurons to std
@@ -80,6 +80,16 @@ switch type %different comparisons to run
                 st_test = cellfun(@(x) x(n+1:end,:),st,'UniformOutput',0); 
                 %train all methods using recordings (10k sum fr across entire probe over entire rec) 
                 trained_opts = Deconvolve_Train(dff_train,st_train,'all',10000,params.bindata);
+            case 'mean'
+                for i = 1:numel(st)
+                   st{i} = st{i}./n_neurons(i,:);
+                end
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
+                st_train = cellfun(@(x) x(1:n,:),st,'UniformOutput',0);
+                st_test = cellfun(@(x) x(n+1:end,:),st,'UniformOutput',0); 
+                %train all methods using recordings (10k sum fr across entire probe over entire rec) 
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',0,params.bindata);                
             otherwise
                 error('unknown normalization method');
         end          
@@ -97,8 +107,9 @@ switch type %different comparisons to run
         %get number of units per rec
         numunits = cellfun(@(x) NumUnitsPerDepthBin(x,params.depth), spike_opts_list,'UniformOutput',0);
 
-        num_methods = 6;
+        num_methods = 4;
         stats = cell(size(train_idx,1),num_methods);
+        stats_train = cell(size(train_idx,1),num_methods);
         nunits_test = zeros(size(train_idx,1),num_methods);
         nunits_train = zeros(size(train_idx,1),num_methods);
         bad_probe_idx=[];
@@ -110,42 +121,46 @@ switch type %different comparisons to run
                 bad_probe_idx=[bad_probe_idx,i];
             else
                 stats{i,1} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'lr_gcamp',trained_opts{train_idx(i,1)}(train_idx(i,2)));
-                stats{i,2} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'lr_glm',trained_opts{train_idx(i,1)}(train_idx(i,2)));
-                stats{i,3} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'glm',trained_opts{train_idx(i,1)}(train_idx(i,2))); 
-                stats{i,4} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'feedforward',trained_opts{train_idx(i,1)}(train_idx(i,2)));
-                stats{i,5} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'none',trained_opts{train_idx(i,1)}(train_idx(i,2)));
+                stats{i,2} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'glm',trained_opts{train_idx(i,1)}(train_idx(i,2))); 
+                stats{i,3} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'feedforward',trained_opts{train_idx(i,1)}(train_idx(i,2)));
+                stats{i,4} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'none',trained_opts{train_idx(i,1)}(train_idx(i,2)));
                 nunits_train(i,1:num_methods) = numunits{train_idx(i,1)}(train_idx(i,2));
                 nunits_test(i,1:num_methods) = numunits{test_idx(i,1)}(test_idx(i,2));
+                stats_train{i,1} = Deconvolve_Test(dff_train{test_idx(i,1)}(:,test_idx(i,2)),st_train{test_idx(i,1)}(:,test_idx(i,2)),'lr_gcamp',trained_opts{train_idx(i,1)}(train_idx(i,2)));
+                stats_train{i,2} = Deconvolve_Test(dff_train{test_idx(i,1)}(:,test_idx(i,2)),st_train{test_idx(i,1)}(:,test_idx(i,2)),'glm',trained_opts{train_idx(i,1)}(train_idx(i,2))); 
+                stats_train{i,3} = Deconvolve_Test(dff_train{test_idx(i,1)}(:,test_idx(i,2)),st_train{test_idx(i,1)}(:,test_idx(i,2)),'feedforward',trained_opts{train_idx(i,1)}(train_idx(i,2)));
+                stats_train{i,4} = Deconvolve_Test(dff_train{test_idx(i,1)}(:,test_idx(i,2)),st_train{test_idx(i,1)}(:,test_idx(i,2)),'none',trained_opts{train_idx(i,1)}(train_idx(i,2)));                
             end
         end %rec
         %concatenate (results is all narx, then all lr_gcamp, then lr_glm, etc.
         deconv_stats = cat(1,stats{:});
+        deconv_stats_train = cat(1,stats_train{:});
         type = {'lr_gcamp','lr_glm','glm','feedforward','none'};      
         fprintf('\n\tsaving')
         %save off
         save([savedir filesep sprintf('within_comparedepths%s%d.mat',norm_method,block)],'type','deconv_stats','nunits_train','bad_probe_idx',...
-            'nunits_test','badprobe','trained_opts','params','depths','block','train_idx','test_idx','norm_method');
+            'nunits_test','badprobe','trained_opts','params','depths','block','train_idx','test_idx','norm_method','deconv_stats_train','n_neurons');
                 
     case 2 %generalizability within recording, across sites same depth       
         fprintf('\n\t Comparing within rec/mouse across sites')
         params.mua = 1; %1= use both 'good' and 'mua' units. 0 = just 'good'
         params.depth = [0 600]; %depth from surface of probe
         %compile spiking data
-        [~,st] = CompileData_deconvolution([],spike_opts_list,params);          
+        [~,st,n_neurons] = CompileData_deconvolution([],spike_opts_list,params);   
 
         %split train/test (additional train,validation,test occurs within train)
-         n = floor(size(dff{1},1)*3/4);
+        n = floor(size(dff{1},1)*3/4);
         switch norm_method
             case 'mapminmax'
-                dff_train = cellfun(@(x) mapminmax(x(1:n,:)',0,1)',dff,'UniformOutput',0);
-                dff_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',dff,'UniformOutput',0);            
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) mapminmax(x(1:n,:)',0,1)',st,'UniformOutput',0);
                 st_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',st,'UniformOutput',0);   
                 %train all methods - optionally can adjust num neurons to mapmin
                 trained_opts = Deconvolve_Train(dff_train,st_train,'all',1000,params.bindata);                 
             case 'std'
-                dff_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),dff,'UniformOutput',0);
-                dff_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),dff,'UniformOutput',0);            
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),st,'UniformOutput',0);
                 st_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),st,'UniformOutput',0);  
                 %train all methods - optionally can adjust num neurons to std
@@ -157,9 +172,19 @@ switch type %different comparisons to run
                 st_test = cellfun(@(x) x(n+1:end,:),st,'UniformOutput',0); 
                 %train all methods using recordings (10k sum fr across entire probe over entire rec) 
                 trained_opts = Deconvolve_Train(dff_train,st_train,'all',10000,params.bindata);
+            case 'mean'
+                for i = 1:numel(st)
+                   st{i} = st{i}./n_neurons(i,:);
+                end
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
+                st_train = cellfun(@(x) x(1:n,:),st,'UniformOutput',0);
+                st_test = cellfun(@(x) x(n+1:end,:),st,'UniformOutput',0); 
+                %train all methods using recordings (10k sum fr across entire probe over entire rec) 
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',0,params.bindata);                
             otherwise
                 error('unknown normalization method');
-        end                 
+        end
         
         %each train will be used 3 times (other locations)
         temp = repmat(1:4,3,1);
@@ -176,7 +201,7 @@ switch type %different comparisons to run
         %get list of not enough spiking
         badprobe = cellfun(@(x) [x.insufactivity], trained_opts,'UniformOutput',0);
 
-        num_methods = 6;
+        num_methods = 4;
         stats = cell(size(train_idx,1),num_methods);    
         bad_probe_idx=[];
         for i = 1:size(train_idx,1)    
@@ -187,10 +212,9 @@ switch type %different comparisons to run
                 %leave variables blank
             else
                 stats{i,1} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'lr_gcamp',trained_opts{train_idx(i,1)}(train_idx(i,2)));
-                stats{i,2} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'lr_glm',trained_opts{train_idx(i,1)}(train_idx(i,2)));
-                stats{i,3} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'glm',trained_opts{train_idx(i,1)}(train_idx(i,2))); 
-                stats{i,4} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'feedforward',trained_opts{train_idx(i,1)}(train_idx(i,2)));
-                stats{i,5} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'none',trained_opts{train_idx(i,1)}(train_idx(i,2)));
+                stats{i,2} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'glm',trained_opts{train_idx(i,1)}(train_idx(i,2))); 
+                stats{i,3} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'feedforward',trained_opts{train_idx(i,1)}(train_idx(i,2)));
+                stats{i,4} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'none',trained_opts{train_idx(i,1)}(train_idx(i,2)));
             end
         end %rec
         %concatenate (results is all narx, then all lr_gcamp, then lr_glm, etc.
@@ -199,28 +223,29 @@ switch type %different comparisons to run
 
         fprintf('\n\tsaving')
         %save off        
-        save([savedir filesep sprintf('within_xsites%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx','badprobe','trained_opts','params','block','train_idx','test_idx','norm_method');
+        save([savedir filesep sprintf('within_xsites%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx','badprobe','trained_opts',...
+            'params','block','train_idx','test_idx','norm_method','n_neurons');
         
     case 3 %generalizability across recording, same site/animal/depth
         fprintf('\n\t Comparing across rec, within mouse/sites')
         params.mua = 1; %1= use both 'good' and 'mua' units. 0 = just 'good'
         params.depth = [0 600]; %depth from surface of probe
         %compile spiking data
-        [~,st] = CompileData_deconvolution([],spike_opts_list,params);          
+        [~,st,n_neurons] = CompileData_deconvolution([],spike_opts_list,params);   
 
         %split train/test (additional train,validation,test occurs within train)
         n = floor(size(dff{1},1)*3/4);
         switch norm_method
             case 'mapminmax'
-                dff_train = cellfun(@(x) mapminmax(x(1:n,:)',0,1)',dff,'UniformOutput',0);
-                dff_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',dff,'UniformOutput',0);            
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) mapminmax(x(1:n,:)',0,1)',st,'UniformOutput',0);
                 st_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',st,'UniformOutput',0);   
                 %train all methods - optionally can adjust num neurons to mapmin
                 trained_opts = Deconvolve_Train(dff_train,st_train,'all',1000,params.bindata);                 
             case 'std'
-                dff_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),dff,'UniformOutput',0);
-                dff_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),dff,'UniformOutput',0);            
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),st,'UniformOutput',0);
                 st_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),st,'UniformOutput',0);  
                 %train all methods - optionally can adjust num neurons to std
@@ -232,10 +257,20 @@ switch type %different comparisons to run
                 st_test = cellfun(@(x) x(n+1:end,:),st,'UniformOutput',0); 
                 %train all methods using recordings (10k sum fr across entire probe over entire rec) 
                 trained_opts = Deconvolve_Train(dff_train,st_train,'all',10000,params.bindata);
+            case 'mean'
+                for i = 1:numel(st)
+                   st{i} = st{i}./n_neurons(i,:);
+                end
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
+                st_train = cellfun(@(x) x(1:n,:),st,'UniformOutput',0);
+                st_test = cellfun(@(x) x(n+1:end,:),st,'UniformOutput',0); 
+                %train all methods using recordings (10k sum fr across entire probe over entire rec) 
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',0,params.bindata);                
             otherwise
                 error('unknown normalization method');
         end
-        %get recording ids 
+        %get recording ids
         mousenum = MouseNumFromPath(dff_list,'Mouse_');
         unique_mice = unique(mousenum);
 
@@ -257,7 +292,7 @@ switch type %different comparisons to run
         %get list of not enough spiking
         badprobe = cellfun(@(x) [x.insufactivity], trained_opts,'UniformOutput',0);
 
-        num_methods = 6;
+        num_methods = 4;
         stats = cell(size(train_idx,1),num_methods);   
         bad_probe_idx=[];
         for i = 1:size(train_idx,1)    
@@ -268,10 +303,9 @@ switch type %different comparisons to run
                 bad_probe_idx=[bad_probe_idx,i];
             else
                 stats{i,1} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'lr_gcamp',trained_opts{train_idx(i,1)}(train_idx(i,2)));
-                stats{i,2} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'lr_glm',trained_opts{train_idx(i,1)}(train_idx(i,2)));
-                stats{i,3} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'glm',trained_opts{train_idx(i,1)}(train_idx(i,2))); 
-                stats{i,4} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'feedforward',trained_opts{train_idx(i,1)}(train_idx(i,2)));
-                stats{i,5} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'none',trained_opts{train_idx(i,1)}(train_idx(i,2)));
+                stats{i,2} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'glm',trained_opts{train_idx(i,1)}(train_idx(i,2))); 
+                stats{i,3} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'feedforward',trained_opts{train_idx(i,1)}(train_idx(i,2)));
+                stats{i,4} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'none',trained_opts{train_idx(i,1)}(train_idx(i,2)));
             end
         end %rec
         %concatenate (results is all narx, then all lr_gcamp, then lr_glm, etc.
@@ -280,28 +314,29 @@ switch type %different comparisons to run
 
         fprintf('\n\tsaving')
         %save off        
-        save([savedir filesep sprintf('xrec_samesites%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx','badprobe','trained_opts','params','block','train_idx','test_idx','norm_method');
+        save([savedir filesep sprintf('xrec_samesites%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx',...
+            'badprobe','trained_opts','params','block','train_idx','test_idx','norm_method','n_neurons');
                 
     case 4 %generalizability across animals, same site/depth
         fprintf('\n\t Comparing across animal, within sites')
         params.mua = 1; %1= use both 'good' and 'mua' units. 0 = just 'good'
         params.depth = [0 600]; %depth from surface of probe
         %compile spiking data
-        [~,st] = CompileData_deconvolution([],spike_opts_list,params);          
+        [~,st,n_neurons] = CompileData_deconvolution([],spike_opts_list,params);   
 
         %split train/test (additional train,validation,test occurs within train)
         n = floor(size(dff{1},1)*3/4);
         switch norm_method
             case 'mapminmax'
-                dff_train = cellfun(@(x) mapminmax(x(1:n,:)',0,1)',dff,'UniformOutput',0);
-                dff_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',dff,'UniformOutput',0);            
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) mapminmax(x(1:n,:)',0,1)',st,'UniformOutput',0);
                 st_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',st,'UniformOutput',0);   
                 %train all methods - optionally can adjust num neurons to mapmin
                 trained_opts = Deconvolve_Train(dff_train,st_train,'all',1000,params.bindata);                 
             case 'std'
-                dff_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),dff,'UniformOutput',0);
-                dff_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),dff,'UniformOutput',0);            
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),st,'UniformOutput',0);
                 st_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),st,'UniformOutput',0);  
                 %train all methods - optionally can adjust num neurons to std
@@ -313,10 +348,20 @@ switch type %different comparisons to run
                 st_test = cellfun(@(x) x(n+1:end,:),st,'UniformOutput',0); 
                 %train all methods using recordings (10k sum fr across entire probe over entire rec) 
                 trained_opts = Deconvolve_Train(dff_train,st_train,'all',10000,params.bindata);
+            case 'mean'
+                for i = 1:numel(st)
+                   st{i} = st{i}./n_neurons(i,:);
+                end
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
+                st_train = cellfun(@(x) x(1:n,:),st,'UniformOutput',0);
+                st_test = cellfun(@(x) x(n+1:end,:),st,'UniformOutput',0); 
+                %train all methods using recordings (10k sum fr across entire probe over entire rec) 
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',0,params.bindata);                
             otherwise
                 error('unknown normalization method');
-        end 
-
+        end
+        
         %get recording ids and make sure that recordings are in correct order
         mousenum = MouseNumFromPath(dff_list,'Mouse_');       
         assert(sum(mousenum([1,3,5])-mousenum([2,4,6]))==0,'mouse numbers not ordered correctly');
@@ -349,7 +394,7 @@ switch type %different comparisons to run
         %get list of not enough spiking
         badprobe = cellfun(@(x) [x.insufactivity], trained_opts,'UniformOutput',0);
 
-        num_methods = 6;
+        num_methods = 4;
         stats = cell(size(train_idx,1),num_methods);   
         bad_probe_idx=[];
         for i = 1:size(train_idx,1)    
@@ -360,10 +405,9 @@ switch type %different comparisons to run
                 bad_probe_idx=[bad_probe_idx,i];
             else
                 stats{i,1} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'lr_gcamp',trained_opts{train_idx(i,1)}(train_idx(i,2)));
-                stats{i,2} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'lr_glm',trained_opts{train_idx(i,1)}(train_idx(i,2)));
-                stats{i,3} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'glm',trained_opts{train_idx(i,1)}(train_idx(i,2))); 
-                stats{i,4} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'feedforward',trained_opts{train_idx(i,1)}(train_idx(i,2)));
-                stats{i,5} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'none',trained_opts{train_idx(i,1)}(train_idx(i,2)));
+                stats{i,2} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'glm',trained_opts{train_idx(i,1)}(train_idx(i,2))); 
+                stats{i,3} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'feedforward',trained_opts{train_idx(i,1)}(train_idx(i,2)));
+                stats{i,4} = Deconvolve_Test(dff_test{test_idx(i,1)}(:,test_idx(i,2)),st_test{test_idx(i,1)}(:,test_idx(i,2)),'none',trained_opts{train_idx(i,1)}(train_idx(i,2)));
             end
         end %rec
         %concatenate (results is all narx, then all lr_gcamp, then lr_glm, etc.
@@ -372,32 +416,33 @@ switch type %different comparisons to run
 
         fprintf('\n\tsaving')
         %save off        
-        save([savedir filesep sprintf('xanimals_withinsites%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx','badprobe','trained_opts','params','block','train_idx','test_idx','norm_method');        
+        save([savedir filesep sprintf('xanimals_withinsites%s.mat',norm_method)],'type','deconv_stats',...
+            'bad_probe_idx','badprobe','trained_opts','params','block','train_idx','test_idx','norm_method','n_neurons');        
     
-    case 5 %training data (add glm intercept and switch validation to 0.1 and test to 0 before running
+    case 5 %training data (add glm intercept  and test to 0 before running
         fprintf('\n\t Comparing within animal, on the training data')
         params.mua = 1; %1= use both 'good' and 'mua' units. 0 = just 'good'
         params.depth = [0 600]; %depth from surface of probe
         %compile spiking data
-        [~,st] = CompileData_deconvolution([],spike_opts_list,params);          
+        [~,st,n_neurons] = CompileData_deconvolution([],spike_opts_list,params);   
 
         %split train/test (additional train,validation,test occurs within train)
         n = floor(size(dff{1},1)*3/4);
         switch norm_method
             case 'mapminmax'
-                dff_train = cellfun(@(x) mapminmax(x(1:n,:)',0,1)',dff,'UniformOutput',0);
-                dff_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',dff,'UniformOutput',0);            
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) mapminmax(x(1:n,:)',0,1)',st,'UniformOutput',0);
                 st_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',st,'UniformOutput',0);   
                 %train all methods - optionally can adjust num neurons to mapmin
                 trained_opts = Deconvolve_Train(dff_train,st_train,'all',1000,params.bindata);                 
             case 'std'
-                dff_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),dff,'UniformOutput',0);
-                dff_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),dff,'UniformOutput',0);            
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),st,'UniformOutput',0);
                 st_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),st,'UniformOutput',0);  
                 %train all methods - optionally can adjust num neurons to std
-                trained_opts = Deconvolve_Train(dff_train,st_train,'all',500,params.bindata);                
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',2500,params.bindata);                
             case 'none'
                 dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
                 dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
@@ -405,9 +450,19 @@ switch type %different comparisons to run
                 st_test = cellfun(@(x) x(n+1:end,:),st,'UniformOutput',0); 
                 %train all methods using recordings (10k sum fr across entire probe over entire rec) 
                 trained_opts = Deconvolve_Train(dff_train,st_train,'all',10000,params.bindata);
+            case 'mean'
+                for i = 1:numel(st)
+                   st{i} = st{i}./n_neurons(i,:);
+                end
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
+                st_train = cellfun(@(x) x(1:n,:),st,'UniformOutput',0);
+                st_test = cellfun(@(x) x(n+1:end,:),st,'UniformOutput',0); 
+                %train all methods using recordings (10k sum fr across entire probe over entire rec) 
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',0,params.bindata);                
             otherwise
                 error('unknown normalization method');
-        end 
+        end
 
         
         % Test within each probe per recroding
@@ -420,7 +475,7 @@ switch type %different comparisons to run
         %get list of not enough spiking
         badprobe = cellfun(@(x) [x.insufactivity], trained_opts,'UniformOutput',0);
 
-        num_methods = 6;
+        num_methods = 4;
         stats = cell(size(train_idx,1),num_methods);   
         bad_probe_idx=[];
         for i = 1:size(train_idx,1)    
@@ -431,10 +486,9 @@ switch type %different comparisons to run
                 bad_probe_idx=[bad_probe_idx,i];
             else
                 stats{i,1} = Deconvolve_Test(dff_train{test_idx(i,1)}(:,test_idx(i,2)),st_train{test_idx(i,1)}(:,test_idx(i,2)),'lr_gcamp',trained_opts{train_idx(i,1)}(train_idx(i,2)));
-                stats{i,2} = Deconvolve_Test(dff_train{test_idx(i,1)}(:,test_idx(i,2)),st_train{test_idx(i,1)}(:,test_idx(i,2)),'lr_glm',trained_opts{train_idx(i,1)}(train_idx(i,2)));
-                stats{i,3} = Deconvolve_Test(dff_train{test_idx(i,1)}(:,test_idx(i,2)),st_train{test_idx(i,1)}(:,test_idx(i,2)),'glm',trained_opts{train_idx(i,1)}(train_idx(i,2))); 
-                stats{i,4} = Deconvolve_Test(dff_train{test_idx(i,1)}(:,test_idx(i,2)),st_train{test_idx(i,1)}(:,test_idx(i,2)),'feedforward',trained_opts{train_idx(i,1)}(train_idx(i,2)));
-                stats{i,5} = Deconvolve_Test(dff_train{test_idx(i,1)}(:,test_idx(i,2)),st_train{test_idx(i,1)}(:,test_idx(i,2)),'none',trained_opts{train_idx(i,1)}(train_idx(i,2)));
+                stats{i,2} = Deconvolve_Test(dff_train{test_idx(i,1)}(:,test_idx(i,2)),st_train{test_idx(i,1)}(:,test_idx(i,2)),'glm',trained_opts{train_idx(i,1)}(train_idx(i,2))); 
+                stats{i,3} = Deconvolve_Test(dff_train{test_idx(i,1)}(:,test_idx(i,2)),st_train{test_idx(i,1)}(:,test_idx(i,2)),'feedforward',trained_opts{train_idx(i,1)}(train_idx(i,2)));
+                stats{i,4} = Deconvolve_Test(dff_train{test_idx(i,1)}(:,test_idx(i,2)),st_train{test_idx(i,1)}(:,test_idx(i,2)),'none',trained_opts{train_idx(i,1)}(train_idx(i,2)));
             end
         end %rec
         %concatenate (results is all narx, then all lr_gcamp, then lr_glm, etc.
@@ -443,39 +497,57 @@ switch type %different comparisons to run
 
         fprintf('\n\tsaving')
         %save off        
-        save([savedir filesep sprintf('training%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx','badprobe','trained_opts','params','block','train_idx','test_idx','norm_method');   
+        save([savedir filesep sprintf('training%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx','badprobe',...
+            'trained_opts','params','block','train_idx','test_idx','norm_method','n_neurons');   
         
     case 6 %train across sites within recording
         fprintf('\n\t training within recording. Compare on test data')
         params.mua = 1; %1= use both 'good' and 'mua' units. 0 = just 'good'
         params.depth = [0 600]; %depth from surface of probe
         %compile spiking data
-        [~,st] = CompileData_deconvolution([],spike_opts_list,params);          
+        [~,st,n_neurons] = CompileData_deconvolution([],spike_opts_list,params);   
 
         %split train/test (additional train,validation,test occurs within train)
         n = floor(size(dff{1},1)*3/4);
         switch norm_method
             case 'mapminmax'
-                dff_train = cellfun(@(x) mapminmax(x(1:n,:)',0,1)',dff,'UniformOutput',0);
-                dff_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',dff,'UniformOutput',0);            
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) mapminmax(x(1:n,:)',0,1)',st,'UniformOutput',0);
-                st_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',st,'UniformOutput',0);                  
+                st_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',st,'UniformOutput',0);   
+                %train all methods - optionally can adjust num neurons to mapmin
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',1000,params.bindata);                 
             case 'std'
-                dff_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),dff,'UniformOutput',0);
-                dff_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),dff,'UniformOutput',0);            
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),st,'UniformOutput',0);
-                st_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),st,'UniformOutput',0);              
+                st_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),st,'UniformOutput',0);  
+                %train all methods - optionally can adjust num neurons to std
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',2500,params.bindata);                
             case 'none'
                 dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
                 dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) x(1:n,:),st,'UniformOutput',0);
                 st_test = cellfun(@(x) x(n+1:end,:),st,'UniformOutput',0); 
+                %train all methods using recordings (10k sum fr across entire probe over entire rec) 
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',10000,params.bindata);
+            case 'mean'
+                for i = 1:numel(st)
+                   st{i} = st{i}./n_neurons(i,:);
+                end
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
+                st_train = cellfun(@(x) x(1:n,:),st,'UniformOutput',0);
+                st_test = cellfun(@(x) x(n+1:end,:),st,'UniformOutput',0); 
+                %train all methods using recordings (10k sum fr across entire probe over entire rec) 
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',0,params.bindata);                
             otherwise
                 error('unknown normalization method');
-        end 
+        end
+
         
         %combine training data xsites
-        [trainInd,valInd,testInd] = divideblock(n,0.7, 0.2, 0.1);
+        [trainInd,valInd] = divideblock(n,0.7, 0.3);
         temp_train_rec = cellfun(@(x) x(trainInd,:),dff_train,'UniformOutput',0); %get training and flatten across probes
         temp_train_rec = cellfun(@(x) x(:),temp_train_rec,'UniformOutput',0); 
         temp_val_rec = cellfun(@(x) x(valInd,:),dff_train,'UniformOutput',0); %get val and flatten across probes
@@ -483,7 +555,7 @@ switch type %different comparisons to run
         temp_test_rec = cellfun(@(x) x(testInd,:),dff_train,'UniformOutput',0); %get test and flatten across probes
         temp_test_rec = cellfun(@(x) x(:),temp_test_rec,'UniformOutput',0); 
         for i = 1:numel(dff_train)
-           dff_train{i} = cat(1,temp_train_rec{i},temp_val_rec{i},temp_test_rec{i});
+           dff_train{i} = cat(1,temp_train_rec{i},temp_val_rec{i});
         end
         
         %same for the spiking data
@@ -491,10 +563,8 @@ switch type %different comparisons to run
         temp_train_rec = cellfun(@(x) x(:),temp_train_rec,'UniformOutput',0); 
         temp_val_rec = cellfun(@(x) x(valInd,:),st_train,'UniformOutput',0); %get val and flatten across probes
         temp_val_rec = cellfun(@(x) x(:),temp_val_rec,'UniformOutput',0); 
-        temp_test_rec = cellfun(@(x) x(testInd,:),st_train,'UniformOutput',0); %get test and flatten across probes
-        temp_test_rec = cellfun(@(x) x(:),temp_test_rec,'UniformOutput',0); 
         for i = 1:numel(st_train)
-           st_train{i} = cat(1,temp_train_rec{i},temp_val_rec{i},temp_test_rec{i});
+           st_train{i} = cat(1,temp_train_rec{i},temp_val_rec{i});
         end          
 
         %train all methods
@@ -509,7 +579,7 @@ switch type %different comparisons to run
         %get list of not enough spiking
         badprobe = cellfun(@(x) [x.insufactivity], trained_opts,'UniformOutput',0);
 
-        num_methods = 6;
+        num_methods = 4;
         stats = cell(size(train_idx,1),num_methods);   
         bad_probe_idx=[];
         for i = 1:size(train_idx,1)    
@@ -531,51 +601,67 @@ switch type %different comparisons to run
 
         fprintf('\n\tsaving')
         %save off        
-        save([savedir filesep sprintf('train_xsites%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx','badprobe','trained_opts','params','block','train_idx','test_idx','norm_method');    
+        save([savedir filesep sprintf('train_xsites%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx',...
+            'badprobe','trained_opts','params','block','train_idx','test_idx','norm_method','n_neurons');    
         
     case 7 %train across sites and animals and compare to withheld
         fprintf('\n\t training across sites within animals. Compare on train data')
         params.mua = 1; %1= use both 'good' and 'mua' units. 0 = just 'good'
         params.depth = [0 600]; %depth from surface of probe
         %compile spiking data
-        [~,st] = CompileData_deconvolution([],spike_opts_list,params);          
+        [~,st,n_neurons] = CompileData_deconvolution([],spike_opts_list,params);   
 
         %split train/test (additional train,validation,test occurs within train)
         n = floor(size(dff{1},1)*3/4);
         switch norm_method
             case 'mapminmax'
-                dff_train = cellfun(@(x) mapminmax(x(1:n,:)',0,1)',dff,'UniformOutput',0);
-                dff_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',dff,'UniformOutput',0);            
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) mapminmax(x(1:n,:)',0,1)',st,'UniformOutput',0);
-                st_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',st,'UniformOutput',0);                  
+                st_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',st,'UniformOutput',0);   
+                %train all methods - optionally can adjust num neurons to mapmin
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',1000,params.bindata);                 
             case 'std'
-                dff_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),dff,'UniformOutput',0);
-                dff_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),dff,'UniformOutput',0);            
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),st,'UniformOutput',0);
-                st_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),st,'UniformOutput',0);              
+                st_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),st,'UniformOutput',0);  
+                %train all methods - optionally can adjust num neurons to std
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',2500,params.bindata);                
             case 'none'
                 dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
                 dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) x(1:n,:),st,'UniformOutput',0);
                 st_test = cellfun(@(x) x(n+1:end,:),st,'UniformOutput',0); 
+                %train all methods using recordings (10k sum fr across entire probe over entire rec) 
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',10000,params.bindata);
+            case 'mean'
+                for i = 1:numel(st)
+                   st{i} = st{i}./n_neurons(i,:);
+                end
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
+                st_train = cellfun(@(x) x(1:n,:),st,'UniformOutput',0);
+                st_test = cellfun(@(x) x(n+1:end,:),st,'UniformOutput',0); 
+                %train all methods using recordings (10k sum fr across entire probe over entire rec) 
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',0,params.bindata);                
             otherwise
                 error('unknown normalization method');
-        end 
+        end
+
         
         %evaulate it on the train data
         dff_test = dff_train; 
         st_test = st_train;
         
         %combine training data xsites
-        [trainInd,valInd,testInd] = divideblock(n,0.7, 0.2, 0.1);
+        [trainInd,valInd] = divideblock(n,0.8, 0.2);
         temp_train_rec = cellfun(@(x) x(trainInd,:),dff_train,'UniformOutput',0); %get training and flatten across probes
         temp_train_rec = cellfun(@(x) x(:),temp_train_rec,'UniformOutput',0); 
         temp_val_rec = cellfun(@(x) x(valInd,:),dff_train,'UniformOutput',0); %get val and flatten across probes
         temp_val_rec = cellfun(@(x) x(:),temp_val_rec,'UniformOutput',0); 
-        temp_test_rec = cellfun(@(x) x(testInd,:),dff_train,'UniformOutput',0); %get test and flatten across probes
-        temp_test_rec = cellfun(@(x) x(:),temp_test_rec,'UniformOutput',0); 
         for i = 1:numel(dff_train)
-           dff_train{i} = cat(1,temp_train_rec{i},temp_val_rec{i},temp_test_rec{i});
+           dff_train{i} = cat(1,temp_train_rec{i},temp_val_rec{i});
         end
         
         %same for the spiking data
@@ -583,10 +669,8 @@ switch type %different comparisons to run
         temp_train_rec = cellfun(@(x) x(:),temp_train_rec,'UniformOutput',0); 
         temp_val_rec = cellfun(@(x) x(valInd,:),st_train,'UniformOutput',0); %get val and flatten across probes
         temp_val_rec = cellfun(@(x) x(:),temp_val_rec,'UniformOutput',0); 
-        temp_test_rec = cellfun(@(x) x(testInd,:),st_train,'UniformOutput',0); %get test and flatten across probes
-        temp_test_rec = cellfun(@(x) x(:),temp_test_rec,'UniformOutput',0); 
         for i = 1:numel(st_train)
-           st_train{i} = cat(1,temp_train_rec{i},temp_val_rec{i},temp_test_rec{i});
+           st_train{i} = cat(1,temp_train_rec{i},temp_val_rec{i});
         end          
 
         %train all methods
@@ -601,7 +685,7 @@ switch type %different comparisons to run
         %get list of not enough spiking
         badprobe = cellfun(@(x) [x.insufactivity], trained_opts,'UniformOutput',0);
 
-        num_methods = 6;
+        num_methods = 4;
         stats = cell(size(train_idx,1),num_methods);   
         bad_probe_idx=[];
         for i = 1:size(train_idx,1)    
@@ -623,50 +707,68 @@ switch type %different comparisons to run
 
         fprintf('\n\tsaving')
         %save off        
-        save([savedir filesep sprintf('train_xsites_evaluatedontrainingdata%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx','badprobe','trained_opts','params','block','train_idx','test_idx','norm_method');          
+        save([savedir filesep sprintf('train_xsites_evaluatedontrainingdata%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx',...
+            'badprobe','trained_opts','params','block','train_idx','test_idx','norm_method','n_neurons');          
 
     case 8
         fprintf('\n\t training across animals and across sites. Compare on test data')
         params.mua = 1; %1= use both 'good' and 'mua' units. 0 = just 'good'
         params.depth = [0 600]; %depth from surface of probe
         %compile spiking data
-        [~,st] = CompileData_deconvolution([],spike_opts_list,params);          
+        [~,st,n_neurons] = CompileData_deconvolution([],spike_opts_list,params);          
+
+        %compile spiking data
+        [~,st,n_neurons] = CompileData_deconvolution([],spike_opts_list,params);   
 
         %split train/test (additional train,validation,test occurs within train)
         n = floor(size(dff{1},1)*3/4);
         switch norm_method
             case 'mapminmax'
-                dff_train = cellfun(@(x) mapminmax(x(1:n,:)',0,1)',dff,'UniformOutput',0);
-                dff_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',dff,'UniformOutput',0);            
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) mapminmax(x(1:n,:)',0,1)',st,'UniformOutput',0);
-                st_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',st,'UniformOutput',0);                  
+                st_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',st,'UniformOutput',0);   
+                %train all methods - optionally can adjust num neurons to mapmin
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',1000,params.bindata);                 
             case 'std'
-                dff_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),dff,'UniformOutput',0);
-                dff_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),dff,'UniformOutput',0);            
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),st,'UniformOutput',0);
-                st_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),st,'UniformOutput',0);              
+                st_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),st,'UniformOutput',0);  
+                %train all methods - optionally can adjust num neurons to std
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',2500,params.bindata);                
             case 'none'
                 dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
                 dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) x(1:n,:),st,'UniformOutput',0);
                 st_test = cellfun(@(x) x(n+1:end,:),st,'UniformOutput',0); 
+                %train all methods using recordings (10k sum fr across entire probe over entire rec) 
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',10000,params.bindata);
+            case 'mean'
+                for i = 1:numel(st)
+                   st{i} = st{i}./n_neurons(i,:);
+                end
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
+                st_train = cellfun(@(x) x(1:n,:),st,'UniformOutput',0);
+                st_test = cellfun(@(x) x(n+1:end,:),st,'UniformOutput',0); 
+                %train all methods using recordings (10k sum fr across entire probe over entire rec) 
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',0,params.bindata);                
             otherwise
                 error('unknown normalization method');
-        end 
+        end
+
         
         %combine training data xsites
-        [trainInd,valInd,testInd] = divideblock(n,0.7, 0.2, 0.1);
+        [trainInd,valInd] = divideblock(n,0.8, 0.2);
         temp_train_rec = cellfun(@(x) x(trainInd,:),dff_train,'UniformOutput',0); %get training and flatten across probes
         temp_train_rec = cellfun(@(x) x(:),temp_train_rec,'UniformOutput',0); 
         temp_train_rec = cat(1,temp_train_rec{:});
         temp_val_rec = cellfun(@(x) x(valInd,:),dff_train,'UniformOutput',0); %get val and flatten across probes
         temp_val_rec = cellfun(@(x) x(:),temp_val_rec,'UniformOutput',0); 
         temp_val_rec = cat(1,temp_val_rec{:});
-        temp_test_rec = cellfun(@(x) x(testInd,:),dff_train,'UniformOutput',0); %get test and flatten across probes
-        temp_test_rec = cellfun(@(x) x(:),temp_test_rec,'UniformOutput',0); 
-        temp_test_rec = cat(1,temp_test_rec{:});
         %combine across everyting 
-        dff_train = {cat(1,temp_train_rec,temp_val_rec,temp_test_rec)};
+        dff_train = {cat(1,temp_train_rec,temp_val_rec)};
         
         %same for the spiking data
         temp_train_rec = cellfun(@(x) x(trainInd,:),st_train,'UniformOutput',0); %get training and flatten across probes
@@ -675,12 +777,9 @@ switch type %different comparisons to run
         temp_val_rec = cellfun(@(x) x(valInd,:),st_train,'UniformOutput',0); %get val and flatten across probes
         temp_val_rec = cellfun(@(x) x(:),temp_val_rec,'UniformOutput',0); 
         temp_val_rec = cat(1,temp_val_rec{:});
-        temp_test_rec = cellfun(@(x) x(testInd,:),st_train,'UniformOutput',0); %get test and flatten across probes
-        temp_test_rec = cellfun(@(x) x(:),temp_test_rec,'UniformOutput',0); 
-        temp_test_rec = cat(1,temp_test_rec{:});
         
         %combine across everyting 
-        st_train = {cat(1,temp_train_rec,temp_val_rec,temp_test_rec)};      
+        st_train = {cat(1,temp_train_rec,temp_val_rec)};      
 
         %train all methods
         trained_opts = Deconvolve_Train(dff_train,st_train,'all',500,params.bindata);    
@@ -694,7 +793,7 @@ switch type %different comparisons to run
         %get list of not enough spiking
         badprobe = cellfun(@(x) [x.insufactivity], trained_opts,'UniformOutput',0);
 
-        num_methods = 6;
+        num_methods = 4;
         stats = cell(size(train_idx,1),num_methods);   
         bad_probe_idx=[];
         for i = 1:size(train_idx,1)    
@@ -716,53 +815,67 @@ switch type %different comparisons to run
 
         fprintf('\n\tsaving')
         %save off        
-        save([savedir filesep sprintf('train_xeverything%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx','badprobe','trained_opts','params','block','train_idx','test_idx','norm_method');          
+        save([savedir filesep sprintf('train_xeverything%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx','badprobe','trained_opts','params','block','train_idx','test_idx','norm_method','n_neurons');          
     case 9
         fprintf('\n\t training across animals and across sites. Compare on train data')
         params.mua = 1; %1= use both 'good' and 'mua' units. 0 = just 'good'
         params.depth = [0 600]; %depth from surface of probe
         %compile spiking data
-        [~,st] = CompileData_deconvolution([],spike_opts_list,params);          
+        [~,st,n_neurons] = CompileData_deconvolution([],spike_opts_list,params);   
 
         %split train/test (additional train,validation,test occurs within train)
         n = floor(size(dff{1},1)*3/4);
         switch norm_method
             case 'mapminmax'
-                dff_train = cellfun(@(x) mapminmax(x(1:n,:)',0,1)',dff,'UniformOutput',0);
-                dff_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',dff,'UniformOutput',0);            
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) mapminmax(x(1:n,:)',0,1)',st,'UniformOutput',0);
-                st_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',st,'UniformOutput',0);                  
+                st_test = cellfun(@(x) mapminmax(x(n+1:end,:)',0,1)',st,'UniformOutput',0);   
+                %train all methods - optionally can adjust num neurons to mapmin
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',1000,params.bindata);                 
             case 'std'
-                dff_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),dff,'UniformOutput',0);
-                dff_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),dff,'UniformOutput',0);            
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),st,'UniformOutput',0);
-                st_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),st,'UniformOutput',0);              
+                st_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),st,'UniformOutput',0);  
+                %train all methods - optionally can adjust num neurons to std
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',2500,params.bindata);                
             case 'none'
                 dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
                 dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
                 st_train = cellfun(@(x) x(1:n,:),st,'UniformOutput',0);
                 st_test = cellfun(@(x) x(n+1:end,:),st,'UniformOutput',0); 
+                %train all methods using recordings (10k sum fr across entire probe over entire rec) 
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',10000,params.bindata);
+            case 'mean'
+                for i = 1:numel(st)
+                   st{i} = st{i}./n_neurons(i,:);
+                end
+                dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+                dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
+                st_train = cellfun(@(x) x(1:n,:),st,'UniformOutput',0);
+                st_test = cellfun(@(x) x(n+1:end,:),st,'UniformOutput',0); 
+                %train all methods using recordings (10k sum fr across entire probe over entire rec) 
+                trained_opts = Deconvolve_Train(dff_train,st_train,'all',0,params.bindata);                
             otherwise
                 error('unknown normalization method');
-        end 
+        end
+
         
         %evaulate it on the train data
         dff_test = dff_train; 
         st_test = st_train;        
         
         %combine training data xsites
-        [trainInd,valInd,testInd] = divideblock(n,0.7, 0.2, 0.1);
+        [trainInd,valInd] = divideblock(n,0.8, 0.2);
         temp_train_rec = cellfun(@(x) x(trainInd,:),dff_train,'UniformOutput',0); %get training and flatten across probes
         temp_train_rec = cellfun(@(x) x(:),temp_train_rec,'UniformOutput',0); 
         temp_train_rec = cat(1,temp_train_rec{:});
         temp_val_rec = cellfun(@(x) x(valInd,:),dff_train,'UniformOutput',0); %get val and flatten across probes
         temp_val_rec = cellfun(@(x) x(:),temp_val_rec,'UniformOutput',0); 
         temp_val_rec = cat(1,temp_val_rec{:});
-        temp_test_rec = cellfun(@(x) x(testInd,:),dff_train,'UniformOutput',0); %get test and flatten across probes
-        temp_test_rec = cellfun(@(x) x(:),temp_test_rec,'UniformOutput',0); 
-        temp_test_rec = cat(1,temp_test_rec{:});
         %combine across everyting 
-        dff_train = {cat(1,temp_train_rec,temp_val_rec,temp_test_rec)};
+        dff_train = {cat(1,temp_train_rec,temp_val_rec)};
         
         %same for the spiking data
         temp_train_rec = cellfun(@(x) x(trainInd,:),st_train,'UniformOutput',0); %get training and flatten across probes
@@ -771,11 +884,9 @@ switch type %different comparisons to run
         temp_val_rec = cellfun(@(x) x(valInd,:),st_train,'UniformOutput',0); %get val and flatten across probes
         temp_val_rec = cellfun(@(x) x(:),temp_val_rec,'UniformOutput',0); 
         temp_val_rec = cat(1,temp_val_rec{:});
-        temp_test_rec = cellfun(@(x) x(testInd,:),st_train,'UniformOutput',0); %get test and flatten across probes
-        temp_test_rec = cellfun(@(x) x(:),temp_test_rec,'UniformOutput',0); 
-        temp_test_rec = cat(1,temp_test_rec{:});
+ 
         %combine across everyting 
-        st_train = {cat(1,temp_train_rec,temp_val_rec,temp_test_rec)};      
+        st_train = {cat(1,temp_train_rec,temp_val_rec)};      
 
         %train all methods
         trained_opts = Deconvolve_Train(dff_train,st_train,'all',500,params.bindata);    
@@ -789,7 +900,7 @@ switch type %different comparisons to run
         %get list of not enough spiking
         badprobe = cellfun(@(x) [x.insufactivity], trained_opts,'UniformOutput',0);
 
-        num_methods = 6;
+        num_methods = 4;
         stats = cell(size(train_idx,1),num_methods);   
         bad_probe_idx=[];
         for i = 1:size(train_idx,1)    
@@ -811,7 +922,8 @@ switch type %different comparisons to run
 
         fprintf('\n\tsaving')
         %save off        
-        save([savedir filesep sprintf('train_xeverything_evaluatetraining%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx','badprobe','trained_opts','params','block','train_idx','test_idx','norm_method');                 
+        save([savedir filesep sprintf('train_xeverything_evaluatetraining%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx','badprobe','trained_opts',...
+            'params','block','train_idx','test_idx','norm_method','n_neurons');                 
         
     otherwise 
         error('unknown comparison')

@@ -55,8 +55,10 @@ for cur_rec = 1:n_rec
                     trained_opts_cur_rec(cur_probe).glmkernelintercept = kernel(1);
                     %to test: stPred = {convn(padarray(dff',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid')'};   
                 case 'feedforward' %linear deconvolution using glm kernel
+                    %shallow feedforward
+                    fprintf('\n\t feedforward')
                     params = [];
-                    params.n_hiddenlayer = 10; %neurons in hidden layer
+                    params.n_hiddenlayer = 20; %neurons in hidden layer
                     params.trainFcn = 'trainlm'; % 'trainlm' works best
                     params.win = win; %size of timepoints to use. 60 is best
                     params.verbose = 0; 
@@ -64,7 +66,7 @@ for cur_rec = 1:n_rec
                     params.outputfnc = 'purelin'; %pure linear performs best, poslin is comparable but forces postive outpu               
                     net = train_feedforward_nn(trace_probe',spikes_probe',params); %train 
                     trained_opts_cur_rec(cur_probe).shallowfeedforward = net;
-                    trained_opts_cur_rec(cur_probe).feedforwardparams = params;   
+                    trained_opts_cur_rec(cur_probe).feedforwardparams = params; 
                 case 'lr_gcamp' %adapt for temporal binning
                     if bindata ==1 %0.95 if 15fps, 0.96 if 30
                         trained_opts_cur_rec(cur_probe).LRgamma = 0.80; %predicted is 0.95

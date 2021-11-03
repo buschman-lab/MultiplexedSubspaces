@@ -1,19 +1,19 @@
-classdef general_params_corticaldynamics  
+classdef general_params_retinotopy  
     properties
         %Path Options
         local_bucket = 'Z:\';
         spock_bucket = '\jukebox\buschman\';
-        repo_path = 'Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\GithubRepo\Widefield_Imaging_Analysis\';        
+        repo_path = 'Rodent Data\Wide Field Microscopy\Widefield_Imaging_Analysis\';        
         dynamic_script_path = 'Rodent Data\Wide Field Microscopy\Widefield_Imaging_Analysis\Spock\DynamicScripts\';
-        processing_intermediates = 'Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging\'; %location of the intermediate files in the processing pipeline
-        figure_save_directory = 'Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging\processingfigures\'; %directory to save off figures during processing
+        processing_intermediates = 'Rodent Data\Wide Field Microscopy\ExampleData\Preprocessed\'; %location of the intermediate files in the processing pipeline
+        figure_save_directory = 'Projects\Cortical Dynamics\Retinotopy\ProcessingFigures\'; %directory to save off figures during processing
         
         %dynamic script options
         sbatch_time = 59;
         sbatch_exclude = 'redshirt-n[12-49]';
         sbatch_memory = 16;
-        sbatch_matlabversion = 'R2019b';
-        sbatch_path = "/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis/Spock";
+        sbatch_matlabversion = 'R2018a';
+        sbatch_path = "/jukebox/buschman/Rodent Data/Wide Field Microscopy/Widefield_Imaging_Analysis/Spock/";
         sbatch_name = [];               
         stack_suffix = '.ome_stack.mat' %the suffix used to take individual dff and ID for combining e.g. '_dff.mat' for corrected recs and '_dff_uncorrected.mat' for uncorrected recs
         delete_singlefiles = 0; %flag to delete individual recording sections after done concatenating
