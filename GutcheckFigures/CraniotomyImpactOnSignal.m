@@ -41,27 +41,27 @@ stack(mask==0)=NaN;
 %% compare raw, dff, dfs, in spatial view
 close all; figure('position',[681 145 1065 834]); 
 subplot(3,3,1); set(gca,'ydir','reverse'); hold on;  imagesc(nanmean(stack,3)); axis off; axis square; colorbar; title('mean')
-cellfun(@(x) plot(x(1,1),x(1,2),'marker','.','color','r','markersize',10,'linewidth',2),probe_coords,'UniformOutput',0)
+% cellfun(@(x) plot(x(1,1),x(1,2),'marker','.','color','r','markersize',10,'linewidth',2),probe_coords,'UniformOutput',0)
 subplot(3,3,2); set(gca,'ydir','reverse'); hold on;  imagesc(nanmax(stack,[],3)); axis off; axis square; colorbar; title('max')
-cellfun(@(x) plot(x(1,1),x(1,2),'marker','.','color','r','markersize',10,'linewidth',2),probe_coords,'UniformOutput',0)
+% cellfun(@(x) plot(x(1,1),x(1,2),'marker','.','color','r','markersize',10,'linewidth',2),probe_coords,'UniformOutput',0)
 subplot(3,3,3); set(gca,'ydir','reverse'); hold on;  imagesc(nanstd(stack,[],3)); axis off; axis square; colorbar; title('std')
-cellfun(@(x) plot(x(1,1),x(1,2),'marker','.','color','r','markersize',10,'linewidth',2),probe_coords,'UniformOutput',0)
+% cellfun(@(x) plot(x(1,1),x(1,2),'marker','.','color','r','markersize',10,'linewidth',2),probe_coords,'UniformOutput',0)
 
 %% dff
 subplot(3,3,4); set(gca,'ydir','reverse'); hold on;  imagesc(nanmean(dff,3)); axis off; axis square; colorbar; title('mean')
-cellfun(@(x) plot(x(1,1),x(1,2),'marker','.','color','r','markersize',10,'linewidth',2),probe_coords,'UniformOutput',0)
+% cellfun(@(x) plot(x(1,1),x(1,2),'marker','.','color','r','markersize',10,'linewidth',2),probe_coords,'UniformOutput',0)
 subplot(3,3,5); set(gca,'ydir','reverse'); hold on;  imagesc(nanmax(dff,[],3)); axis off; axis square; colorbar; title('max')
-cellfun(@(x) plot(x(1,1),x(1,2),'marker','.','color','r','markersize',10,'linewidth',2),probe_coords,'UniformOutput',0)
+% cellfun(@(x) plot(x(1,1),x(1,2),'marker','.','color','r','markersize',10,'linewidth',2),probe_coords,'UniformOutput',0)
 subplot(3,3,6); set(gca,'ydir','reverse'); hold on;  imagesc(nanstd(dff,[],3)); axis off; axis square; colorbar; title('std')
-cellfun(@(x) plot(x(1,1),x(1,2),'marker','.','color','r','markersize',10,'linewidth',2),probe_coords,'UniformOutput',0)
+% cellfun(@(x) plot(x(1,1),x(1,2),'marker','.','color','r','markersize',10,'linewidth',2),probe_coords,'UniformOutput',0)
 
 %% dfs
 subplot(3,3,7); set(gca,'ydir','reverse'); hold on;  imagesc(nanmean(dfs,3)); axis off; axis square; colorbar; title('mean')
-cellfun(@(x) plot(x(1,1),x(1,2),'marker','.','color','r','markersize',10,'linewidth',2),probe_coords,'UniformOutput',0)
+% cellfun(@(x) plot(x(1,1),x(1,2),'marker','.','color','r','markersize',10,'linewidth',2),probe_coords,'UniformOutput',0)
 subplot(3,3,8); set(gca,'ydir','reverse'); hold on;  imagesc(nanmax(dfs,[],3)); axis off; axis square; colorbar; title('max')
-cellfun(@(x) plot(x(1,1),x(1,2),'marker','.','color','r','markersize',10,'linewidth',2),probe_coords,'UniformOutput',0)
+% cellfun(@(x) plot(x(1,1),x(1,2),'marker','.','color','r','markersize',10,'linewidth',2),probe_coords,'UniformOutput',0)
 subplot(3,3,9); set(gca,'ydir','reverse'); hold on;  imagesc(nanstd(dfs,[],3)); axis off; axis square; colorbar; title('std')
-cellfun(@(x) plot(x(1,1),x(1,2),'marker','.','color','r','markersize',10,'linewidth',2),probe_coords,'UniformOutput',0)
+% cellfun(@(x) plot(x(1,1),x(1,2),'marker','.','color','r','markersize',10,'linewidth',2),probe_coords,'UniformOutput',0)
 
 
 %% compare the distribution of pixel values 

@@ -8,16 +8,16 @@
 %get the drift of each neuron for each recording
 
 %% Example Traces on trained or withheld data
-% savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\ExampleTracesTraining';
-savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\ExampleTracesWithheld';
+savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\ExampleTracesTraining';
+% savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\ExampleTracesWithheld';
 fp = fig_params_deconvolutionpaper; 
 col = [fp.c_none; fp.c_lr; fp.c_glm ;fp.c_ff];
-% fn = GrabFiles('deconvolved_traces_trained_datastd.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'}); %trained
-% fn = GrabFiles('deconvolved_traces_trained_data_10pvalidationAndGLMinterceptstd.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'}); savefn = 'trained'; %trained
-fn = GrabFiles('deconvolved_traces_withheld_datastd.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'}); savefn = 'withheld'; %withheld
+fn = GrabFiles('deconvolved_traces_trained_datastd.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'}); %trained
+% fn = GrabFiles('deconvolved_traces_withheld_datastd.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'}); savefn = 'withheld'; %withheld
 data = load(fn{1});
 labels = {'None','LR','GLM','fNN'};
 %loop through each rec and each probe and generate the figure
+if ~exist(savedir,'dir'); mkdir(savedir); end
 n_rec = size(data(1).st_test,2);
 n_probe = size(data(1).st_test{1},2);
 for cur_rec = 1:n_rec
@@ -66,20 +66,22 @@ for cur_rec = 1:n_rec
            end           
            fp.FigureSizing(gcf,[3 2 20 3],[10 10 25 7])             
            %save off
-           saveCurFigs(gcf,{'-dpng','-dsvg'},sprintf('Rec%d_P%d_%d',cur_rec,cur_probe,cur_method),savedir,0); 
+           saveCurFigs(gcf,'-dsvg',sprintf('Rec%d_P%d_%d',cur_rec,cur_probe,cur_method),savedir,0); 
            
            %zoom in, change size, add box
            delete(r); 
            xlim([posdur,posdur+subdur])
            fp.FigureSizing(gcf,[3 2 10 3],[10 10 15 7]) 
            p.LineWidth=1; box on 
-           saveCurFigs(gcf,{'-dpng','-dsvg'},sprintf('Rec%d_P%d_%dzoom',cur_rec,cur_probe,cur_method),savedir,0); close
+           saveCurFigs(gcf,'-dsvg',sprintf('Rec%d_P%d_%dzoom',cur_rec,cur_probe,cur_method),savedir,0); close all
        end
     end
 end
 
 %% Within site/animals training data stats
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\training';
+if ~exist(savedir,'dir'); mkdir(savedir); end
+
 fp = fig_params_deconvolutionpaper; 
 col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load example traces and plot
@@ -116,6 +118,7 @@ saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('xcorr'),savedir,0)
 
 %% Within site/animals
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\withinsites_animal';
+if ~exist(savedir,'dir'); mkdir(savedir); end
 fp = fig_params_deconvolutionpaper; 
 col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load example traces and plot
@@ -147,13 +150,14 @@ saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('xcorr'),savedir,0)
 
 %% Across site within animal
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\xsite_within_animal';
+if ~exist(savedir,'dir'); mkdir(savedir); end
 fp = fig_params_deconvolutionpaper; 
 col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 
 %load fit Across Sites uM 
 fn = GrabFiles('within_xsite\w*std\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
 [data,lags,xcorr_trace,type] = LoadResults(fn{1},{'lr_gcamp','glm','feedforward','none'});%get the desired depth 
-labels = {'None','LR','GLM','fNN'};
+% labels = {'None','LR','GLM','fNN'};
 
 %reverse skew
 data{3} = -1*data{3};
@@ -175,6 +179,7 @@ saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('xcorr'),savedir,0)
 
 %% Across recordings in same animal. same site
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\xrec_same_siteanimal';
+if ~exist(savedir,'dir'); mkdir(savedir); end
 fp = fig_params_deconvolutionpaper; 
 col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load example traces and plot
@@ -204,6 +209,7 @@ saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('xcorr'),savedir,0)
 
 %% Across animals. same site
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\xanimals_samesite';
+if ~exist(savedir,'dir'); mkdir(savedir); end
 fp = fig_params_deconvolutionpaper; 
 col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load example traces and plot
@@ -233,6 +239,7 @@ saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('xcorr'),savedir,0)
 
 %% train Across sites eval on testing data
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\train_xsite';
+if ~exist(savedir,'dir'); mkdir(savedir); end
 fp = fig_params_deconvolutionpaper; 
 col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load example traces and plot
@@ -263,6 +270,7 @@ saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('xcorr'),savedir,0)
 
 %% train Across sites eval on training data
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\train_xsite_evaltrain';
+if ~exist(savedir,'dir'); mkdir(savedir); end
 fp = fig_params_deconvolutionpaper; 
 col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load example traces and plot
@@ -292,6 +300,7 @@ saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('xcorr'),savedir,0)
 
 %% train everything eval testing data
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\train_all';
+if ~exist(savedir,'dir'); mkdir(savedir); end
 fp = fig_params_deconvolutionpaper; 
 col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load example traces and plot
@@ -321,6 +330,7 @@ saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('xcorr'),savedir,0)
 
 %% train everything evaluate training data
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\train_all_evaltrain';
+if ~exist(savedir,'dir'); mkdir(savedir); end
 fp = fig_params_deconvolutionpaper; 
 col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load example traces and plot
@@ -350,6 +360,7 @@ saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('xcorr'),savedir,0)
 
 %% plot the training across depths ON TESTING DATA
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\across_depth_test';
+if ~exist(savedir,'dir'); mkdir(savedir); end
 fp = fig_params_deconvolutionpaper; 
 col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load example traces and plot
@@ -394,13 +405,14 @@ for i = 1:3 %loop through statistics
     xlim([min(depths),max(depths)])    
     set(gca,'XTickLabelRotation',45)
 end
-% saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('depthcorr'),savedir,0); close all
+saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('depthcorr'),savedir,0); close all
 figure; hold on; 
 shadedErrorBar(depths,n_neurons_avg,n_neurons_sem,'lineprops',{'linestyle','-','color',[0.5 0.5 0.5]});    
-% saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('depthneu'),savedir,0); close all
+saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('depthneu'),savedir,0); close all
 
 %% compare the superficial and deep
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\superficial_vs_deep';
+if ~exist(savedir,'dir'); mkdir(savedir); end
 fp = fig_params_deconvolutionpaper; 
 col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 
@@ -442,105 +454,14 @@ fp.SetTitle(gca,'superficial vs deep')
 fp.FigureSizing(gcf,[2 4 10 6],[])
 saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('rho'),savedir,0); close all
 
-% %% plot the training across depths ON training data
-% savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\across_depth_TRAIN';
-% fp = fig_params_deconvolutionpaper; 
-% col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
-% %load example traces and plot
-% 
-% %load data
-% fn = GrabFiles('within_compare\w*mean\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
-% n=7;
-% fn = fn(1:7);
-% data = cell(numel(fn),3);
-% for i = 1:numel(fn)
-%     data(i,:) = LoadResultsTrain(fn{i},{'lr_gcamp','glm','feedforward','none'});%get the desired depth     
-% end
-% 
-% labels = {'None','LR','GLM','fNN'};
-% %load depths
-% depths = load(fn{1},'depths');depths = nanmedian(depths.depths(1:n,:),2);
-% n_neurons = cellfun(@(x) load(x,'n_neurons'),fn,'UniformOutput',0);
-% n_neurons_avg = cellfun(@(x) nanmean(x.n_neurons(:)),n_neurons,'UniformOutput',1);
-% n_neurons_sem = cellfun(@(x) sem(x.n_neurons(:)),n_neurons,'UniformOutput',1);
-% 
-% statname = {'rho','err','s'};
-% for i = 1:3 %loop through statistics
-%     figure; hold on; 
-%     %equate their sizes
-%     maxlen = max(cellfun(@(x) size(x,1),data(:,i),'UniformOutput',1));
-%     temp = cellfun(@(x) cat(1,x, NaN(maxlen-size(x,1),size(x,2))),data(:,i),'UniformOutput',0);
-%     %loop through type
-%     for j=1:size(temp{1},2)
-%         data_method = cellfun(@(x) x(:,j), temp,'UniformOutput',0);
-%         data_method = [data_method{:}];
-% 
-%         y = nanmean(data_method,1)';
-%         x = depths;
-%         yerr = sem(data_method,1)';
-%         shadedErrorBar(x,y,yerr,'lineprops',{'linestyle','-','color',col{j}});    
-%         ylabel(statname{i})
-%         xlabel('Depth (uM)');              
-%     end
-%     fp.FormatAxes(gca); grid on
-%     fp.SetTitle(gca,statname{i})
-%     fp.FigureSizing(gcf,[2 4 8 6],[])      
-%     xlim([min(depths),max(depths)])    
-%     set(gca,'XTickLabelRotation',45)
-% end
-% saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('depthcorr'),savedir,0); close all
-% figure; hold on; 
-% shadedErrorBar(depths,n_neurons_avg,n_neurons_sem,'lineprops',{'linestyle','-','color',[0.5 0.5 0.5]});    
-% saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('depthneu'),savedir,0); close all
-% 
-% %% compare the superficial and deep
-% savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\superficial_vs_deep_train';
-% fp = fig_params_deconvolutionpaper; 
-% col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
-% 
-% %load data
-% fn = GrabFiles('within_compare\w*mean\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
-% fn = fn(8:9);
-% type = {'lr_gcamp','glm','feedforward'};
-% data = cell(1,numel(type));
-% for j = 1:numel(type)        
-%    data{j} = LoadResultsByType(fn,type{j},'rho');
-% end
-% 
-% col = repmat([{fp.c_lr},{fp.c_glm},{fp.c_ff}],numel(fn),1);
-% col = col(:);    
-% 
-% %get the xvalues
-% offset=0.5; %gap between types
-% x = (repmat(1:numel(fn),numel(type),1)+[0:numel(fn)+offset:(numel(fn)+offset)*(numel(type)-1)]')';
-% x = x(:);
-% data = cat(1,data{:});
-% 
-% %plot
-% figure; hold on; 
-% vp = CompareViolins(data,fp,'plotspread',1,'xpos',x,'col',col);
-% xlim([0.5,x(end)+0.5])
-% ylabel('rho'); xlabel('Depth (um)')
-% set(gca,'xticklabels',{'0-600','600-1400'},'XTickLabelRotation',45)
-% pval = ranksum(data(1,:),data(2,:));
-% plot([x(1),x(2)],[0.7 0.7],'linewidth',1,'color','k'); 
-% text(nanmean(x(1:2)),0.7,sprintf('p=%0.2g',pval),'HorizontalAlignment','center','VerticalAlignment','bottom','Fontsize',12)
-% pval = ranksum(data(3,:),data(4,:));
-% plot([x(3),x(4)],[0.8 0.8],'linewidth',1,'color','k'); 
-% text(nanmean(x(3:4)),0.8,sprintf('p=%0.2g',pval),'HorizontalAlignment','center','VerticalAlignment','bottom','Fontsize',12)
-% pval = ranksum(data(5,:),data(6,:));
-% plot([x(5),x(6)],[0.9 0.9],'linewidth',1,'color','k'); 
-% text(nanmean(x(5:6)),0.9,sprintf('p=%0.2g',pval),'HorizontalAlignment','center','VerticalAlignment','bottom','Fontsize',12)
-% fp.FormatAxes(gca); grid on
-% fp.SetTitle(gca,'superficial vs deep')
-% fp.FigureSizing(gcf,[2 4 10 6],[])
-% saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('rho'),savedir,0); close all
+
 
 %% Compare within methods, across train/fit types
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\methods_acrosscomparisons';
+if ~exist(savedir,'dir'); mkdir(savedir); end
 fp = fig_params_deconvolutionpaper; 
 fn = cell(9,1);
-temp = GrabFiles('trainingstd.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
+temp =  GrabFiles('trainingstd.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
 fn(1) = temp(2);
 fn(2) = GrabFiles('within_comparedepthsstd8.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
 fn(3) = GrabFiles('within_xsite\w*std\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
@@ -776,7 +697,8 @@ function handles = makeXcorrPlots(xcorr_trace,fp,sz,col,labels)
     end
     handles = get(groot, 'Children');
 end
-%% statistical comparisons
+
+%% sign rank statistical
 function handles = makeStatsPlots(data,fp,sz,labels)    
     titlestr = {'Correlation','MSE','Skew'};
     for i = 1:numel(titlestr)
@@ -785,7 +707,11 @@ function handles = makeStatsPlots(data,fp,sz,labels)
         idx = nchoosek(1:n,2);
         p_mat = NaN(size(data{i},2));
         for j = 1:size(idx,1)   
-           p_mat(idx(j,1),idx(j,2)) = -log10(signrank(data{i}(:,idx(j,1)),data{i}(:,idx(j,2))));
+           if i==1 %fisherz transform correlations before computing pvalue
+               p_mat(idx(j,1),idx(j,2)) = -log10(signrank(fisherZ(data{i}(:,idx(j,1))),fisherZ(data{i}(:,idx(j,2)))));
+           else
+               p_mat(idx(j,1),idx(j,2)) = -log10(signrank(data{i}(:,idx(j,1)),data{i}(:,idx(j,2))));
+           end
         end
         imagesc(p_mat,[0 4])
 
@@ -809,4 +735,98 @@ function handles = makeStatsPlots(data,fp,sz,labels)
     handles = get(groot, 'Children');
 end
 
+
+% %% plot the training across depths ON training data
+% savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\across_depth_TRAIN';
+% fp = fig_params_deconvolutionpaper; 
+% col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
+% %load example traces and plot
+% 
+% %load data
+% fn = GrabFiles('within_compare\w*mean\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
+% n=7;
+% fn = fn(1:7);
+% data = cell(numel(fn),3);
+% for i = 1:numel(fn)
+%     data(i,:) = LoadResultsTrain(fn{i},{'lr_gcamp','glm','feedforward','none'});%get the desired depth     
+% end
+% 
+% labels = {'None','LR','GLM','fNN'};
+% %load depths
+% depths = load(fn{1},'depths');depths = nanmedian(depths.depths(1:n,:),2);
+% n_neurons = cellfun(@(x) load(x,'n_neurons'),fn,'UniformOutput',0);
+% n_neurons_avg = cellfun(@(x) nanmean(x.n_neurons(:)),n_neurons,'UniformOutput',1);
+% n_neurons_sem = cellfun(@(x) sem(x.n_neurons(:)),n_neurons,'UniformOutput',1);
+% 
+% statname = {'rho','err','s'};
+% for i = 1:3 %loop through statistics
+%     figure; hold on; 
+%     %equate their sizes
+%     maxlen = max(cellfun(@(x) size(x,1),data(:,i),'UniformOutput',1));
+%     temp = cellfun(@(x) cat(1,x, NaN(maxlen-size(x,1),size(x,2))),data(:,i),'UniformOutput',0);
+%     %loop through type
+%     for j=1:size(temp{1},2)
+%         data_method = cellfun(@(x) x(:,j), temp,'UniformOutput',0);
+%         data_method = [data_method{:}];
+% 
+%         y = nanmean(data_method,1)';
+%         x = depths;
+%         yerr = sem(data_method,1)';
+%         shadedErrorBar(x,y,yerr,'lineprops',{'linestyle','-','color',col{j}});    
+%         ylabel(statname{i})
+%         xlabel('Depth (uM)');              
+%     end
+%     fp.FormatAxes(gca); grid on
+%     fp.SetTitle(gca,statname{i})
+%     fp.FigureSizing(gcf,[2 4 8 6],[])      
+%     xlim([min(depths),max(depths)])    
+%     set(gca,'XTickLabelRotation',45)
+% end
+% saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('depthcorr'),savedir,0); close all
+% figure; hold on; 
+% shadedErrorBar(depths,n_neurons_avg,n_neurons_sem,'lineprops',{'linestyle','-','color',[0.5 0.5 0.5]});    
+% saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('depthneu'),savedir,0); close all
+% 
+% %% compare the superficial and deep
+% savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\superficial_vs_deep_train';
+% fp = fig_params_deconvolutionpaper; 
+% col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
+% 
+% %load data
+% fn = GrabFiles('within_compare\w*mean\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
+% fn = fn(8:9);
+% type = {'lr_gcamp','glm','feedforward'};
+% data = cell(1,numel(type));
+% for j = 1:numel(type)        
+%    data{j} = LoadResultsByType(fn,type{j},'rho');
+% end
+% 
+% col = repmat([{fp.c_lr},{fp.c_glm},{fp.c_ff}],numel(fn),1);
+% col = col(:);    
+% 
+% %get the xvalues
+% offset=0.5; %gap between types
+% x = (repmat(1:numel(fn),numel(type),1)+[0:numel(fn)+offset:(numel(fn)+offset)*(numel(type)-1)]')';
+% x = x(:);
+% data = cat(1,data{:});
+% 
+% %plot
+% figure; hold on; 
+% vp = CompareViolins(data,fp,'plotspread',1,'xpos',x,'col',col);
+% xlim([0.5,x(end)+0.5])
+% ylabel('rho'); xlabel('Depth (um)')
+% set(gca,'xticklabels',{'0-600','600-1400'},'XTickLabelRotation',45)
+% pval = ranksum(data(1,:),data(2,:));
+% plot([x(1),x(2)],[0.7 0.7],'linewidth',1,'color','k'); 
+% text(nanmean(x(1:2)),0.7,sprintf('p=%0.2g',pval),'HorizontalAlignment','center','VerticalAlignment','bottom','Fontsize',12)
+% pval = ranksum(data(3,:),data(4,:));
+% plot([x(3),x(4)],[0.8 0.8],'linewidth',1,'color','k'); 
+% text(nanmean(x(3:4)),0.8,sprintf('p=%0.2g',pval),'HorizontalAlignment','center','VerticalAlignment','bottom','Fontsize',12)
+% pval = ranksum(data(5,:),data(6,:));
+% plot([x(5),x(6)],[0.9 0.9],'linewidth',1,'color','k'); 
+% text(nanmean(x(5:6)),0.9,sprintf('p=%0.2g',pval),'HorizontalAlignment','center','VerticalAlignment','bottom','Fontsize',12)
+% fp.FormatAxes(gca); grid on
+% fp.SetTitle(gca,'superficial vs deep')
+% fp.FigureSizing(gcf,[2 4 10 6],[])
+% saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('rho'),savedir,0); close all
 

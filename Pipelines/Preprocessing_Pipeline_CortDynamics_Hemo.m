@@ -32,9 +32,14 @@ s_conn = ssh2_config('spock.princeton.edu',username,password);
 addpath(genpath('Z:\Rodent Data\Wide Field Microscopy\fpCNMF'));
 addpath(genpath('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\GithubRepo\Widefield_Imaging_Analysis'));
 
-%configure preprocessing options
+% configure preprocessing options (hemo)
+% opts = ConfigurePreProcessing('crop_w',540,'vasc_std',0.5,'save_uncorrected',1,...
+%     'fixed_image','first','method','zscore','method_window',30,'wavelength_pattern',[1,2],'fps',30,'savecompressed',1,...
+%     'mask_brain_outline_dir',[fileparts(which('ConfigurePreProcessing.m')) filesep 'brainoutline_small.mat']);
+
+% %configure preprocessing options (no hemo)
 opts = ConfigurePreProcessing('crop_w',540,'vasc_std',0.5,'save_uncorrected',0,...
-    'fixed_image','first','method_window',30,'wavelength_pattern',1,'fps',30,'savecompressed',1,...
+    'fixed_image','first','method','zscore','method_window',30,'wavelength_pattern',1,'fps',30,'savecompressed',1,...
     'mask_brain_outline_dir',[fileparts(which('ConfigurePreProcessing.m')) filesep 'brainoutline_small.mat']);
 
 %load general params (this is for anything after preprocessing)
@@ -86,7 +91,8 @@ for cur_mouse = 1:numel(mice)
             saveas(gcf,[mouse_folder{cur_fold}, filesep,'ReferenceImage.png']); close all; 
         else %new images
             %Register Reference Images to the first reference image try to do it automatedly, but backs up with manual allignment if necessary        
-            prepro_log = RegisterReferenceImages(ref_imgs_mouse{1},ref_imgs_mouse{cur_fold},prepro_log);               
+            prepro_log = RegisterReferenceImages(ref_imgs_mouse{1},ref_imgs_mouse{cur_fold},prepro_log); 
+            prepro_log.cropped_alligned_img = PreProcessImage(ref_imgs_mouse{cur_fold},prepro_log,{'spatial_bin_factor',1});              
             [~,fn] = fileparts(mouse_folder{cur_fold});
             saveCurFigs(gcf,'-dpng',sprintf('registration_%s',fn),save_dir_processed,0); %close all;       
             close all;
@@ -146,7 +152,8 @@ end
 % InspectPreprocessedData(PreprocessedDataFilepath,'preprocessed')
 
 %% Now manually track the probes (AFTER REGISTRATION)
-for cur_fold = 5:numel(folder_list_raw)
+file_list_preprocessed = GrabFiles('\w*NP\w*dff_combined.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging'});
+for cur_fold = 3:numel(file_list_preprocessed)
    MarkProbe({file_list_preprocessed{cur_fold}});
 end
 

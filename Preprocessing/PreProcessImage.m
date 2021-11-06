@@ -24,4 +24,7 @@ cur_img = double(cur_img([1:opts.crop_h],[1:opts.crop_w]));
 %Mask and spatial bin
 cur_img = SpatialBin(cur_img,opts.spatial_bin_factor,opts.mask,1);
 
+%Remask to remove edge effects from mask
+cur_img(imresize(opts.mask,[68 68])==0)=0;
+
 end

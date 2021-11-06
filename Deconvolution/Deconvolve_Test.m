@@ -1,7 +1,10 @@
-function [stats,stPred] = Deconvolve_Test(trace_probe,spikes_probe,method,trained_opts)
+function [stats,stPred] = Deconvolve_Test(trace_probe,spikes_probe,method,trained_opts,addGLMint)
 %Camden MacDowell - timeless
 %applies deconvolution of the desired method on testing data
 %trace_probe and spikes_probe are vectors of of dff and spikes of one probe 
+if nargin <5
+    addGLMint = 0; %don't add in intercept (i.e. testing data)
+end
 timepoints = zeros(1,size(spikes_probe,1)); %track used timepoints (varies by method)
 switch method
     case 'narx' %autoregressive neural network 
@@ -32,8 +35,12 @@ switch method
         timepoints(1:end)=1;         
     case 'glm'
         kernel = flipud(trained_opts.glmkernel);
-%         stPred = convn(padarray(trace_probe',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid'); 
-        stPred = convn(padarray(trace_probe',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid')+trained_opts.glmkernelintercept; 
+        if addGLMint
+            fprintf('\n\t\n\nadding the intercept');
+            stPred = convn(padarray(trace_probe',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid')+trained_opts.glmkernelintercept;             
+        else
+            stPred = convn(padarray(trace_probe',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid');             
+        end
         timepoints(1:end)=1;
     case 'none'
         stPred = trace_probe;

@@ -1,8 +1,10 @@
-function ypred = DeconvolveData(y_all,method,trained_opts)
+function ypred = DeconvolveData(y_all,method,trained_opts,addGLMint)
 %Camden MacDowell - timeless
 %accepts y_all as a vector or y_all as a t x n matrix
 %some methods return a shorter vector, so also return the valid timepoints. 
-
+if nargin <4 
+    addGLMint = 0; 
+end
 ypred = NaN(size(y_all));
 n = size(y_all,2);
 for cur_trace = 1:n %trace loop
@@ -36,8 +38,11 @@ for cur_trace = 1:n %trace loop
             timepoints(1:end)=1;           
         case 'glm'
             kernel = flipud(trained_opts.glmkernel);
-%             ypred_temp = convn(padarray(y',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid');
-            ypred_temp = convn(padarray(y',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid')+trained_opts.glmkernelintercept; 
+            if addGLMint
+                ypred_temp = convn(padarray(y',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid')+trained_opts.glmkernelintercept;             
+            else
+                ypred_temp = convn(padarray(y',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid');             
+            end            
             timepoints(1:end)=1;
         case 'none'
             ypred_temp = y;

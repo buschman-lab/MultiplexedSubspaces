@@ -6,12 +6,12 @@ function CompareDeconvolutionMethods(type,block,norm_method)
 
 %addpaths for spock
 if ispc
-   load('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution\restingstate_processed_fn.mat','dff_list','spike_opts_list') 
+   load('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging\restingstate_processed_fn.mat','dff_list','spike_opts_list') 
 else
    addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Ephys'))
    addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/GenUtils'))
    addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis'))
-   load('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/Analysis/Deconvolution/restingstate_processed_fn.mat','dff_list_bucket','spike_opts_list_bucket')   
+   load('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/PreprocessedImaging/restingstate_processed_fn.mat','dff_list_bucket','spike_opts_list_bucket')   
    dff_list = dff_list_bucket;
    spike_opts_list = spike_opts_list_bucket;
 end   
@@ -419,7 +419,7 @@ switch type %different comparisons to run
         save([savedir filesep sprintf('xanimals_withinsites%s.mat',norm_method)],'type','deconv_stats',...
             'bad_probe_idx','badprobe','trained_opts','params','block','train_idx','test_idx','norm_method','n_neurons');        
     
-    case 5 %training data (add glm intercept  and test to 0 before running
+    case 5 %training data (add glm 
         fprintf('\n\t Comparing within animal, on the training data')
         params.mua = 1; %1= use both 'good' and 'mua' units. 0 = just 'good'
         params.depth = [0 600]; %depth from surface of probe
@@ -486,7 +486,7 @@ switch type %different comparisons to run
                 bad_probe_idx=[bad_probe_idx,i];
             else
                 stats{i,1} = Deconvolve_Test(dff_train{test_idx(i,1)}(:,test_idx(i,2)),st_train{test_idx(i,1)}(:,test_idx(i,2)),'lr_gcamp',trained_opts{train_idx(i,1)}(train_idx(i,2)));
-                stats{i,2} = Deconvolve_Test(dff_train{test_idx(i,1)}(:,test_idx(i,2)),st_train{test_idx(i,1)}(:,test_idx(i,2)),'glm',trained_opts{train_idx(i,1)}(train_idx(i,2))); 
+                stats{i,2} = Deconvolve_Test(dff_train{test_idx(i,1)}(:,test_idx(i,2)),st_train{test_idx(i,1)}(:,test_idx(i,2)),'glm',trained_opts{train_idx(i,1)}(train_idx(i,2)),1); 
                 stats{i,3} = Deconvolve_Test(dff_train{test_idx(i,1)}(:,test_idx(i,2)),st_train{test_idx(i,1)}(:,test_idx(i,2)),'feedforward',trained_opts{train_idx(i,1)}(train_idx(i,2)));
                 stats{i,4} = Deconvolve_Test(dff_train{test_idx(i,1)}(:,test_idx(i,2)),st_train{test_idx(i,1)}(:,test_idx(i,2)),'none',trained_opts{train_idx(i,1)}(train_idx(i,2)));
             end
@@ -552,8 +552,6 @@ switch type %different comparisons to run
         temp_train_rec = cellfun(@(x) x(:),temp_train_rec,'UniformOutput',0); 
         temp_val_rec = cellfun(@(x) x(valInd,:),dff_train,'UniformOutput',0); %get val and flatten across probes
         temp_val_rec = cellfun(@(x) x(:),temp_val_rec,'UniformOutput',0); 
-        temp_test_rec = cellfun(@(x) x(testInd,:),dff_train,'UniformOutput',0); %get test and flatten across probes
-        temp_test_rec = cellfun(@(x) x(:),temp_test_rec,'UniformOutput',0); 
         for i = 1:numel(dff_train)
            dff_train{i} = cat(1,temp_train_rec{i},temp_val_rec{i});
         end

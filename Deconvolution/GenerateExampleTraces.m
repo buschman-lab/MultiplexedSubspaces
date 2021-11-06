@@ -69,7 +69,7 @@ for cur_rec = 1:n_rec
 end %rec
 save([savedir filesep sprintf('deconvolved_traces_withheld_data%s.mat',norm_method)],'params','st_test','ypred_ff','ypred_glm','ypred_lr','ypred_none');
 
-%on the trained data
+%on the trained data (with glm intercept added back)
 n_rec = numel(dff);
 n_probe = size(dff{1},2);
 ypred_ff = cell(1,n_rec);
@@ -81,14 +81,13 @@ for cur_rec = 1:n_rec
     for cur_probe = 1:n_probe
        fprintf('\n working on probe %d or %d',cur_probe,n_probe)
        ypred_ff{cur_rec}(:,cur_probe) = DeconvolveData(dff_train{cur_rec}(:,cur_probe),'feedforward',trained_opts{cur_rec}(:,cur_probe));
-       ypred_glm{cur_rec}(:,cur_probe) = DeconvolveData(dff_train{cur_rec}(:,cur_probe),'glm',trained_opts{cur_rec}(:,cur_probe));
+       ypred_glm{cur_rec}(:,cur_probe) = DeconvolveData(dff_train{cur_rec}(:,cur_probe),'glm',trained_opts{cur_rec}(:,cur_probe),1);
        ypred_lr{cur_rec}(:,cur_probe) = DeconvolveData(dff_train{cur_rec}(:,cur_probe),'lr_gcamp',trained_opts{cur_rec}(:,cur_probe));
        ypred_none{cur_rec}(:,cur_probe) = DeconvolveData(dff_train{cur_rec}(:,cur_probe),'none',trained_opts{cur_rec}(:,cur_probe));
     end %probe
 end %rec
 st_test = st_train;
-% save([savedir filesep sprintf('deconvolved_traces_trained_data%s.mat',norm_method)],'params','st_test','ypred_ff','ypred_glm','ypred_lr','ypred_none');
-save([savedir filesep sprintf('deconvolved_traces_trained_data_10pvalidationAndGLMintercept%s.mat',norm_method)],'params','st_test','ypred_ff','ypred_glm');
+save([savedir filesep sprintf('deconvolved_traces_trained_data%s.mat',norm_method)],'params','st_test','ypred_ff','ypred_glm','ypred_lr','ypred_none');
 
 end %function end
 
