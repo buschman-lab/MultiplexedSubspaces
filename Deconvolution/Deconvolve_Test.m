@@ -34,8 +34,9 @@ switch method
         stPred = lucric(trace_probe-min(trace_probe),gamma,1,win); 
         timepoints(1:end)=1;         
     case 'glm'
+        fprintf('\naddGLMint %d',addGLMint);
         kernel = flipud(trained_opts.glmkernel);
-        if addGLMint
+        if addGLMint ==1
             fprintf('\n\t\n\nadding the intercept');
             stPred = convn(padarray(trace_probe',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid')+trained_opts.glmkernelintercept;             
         else

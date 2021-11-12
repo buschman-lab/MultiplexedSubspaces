@@ -8,6 +8,7 @@
 %get the drift of each neuron for each recording
 
 %% Example Traces on trained or withheld data
+%Camden | you're currently just using the first recording, first probe for example figures
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\ExampleTracesTraining';
 % savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\ExampleTracesWithheld';
 fp = fig_params_deconvolutionpaper; 
@@ -15,7 +16,7 @@ col = [fp.c_none; fp.c_lr; fp.c_glm ;fp.c_ff];
 fn = GrabFiles('deconvolved_traces_trained_datastd.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'}); %trained
 % fn = GrabFiles('deconvolved_traces_withheld_datastd.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'}); savefn = 'withheld'; %withheld
 data = load(fn{1});
-labels = {'None','LR','GLM','fNN'};
+labels = {'WF','LR','GLM','fNN'};
 %loop through each rec and each probe and generate the figure
 if ~exist(savedir,'dir'); mkdir(savedir); end
 n_rec = size(data(1).st_test,2);
@@ -28,6 +29,7 @@ for cur_rec = 1:n_rec
            data(1).ypred_glm{cur_rec}(:,cur_probe),data(1).ypred_ff{cur_rec}(:,cur_probe)];
        y = data(1).st_test{cur_rec}(:,cur_probe);
        x = (1:size(ypred,1))/30;
+       xvals = [60 360]; %window to plot (300sec is usually good length)
        subdur=20; %duration of the subplot in seconds
        posdur=190; %position of the subplot in seconds
        %plot each individually, including true, for 5 minutes 
@@ -35,10 +37,11 @@ for cur_rec = 1:n_rec
            figure; hold on; 
            %add zoom box
            if cur_method==size(ypred,2)+1
-              yvals = [floor(min(y(1:600*30))),ceil(max(y(1:600*30)))];
+              yvals = [floor(min(y(xvals(1):xvals(2)))),ceil(max(y(xvals(1):xvals(2))))];
            else
-              yvals = [floor(min(ypred(1:600*30,cur_method))),ceil(max(ypred(1:600*30,cur_method)))];
+              yvals = [floor(min(ypred(xvals(1):xvals(2),cur_method))),ceil(max(ypred(xvals(1):xvals(2),cur_method)))];
            end           
+%            r=rectangle('position',[posdur,0,subdur,6],'FaceColor',[0.25 0.25 0.25 0.25],'EdgeColor','none');
            r=rectangle('position',[posdur,yvals(1),subdur,sum(abs(yvals))],'FaceColor',[0.25 0.25 0.25 0.25],'EdgeColor','none');
            plot([0 x(end)],[0 0],'color','k','linewidth',fp.line_width)
            if cur_method==size(ypred,2)+1
@@ -50,30 +53,48 @@ for cur_rec = 1:n_rec
                p=plot(x,ypred(:,cur_method),'linewidth',fp.line_width,'color',col(cur_method,:));
            end
            if cur_method==1
-               ylabel('\DeltaF/F'); 
+               ylabel('\DeltaF/\sigma'); 
            elseif cur_method == size(ypred,2)+1
                ylabel({'Normalized','firing rate'});
            else
                ylabel({'Predicted','firing rate'});
-           end
-           xlim([0 300]);
+           end           
+           xlim(xvals);
+           set(gca,'xtick',xvals(1):50:xvals(2),'xticklabel',0:50:diff(xvals))
            xlabel('Time (s)')                                     
            fp.FormatAxes(gca); grid on
            if cur_method==size(ypred,2)+1
                fp.SetTitle(gca,'Original')
            else
                fp.SetTitle(gca,labels{cur_method})
-           end           
-           fp.FigureSizing(gcf,[3 2 20 3],[10 10 25 7])             
+           end
+           set(gca,'ylim',yvals)
+           fp.FigureSizing(gcf,[3 2 20 3],[10 10 25 7])
+           
            %save off
-           saveCurFigs(gcf,'-dsvg',sprintf('Rec%d_P%d_%d',cur_rec,cur_probe,cur_method),savedir,0); 
+           saveCurFigs(gcf,{'-dpng','-dsvg'},sprintf('Rec%d_P%d_%d',cur_rec,cur_probe,cur_method),savedir,0); 
            
            %zoom in, change size, add box
            delete(r); 
            xlim([posdur,posdur+subdur])
            fp.FigureSizing(gcf,[3 2 10 3],[10 10 15 7]) 
            p.LineWidth=1; box on 
-           saveCurFigs(gcf,'-dsvg',sprintf('Rec%d_P%d_%dzoom',cur_rec,cur_probe,cur_method),savedir,0); close all
+           saveCurFigs(gcf,{'-dpng','-dsvg'},sprintf('Rec%d_P%d_%dzoom',cur_rec,cur_probe,cur_method),savedir,0); close all
+           
+           %plot the distribution of values
+           figure; hold on; 
+           if cur_method==size(ypred,2)+1
+               histogram(y,'numbins',50,'EdgeAlpha',0,'FaceColor','k');            
+               xlabel('Firing Rate')
+           else
+               histogram(ypred(:,cur_method),'EdgeAlpha',0,'FaceColor',col(cur_method,:));
+               xlabel('Predicted Firing Rate')
+           end
+           fp.FigureSizing(gcf,[3 2 3 3],[10 10 15 7]) 
+           ytemp = get(gca,'ylim'); plot([0 0],ytemp,'color','k','linewidth',1,'linestyle','-')
+           ylabel('# Values');            
+           fp.FormatAxes(gca); grid on
+           saveCurFigs(gcf,{'-dpng','-dsvg'},sprintf('Rec%d_P%d_%dhistogram',cur_rec,cur_probe,cur_method),savedir,0); close all           
        end
     end
 end
@@ -89,7 +110,7 @@ col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load fit to 600uM 
 fn = GrabFiles('trainingstd.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
 [data,lags,xcorr_trace,type] = LoadResults(fn{1},{'lr_gcamp','glm','feedforward','none'});%get the desired depth 
-labels = {'None','LR','GLM','fNN'};
+labels = {'WF','LR','GLM','fNN'};
 
 %reverse skew
 data{3} = -1*data{3};
@@ -115,6 +136,10 @@ sz = {[2 2 8 8],[2 2 4 4]};
 fh_xcorr = makeXcorrPlots(xcorr_trace,fp,sz,col,labels);
 saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('xcorr'),savedir,0); close all
 
+%save the stats
+stats = computeStats(data);
+writetable(stats,[savedir filesep 'stats_table.txt'],'Delimiter',' ') 
+save([savedir filesep 'statistics.mat'],'stats');
 
 %% Within site/animals
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\withinsites_animal';
@@ -126,7 +151,7 @@ col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load fit to 600uM 
 fn = GrabFiles('within_compare\w*std\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
 [data,lags,xcorr_trace,type] = LoadResults(fn{end-1},{'lr_gcamp','glm','feedforward','none'});%get the desired depth 
-labels = {'None','LR','GLM','fNN'};
+labels = {'WF','LR','GLM','fNN'};
 %reverse skew
 data{3} = -1*data{3};
 
@@ -145,8 +170,10 @@ sz = {[2 2 8 8],[2 2 4 4]};
 fh_xcorr = makeXcorrPlots(xcorr_trace,fp,sz,col,labels);
 saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('xcorr'),savedir,0); close all
 
-% figure comparing the distibutions shape
-% figure comparing methods across depths
+%save the stats
+stats = computeStats(data);
+writetable(stats,[savedir filesep 'stats_table.txt'],'Delimiter',' ') 
+save([savedir filesep 'statistics.mat'],'stats');
 
 %% Across site within animal
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\xsite_within_animal';
@@ -157,7 +184,7 @@ col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load fit Across Sites uM 
 fn = GrabFiles('within_xsite\w*std\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
 [data,lags,xcorr_trace,type] = LoadResults(fn{1},{'lr_gcamp','glm','feedforward','none'});%get the desired depth 
-% labels = {'None','LR','GLM','fNN'};
+% labels = {'WF','LR','GLM','fNN'};
 
 %reverse skew
 data{3} = -1*data{3};
@@ -176,6 +203,11 @@ saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('pvals'),savedir,0)
 sz = {[2 2 8 8],[2 2 4 4]};
 fh_xcorr = makeXcorrPlots(xcorr_trace,fp,sz,col,labels);
 saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('xcorr'),savedir,0); close all
+
+%save the stats
+stats = computeStats(data);
+writetable(stats,[savedir filesep 'stats_table.txt'],'Delimiter',' ') 
+save([savedir filesep 'statistics.mat'],'stats');
 
 %% Across recordings in same animal. same site
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\xrec_same_siteanimal';
@@ -187,7 +219,7 @@ col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load fit Across Sites uM 
 fn = GrabFiles('xrec_samesitesstd\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
 [data,lags,xcorr_trace,type] = LoadResults(fn{1});%get the desired depth 
-labels = {'None','LR','GLM','fNN'};
+labels = {'WF','LR','GLM','fNN'};
 
 %reverse skew
 data{3} = -1*data{3};
@@ -207,6 +239,11 @@ sz = {[2 2 8 8],[2 2 4 4]};
 fh_xcorr = makeXcorrPlots(xcorr_trace,fp,sz,col,labels);
 saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('xcorr'),savedir,0); close all
 
+%save the stats
+stats = computeStats(data);
+writetable(stats,[savedir filesep 'stats_table.txt'],'Delimiter',' ') 
+save([savedir filesep 'statistics.mat'],'stats');
+
 %% Across animals. same site
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\xanimals_samesite';
 if ~exist(savedir,'dir'); mkdir(savedir); end
@@ -217,7 +254,7 @@ col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load fit Across Sites uM 
 fn = GrabFiles('xanimals\w*std\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
 [data,lags,xcorr_trace,type] = LoadResults(fn{1});%get the desired depth 
-labels = {'None','LR','GLM','fNN'};
+labels = {'WF','LR','GLM','fNN'};
 
 %reverse skew
 data{3} = -1*data{3};
@@ -237,6 +274,11 @@ sz = {[2 2 8 8],[2 2 4 4]};
 fh_xcorr = makeXcorrPlots(xcorr_trace,fp,sz,col,labels);
 saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('xcorr'),savedir,0); close all
 
+%save the stats
+stats = computeStats(data);
+writetable(stats,[savedir filesep 'stats_table.txt'],'Delimiter',' ') 
+save([savedir filesep 'statistics.mat'],'stats');
+
 %% train Across sites eval on testing data
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\train_xsite';
 if ~exist(savedir,'dir'); mkdir(savedir); end
@@ -247,7 +289,7 @@ col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load fit Across Sites uM 
 fn = GrabFiles('train_xsitesstd\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
 [data,lags,xcorr_trace,type] = LoadResults(fn{1},{'lr_gcamp','glm','feedforward','none'});%get the desired depth 
-labels = {'None','LR','GLM','fNN'};
+labels = {'WF','LR','GLM','fNN'};
 
 %reverse skew
 data{3} = -1*data{3};
@@ -267,6 +309,10 @@ sz = {[2 2 8 8],[2 2 4 4]};
 fh_xcorr = makeXcorrPlots(xcorr_trace,fp,sz,col,labels);
 saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('xcorr'),savedir,0); close all
 
+%save the stats
+stats = computeStats(data);
+writetable(stats,[savedir filesep 'stats_table.txt'],'Delimiter',' ') 
+save([savedir filesep 'statistics.mat'],'stats');
 
 %% train Across sites eval on training data
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\train_xsite_evaltrain';
@@ -278,7 +324,7 @@ col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load fit Across Sites uM 
 fn = GrabFiles('train_xsites_evaluatedontrainingdatastd\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
 [data,lags,xcorr_trace,type] = LoadResults(fn{1},{'lr_gcamp','glm','feedforward','none'});%get the desired depth 
-labels = {'None','LR','GLM','fNN'};
+labels = {'WF','LR','GLM','fNN'};
 
 %reverse skew
 data{3} = -1*data{3};
@@ -297,6 +343,11 @@ saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('pvals'),savedir,0)
 sz = {[2 2 8 8],[2 2 4 4]};
 fh_xcorr = makeXcorrPlots(xcorr_trace,fp,sz,col,labels);
 saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('xcorr'),savedir,0); close all
+
+%save the stats
+stats = computeStats(data);
+writetable(stats,[savedir filesep 'stats_table.txt'],'Delimiter',' ') 
+save([savedir filesep 'statistics.mat'],'stats');
 
 %% train everything eval testing data
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\train_all';
@@ -308,7 +359,7 @@ col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load fit Across Sites uM 
 fn = GrabFiles('train_xeverythingstd\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
 [data,lags,xcorr_trace,type] = LoadResults(fn{1},{'lr_gcamp','glm','feedforward','none'});%get the desired depth 
-labels = {'None','LR','GLM','fNN'};
+labels = {'WF','LR','GLM','fNN'};
 
 %reverse skew
 data{3} = -1*data{3};
@@ -327,6 +378,11 @@ saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('pvals'),savedir,0)
 sz = {[2 2 8 8],[2 2 4 4]};
 fh_xcorr = makeXcorrPlots(xcorr_trace,fp,sz,col,labels);
 saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('xcorr'),savedir,0); close all
+
+%save the stats
+stats = computeStats(data);
+writetable(stats,[savedir filesep 'stats_table.txt'],'Delimiter',' ') 
+save([savedir filesep 'statistics.mat'],'stats');
 
 %% train everything evaluate training data
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\train_all_evaltrain';
@@ -338,7 +394,7 @@ col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load fit Across Sites uM 
 fn = GrabFiles('train_xsites\w*std\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
 [data,lags,xcorr_trace,type] = LoadResults(fn{1},{'lr_gcamp','glm','feedforward','none'});%get the desired depth 
-labels = {'None','LR','GLM','fNN'};
+labels = {'WF','LR','GLM','fNN'};
 
 %reverse skew
 data{3} = -1*data{3};
@@ -357,6 +413,11 @@ saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('pvals'),savedir,0)
 sz = {[2 2 8 8],[2 2 4 4]};
 fh_xcorr = makeXcorrPlots(xcorr_trace,fp,sz,col,labels);
 saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('xcorr'),savedir,0); close all
+
+%save the stats
+stats = computeStats(data);
+writetable(stats,[savedir filesep 'stats_table.txt'],'Delimiter',' ') 
+save([savedir filesep 'statistics.mat'],'stats');
 
 %% plot the training across depths ON TESTING DATA
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\across_depth_test';
@@ -374,7 +435,7 @@ for i = 1:numel(fn)
     data(i,:) = LoadResults(fn{i},{'lr_gcamp','glm','feedforward','none'});%get the desired depth     
 end
 
-labels = {'None','LR','GLM','fNN'};
+labels = {'WF','LR','GLM','fNN'};
 %load depths
 depths = load(fn{1},'depths');depths = nanmedian(depths.depths(1:n,:),2);
 n_neurons = cellfun(@(x) load(x,'n_neurons'),fn,'UniformOutput',0);
@@ -454,6 +515,22 @@ fp.SetTitle(gca,'superficial vs deep')
 fp.FigureSizing(gcf,[2 4 10 6],[])
 saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('rho'),savedir,0); close all
 
+%get the statistics
+data = data';
+stats = cell(1,size(data,2));
+for i = 1:size(data,2)
+    temp = fisherZ(data(:,i));
+    stats{i}.mean = fisherInverse(nanmean(temp));              
+    ci = fisherInverse(bootci(1000,@nanmean,temp));              
+    stats{i}.CIL = ci(1);
+    stats{i}.CIU = ci(2);
+end
+stats = cat(1,stats{:});
+stats = struct2table(stats);
+stats.Properties.RowNames = {'LR S','LR D','GLM S','GLM D','fNN S','fNN D'}; 
+%save the stats
+writetable(stats,[savedir filesep 'stats_table.txt'],'Delimiter',' ') 
+save([savedir filesep 'statistics.mat'],'stats');
 
 
 %% Compare within methods, across train/fit types
@@ -475,7 +552,7 @@ fn(8) = temp(2);
 fn(9) = GrabFiles('train_xeverything_ev\w*std\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
 type = {'lr_gcamp','glm','feedforward'};
 titlestr = {'Correlation','MSE','Skew'};
-ylabelstr = {'Rho-z','MSE','\Delta Skew'};
+ylabelstr = {'rho','MSE','\Delta Skew'};
 statname = {'rho','err','s'};
 labels = {'LR','GLM','fNN'};
 for i = 1:numel(statname)
@@ -538,7 +615,7 @@ for i = 1:numel(fn)
     %split into the data of the types that you want    
     if strcmp(statname,'rho')
 %        temp{i} = fisherZ([res.deconv_stats(strcmp(deconv_type,comptype)).rho]); %rho
-       temp{i} = [res.deconv_stats(strcmp(deconv_type,comptype)).rho]; %rho-z
+       temp{i} = [res.deconv_stats(strcmp(deconv_type,comptype)).rho]; %rho
     elseif strcmp(statname,'err')
        temp{i} = [res.deconv_stats(strcmp(deconv_type,comptype)).err]; %mse
     elseif strcmp(statname,'s')
@@ -572,7 +649,7 @@ data = cell(1,3);
 xcorr_trace = cell(1,numel(type));
 lags = NaN(sum(strcmp(deconv_type,type{1})),numel(type));
 for i = 1:numel(type)
-%    data{1}(:,i) = fisherZ([res.deconv_stats(strcmp(deconv_type,type{i})).rho]); %rho-z
+%    data{1}(:,i) = fisherZ([res.deconv_stats(strcmp(deconv_type,type{i})).rho]); %rho
    data{1}(:,i) = [res.deconv_stats(strcmp(deconv_type,type{i})).rho]; %rho
    data{2}(:,i) = [res.deconv_stats(strcmp(deconv_type,type{i})).err]; %mse   
    data{3}(:,i) = ([res.deconv_stats(strcmp(deconv_type,type{i})).s]); %absolute skew
@@ -600,7 +677,7 @@ data = cell(1,3);
 xcorr_trace = cell(1,numel(type));
 lags = NaN(sum(strcmp(deconv_type,type{1})),numel(type));
 for i = 1:numel(type)
-%    data{1}(:,i) = fisherZ([res.deconv_stats(strcmp(deconv_type,type{i})).rho]); %rho-z
+%    data{1}(:,i) = fisherZ([res.deconv_stats(strcmp(deconv_type,type{i})).rho]); %rho
    data{1}(:,i) = [res.deconv_stats_train(strcmp(deconv_type,type{i})).rho]; %rho
    data{2}(:,i) = [res.deconv_stats_train(strcmp(deconv_type,type{i})).err]; %mse   
    data{3}(:,i) = ([res.deconv_stats_train(strcmp(deconv_type,type{i})).s]); %absolute skew
@@ -613,7 +690,7 @@ end %function
 %% make base plots
 function handles = makeViolinPlots(data,spreadflag,fp,sz,col,labels)    
     titlestr = {'Correlation','MSE','Skew'};
-    ylabelstr = {'Rho-z','MSE','\Delta Skew'};
+    ylabelstr = {'rho','MSE','\Delta Skew'};
     for i = 1:numel(titlestr)
         figure; hold on;
         vp = CompareViolins(data{i}',fp,'col',col,'connectline',[0.25 0.25 0.25 0.50],'plotspread',spreadflag);
@@ -707,7 +784,7 @@ function handles = makeStatsPlots(data,fp,sz,labels)
         idx = nchoosek(1:n,2);
         p_mat = NaN(size(data{i},2));
         for j = 1:size(idx,1)   
-           if i==1 %fisherz transform correlations before computing pvalue
+           if strcmp(titlestr{i},'Correlation') %fisherz transform correlations before computing pvalue
                p_mat(idx(j,1),idx(j,2)) = -log10(signrank(fisherZ(data{i}(:,idx(j,1))),fisherZ(data{i}(:,idx(j,2)))));
            else
                p_mat(idx(j,1),idx(j,2)) = -log10(signrank(data{i}(:,idx(j,1)),data{i}(:,idx(j,2))));
@@ -735,6 +812,34 @@ function handles = makeStatsPlots(data,fp,sz,labels)
     handles = get(groot, 'Children');
 end
 
+% get the mean and confidence intervals 
+function stats = computeStats(data)
+    label = {'Correlation','MSE','Skew'};
+    stats = cell(1,numel(label));
+    for i = 1:numel(label)
+       n=size(data{1},2); %loop through each label type
+       for j = 1:n
+           if strcmp(label{i},'Correlation') %fisherZ correlation
+              temp = fisherZ(data{i}(:,j));
+              stats{i}.mean = fisherInverse(nanmean(temp));              
+              ci = fisherInverse(bootci(1000,@nanmean,temp));              
+              stats{i}.CIL = ci(1);
+              stats{i}.CIU = ci(2);
+           else
+              stats{i}.mean = nanmean(data{i}(:,j));     
+              ci = bootci(1000,@nanmean,data{i}(:,j));
+              stats{i}.CIL = ci(1);
+              stats{i}.CIU = ci(2);              
+           end
+       end
+    end
+    stats = cat(1,stats{:});
+    stats = struct2table(stats);     
+    stats.Properties.RowNames = label; 
+end
+
+
+
 
 % %% plot the training across depths ON training data
 % savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\across_depth_TRAIN';
@@ -751,7 +856,7 @@ end
 %     data(i,:) = LoadResultsTrain(fn{i},{'lr_gcamp','glm','feedforward','none'});%get the desired depth     
 % end
 % 
-% labels = {'None','LR','GLM','fNN'};
+% labels = {'WF','LR','GLM','fNN'};
 % %load depths
 % depths = load(fn{1},'depths');depths = nanmedian(depths.depths(1:n,:),2);
 % n_neurons = cellfun(@(x) load(x,'n_neurons'),fn,'UniformOutput',0);

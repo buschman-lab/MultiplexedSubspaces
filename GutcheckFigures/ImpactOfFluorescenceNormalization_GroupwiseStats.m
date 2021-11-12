@@ -6,6 +6,29 @@ savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\
 fn = GrabFiles('stats.mat',0,{savedir});
 data = cellfun(@(x) load(x),fn,'UniformOutput',0);
 
+%compare the rho distributions within and out of the craniotomies
+in = cellfun(@(x) nanmean(x.rho_in),data,'UniformOutput',1); %in cranio vs contra
+out = cellfun(@(x) nanmean(x.rho_out),data,'UniformOutput',1); %rest of hemi vs contra
+
+%combine for plotting
+figure; hold on;
+b = bar(1,nanmean(out),'FaceColor','flat','FaceAlpha',0.7,'EdgeColor',[1 1 1]);
+b.CData(1,:) = [0.75 0.75 0.75];
+b = bar(2,nanmean(in),'FaceColor','flat','FaceAlpha',0.5,'EdgeColor',[1 1 1]);
+b.CData(1,:) = [0.91 0.41 0.17];
+errorbar(1,nanmean(out),sem(out,2),'linestyle','none','linewidth',2,'Color',[0.3 0.3 0.3]);
+errorbar(2,nanmean(in),sem(in,2),'linestyle','none','linewidth',2,'Color',[0.3 0.3 0.3]);
+%plot the distribution
+x = 0.75+rand(numel(in),1)/2;
+for i = 1:numel(x); plot([x(i),x(i)+1],[out(i),in(i)],'linewidth',0.75,'color',[0.1 0.1 0.1 0.5],'marker','.','markersize',9,'linestyle','none'); end
+line([1,2],[0.7 0.7],'linewidth',2,'color',[0.1 0.1 0.1]);
+pval = ranksum(in,out);
+text(1.5,0.7,sprintf('%0.3f',pval),'Rotation',0,'HorizontalAlignment','center','VerticalAlignment','bottom','fontsize',14);
+ylabel('fstat');
+ylim([0 0.7])
+set(gca,'units','centimeters','position',[2 2 2.5 4],'xlim',[0.5 2.5]); fp.FormatAxes(gca); 
+saveCurFigs(gcf,'-svg','grouped_fstat_correlationcraniotocontra',savedir,1); close all
+
 %compare the dff vs dff f_stats between hemispheres
 dff = cellfun(@(x) x.fstat_between_dff,data,'UniformOutput',1); %dff
 dfs = cellfun(@(x) x.fstat_between_dfs,data,'UniformOutput',1); %dfs

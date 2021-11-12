@@ -6,11 +6,11 @@ function stats = deconvolutionfitStats(ypred,y)
 
 n = size(y,1);
   
-%correlation between predicted and true
+%correlation between predicted and true (diag = match probes)
 stats.rho = diag(corr(ypred-nanmean(ypred),y-nanmean(y)));
 
 %maximum crosscorrelation between pred and true 
-[a,b] = xcorr(ypred-nanmean(ypred),y-nanmean(y),60,'normalized');
+[a,b] = xcorr(ypred-nanmean(ypred),y-nanmean(y),30,'normalized');
 [~,idx] = max(a);
 stats.x_rho = a(idx);
 stats.x_lag = b(idx);

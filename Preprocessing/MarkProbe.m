@@ -1,4 +1,4 @@
-function MarkProbe(opts_fn)
+function MarkProbe(opts_fn,probe_label)
 %Camden MacDowell - timeless
 %Manual marking of probe surface trajectory
 %opts_fn is a cell array 

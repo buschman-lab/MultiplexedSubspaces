@@ -32,7 +32,7 @@ s_conn = ssh2_config('spock.princeton.edu',username,password);
 addpath(genpath('Z:\Rodent Data\Wide Field Microscopy\fpCNMF'));
 addpath(genpath('Z:\Rodent Data\Wide Field Microscopy\Widefield_Imaging_Analysis'));
 
-%configure preprocessing options
+%configure preprocessing options % configure preprocessing options (hemo) %MAKE SURE TO CHECK THAT RECORDING IS FOLLOWING THE EXPECTED WAVELENGTH PATTERN
 opts = ConfigurePreProcessing('crop_w',540,'vasc_std',2,'save_uncorrected',1,'fixed_image','first','spatial_bin_factor',4,'method_window',15);
 
 %load general params (this is for anything after preprocessing)

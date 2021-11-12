@@ -146,7 +146,7 @@ end
 [~,~,~,stats] = vartest2(activity_contra(:),activity_in(:));
 fstat_between_dfs = stats.fstat;
 
-save([savedir fig_header, '_stats.mat'],'fstat_in_dfs','fstat_out_dfs','fstat_in_dff','fstat_out_dff','fstat_between_dff','fstat_between_dfs');
+save([savedir fig_header, '_stats.mat'],'fstat_in_dfs','fstat_out_dfs','fstat_in_dff','fstat_out_dff','fstat_between_dff','fstat_between_dfs','rho_in','rho_out');
 
 
 end
@@ -169,7 +169,6 @@ function [stack,opts] = GrabAFewMinutes(file_list,dff_flag)
        stack = HemodynamicCorrection(stack, opts);
     elseif dff_flag==2 %uncorrected
        [~,stack] = HemodynamicCorrection(stack, opts);
-       stack = filterstack(stack, 15, [0.1 4], 'lowpass', 1, 0);
     else %filter to remove
         stack = filterstack(stack, 30, [0.1 4], 'lowpass', 1, 0);
     end

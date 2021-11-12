@@ -32,14 +32,15 @@ s_conn = ssh2_config('spock.princeton.edu',username,password);
 addpath(genpath('Z:\Rodent Data\Wide Field Microscopy\fpCNMF'));
 addpath(genpath('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\GithubRepo\Widefield_Imaging_Analysis'));
 
-% configure preprocessing options (hemo)
+
+% configure preprocessing options (hemo) %MAKE SURE TO CHECK THAT RECORDING IS FOLLOWING THE EXPECTED WAVELENGTH PATTERN
 % opts = ConfigurePreProcessing('crop_w',540,'vasc_std',0.5,'save_uncorrected',1,...
-%     'fixed_image','first','method','zscore','method_window',30,'wavelength_pattern',[1,2],'fps',30,'savecompressed',1,...
+%     'fixed_image','first','method','zscore','method_window',30,'wavelength_pattern',[2,1],'fps',30,'savecompressed',1,...
 %     'mask_brain_outline_dir',[fileparts(which('ConfigurePreProcessing.m')) filesep 'brainoutline_small.mat']);
 
-% %configure preprocessing options (no hemo)
+%configure preprocessing options (no hemo)
 opts = ConfigurePreProcessing('crop_w',540,'vasc_std',0.5,'save_uncorrected',0,...
-    'fixed_image','first','method','zscore','method_window',30,'wavelength_pattern',1,'fps',30,'savecompressed',1,...
+    'fixed_image','first','method','movingavg','method_window',30,'wavelength_pattern',1,'fps',30,'savecompressed',1,...
     'mask_brain_outline_dir',[fileparts(which('ConfigurePreProcessing.m')) filesep 'brainoutline_small.mat']);
 
 %load general params (this is for anything after preprocessing)
@@ -111,25 +112,25 @@ file_list_preprocessed = cell(1,numel(folder_list_raw));
 for cur_fold = 1:numel(folder_list_raw)
     [file_list_raw,~] = GrabFiles('.tif',0,folder_list_raw(cur_fold)); 
     [opts_list,~] = GrabFiles('prepro_log.m',0,folder_list_raw(cur_fold)); 
-    
-    %Create spock bash script for each file and run it
-    job_id = cell(1,numel(file_list_raw));
-    for cur_file = 1:numel(file_list_raw)
-        input_val = {ConvertToBucketPath(file_list_raw{cur_file}), ConvertToBucketPath(opts_list{1})};
-        script_name = WriteBashScript(parameter_class,sprintf('%d_%d',cur_fold,cur_file),'Spock_Preprocessing_Pipeline',input_val,{"'%s'","'%s'"},...
-            'sbatch_time',60,'sbatch_memory',8);  %
-        
-        %Run job
-        response = ssh2_command(s_conn,...
-            ['cd /jukebox/buschman/Rodent\ Data/Wide\ Field\ Microscopy/Widefield_Imaging_Analysis/Spock/DynamicScripts/ ;',... %cd to directory
-            sprintf('sbatch %s',script_name)]); 
-        
-        %get job id
-        job_id{cur_file} = erase(response.command_result{1},'Submitted batch job ');
-        if cur_file ~=numel(file_list_raw)
-            job_id{cur_file} = [job_id{cur_file} ','];
-        end
-    end    
+%     
+%     %Create spock bash script for each file and run it
+%     job_id = cell(1,numel(file_list_raw));
+%     for cur_file = 1:numel(file_list_raw)
+%         input_val = {ConvertToBucketPath(file_list_raw{cur_file}), ConvertToBucketPath(opts_list{1})};
+%         script_name = WriteBashScript(parameter_class,sprintf('%d_%d',cur_fold,cur_file),'Spock_Preprocessing_Pipeline',input_val,{"'%s'","'%s'"},...
+%             'sbatch_time',60,'sbatch_memory',8);  %
+%         
+%         %Run job
+%         response = ssh2_command(s_conn,...
+%             ['cd /jukebox/buschman/Rodent\ Data/Wide\ Field\ Microscopy/Widefield_Imaging_Analysis/Spock/DynamicScripts/ ;',... %cd to directory
+%             sprintf('sbatch %s',script_name)]); 
+%         
+%         %get job id
+%         job_id{cur_file} = erase(response.command_result{1},'Submitted batch job ');
+%         if cur_file ~=numel(file_list_raw)
+%             job_id{cur_file} = [job_id{cur_file} ','];
+%         end
+%     end    
        
     %Once each folder is done, combine all the stacks and do hemocorrection
     [~,header] = fileparts(ConvertToBucketPath(folder_list_raw{cur_fold}));
@@ -137,23 +138,23 @@ for cur_fold = 1:numel(folder_list_raw)
     script_name = WriteBashScript(parameter_class,sprintf('%d_combine',cur_fold),'Spock_CombineStacks',{ConvertToBucketPath(folder_list_raw{cur_fold}),ConvertToBucketPath(file_list_preprocessed{cur_fold}),parameter_class},{"'%s'","'%s'","'%s'"},...
         'sbatch_time',60,'sbatch_memory',64);    
     
-    % Run job with dependency
-    response = ssh2_command(s_conn,...
-        ['cd /jukebox/buschman/Rodent\ Data/Wide\ Field\ Microscopy/Widefield_Imaging_Analysis/Spock/DynamicScripts/ ;',... %cd to directory
-        sprintf('sbatch --dependency=afterok:%s %s',[job_id{:}],script_name)]); 
-    
-% %     % Run job with no dependency
+%     % Run job with dependency
 %     response = ssh2_command(s_conn,...
 %         ['cd /jukebox/buschman/Rodent\ Data/Wide\ Field\ Microscopy/Widefield_Imaging_Analysis/Spock/DynamicScripts/ ;',... %cd to directory
-%         sprintf('sbatch %s',script_name)]); 
+%         sprintf('sbatch --dependency=afterok:%s %s',[job_id{:}],script_name)]); 
+    
+    % Run job with no dependency
+    response = ssh2_command(s_conn,...
+        ['cd /jukebox/buschman/Rodent\ Data/Wide\ Field\ Microscopy/Widefield_Imaging_Analysis/Spock/DynamicScripts/ ;',... %cd to directory
+        sprintf('sbatch %s',script_name)]); 
 end
 
 %if you want to see what the preprocessed data looks like then run
 % InspectPreprocessedData(PreprocessedDataFilepath,'preprocessed')
 
 %% Now manually track the probes (AFTER REGISTRATION)
-file_list_preprocessed = GrabFiles('\w*NP\w*dff_combined.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging'});
-for cur_fold = 3:numel(file_list_preprocessed)
+file_list_preprocessed = GrabFiles('\w*360\w*dff_combined.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging'});
+for cur_fold = 1:numel(file_list_preprocessed)
    MarkProbe({file_list_preprocessed{cur_fold}});
 end
 

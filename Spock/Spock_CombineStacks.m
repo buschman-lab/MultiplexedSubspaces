@@ -13,13 +13,14 @@ function Spock_CombineStacks(folder_path,save_fn,parameter_class)
     end
     
     %perform hemodynamic correction and make dff
-    if numel(unique(opts.wavelength_pattern))>1 %if multiple wavelengths used
+    if numel(unique(opts.wavelength_pattern))>1 %if multiple wavelengths used        
        [dff, dff_b, ~] = HemodynamicCorrection(stack, opts); 
        %ImpactOfHemoCorrection(dff,dff_b,dff_h)
     else
-       fprintf('\n No hemodynamic correction');
+       fprintf('\n No hemodynamic correction');       
+%        opts.method = 'zscore';
        %if no correction, then lowpass at 4hz
-       stack = filterstack(stack, 15, [0.1 4], 'lowpass', 1, 0);       
+       stack = filterstack(stack, 30, [0.1 4], 'lowpass', 1, 0);       
        dff_b = makeDFF(stack, opts); 
        dff = [];
     end

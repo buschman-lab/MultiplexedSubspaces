@@ -47,12 +47,23 @@ for cur_f = 1:numel(handles)
     pos = get(fig,'Position');
     set(fig,'PaperPositionMode','Auto','PaperUnits','centimeters','PaperSize',[pos(3), pos(4)])   
     filename = sprintf('%d_%s',cur_f,fn_base);
-    if fancyflag ==1
-		export_fig(filename,format,fig,'-nocrop','-transparent','-painters')
-    else   
-        %Save the figure, with same suffix and iterate numbers as the prefix
-       print(fig,sprintf('%d_%s',cur_f,fn_base),format,'-painters')       
-	end
+    if iscell(format)%cell array, multiple formats
+        for i = 1:numel(format)
+            if fancyflag ==1
+                export_fig(filename,format{i},fig,'-nocrop','-transparent','-painters')
+            else   
+               %Save the figure, with same suffix and iterate numbers as the prefix
+               print(fig,sprintf('%d_%s',cur_f,fn_base),format{i},'-painters')       
+            end            
+        end
+    else %single format
+        if fancyflag ==1
+            export_fig(filename,format,fig,'-nocrop','-transparent','-painters')
+        else   
+            %Save the figure, with same suffix and iterate numbers as the prefix
+           print(fig,sprintf('%d_%s',cur_f,fn_base),format,'-painters')       
+        end
+    end
 end
 
 cd(startDir) %return user to start dir
