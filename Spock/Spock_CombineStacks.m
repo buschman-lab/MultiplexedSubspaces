@@ -16,11 +16,8 @@ function Spock_CombineStacks(folder_path,save_fn,parameter_class)
     if numel(unique(opts.wavelength_pattern))>1 %if multiple wavelengths used        
        [dff, dff_b, ~] = HemodynamicCorrection(stack, opts); 
        %ImpactOfHemoCorrection(dff,dff_b,dff_h)
-    else
-       fprintf('\n No hemodynamic correction');       
-%        opts.method = 'zscore';
-       %if no correction, then lowpass at 4hz
-       stack = filterstack(stack, 30, [0.1 4], 'lowpass', 1, 0);       
+    else %Camden: do NOT add filterstack here... gums up the deconvolution with GLM (GLM kernel is then predominately the filter since the spiking is not filtered). 
+       fprintf('\n No hemodynamic correction');             
        dff_b = makeDFF(stack, opts); 
        dff = [];
     end

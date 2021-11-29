@@ -4,8 +4,8 @@ classdef general_params_corticaldynamics
         local_bucket = 'Z:\';
         spock_bucket = '\jukebox\buschman\';
         repo_path = 'Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\GithubRepo\Widefield_Imaging_Analysis\';        
-        dynamic_script_path = 'Rodent Data\Wide Field Microscopy\Widefield_Imaging_Analysis\Spock\DynamicScripts\';
-        processing_intermediates = 'Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging\'; %location of the intermediate files in the processing pipeline
+        dynamic_script_path = 'Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\DynamicScripts\';
+        processing_intermediates = 'Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\MotifDiscovery\'; %location of the intermediate files in the processing pipeline
         figure_save_directory = 'Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging\processingfigures\'; %directory to save off figures during processing
         
         %fit neural network file name
@@ -18,7 +18,7 @@ classdef general_params_corticaldynamics
         sbatch_exclude = 'redshirt-n[12-49]';
         sbatch_memory = 16;
         sbatch_matlabversion = 'R2019b';
-        sbatch_path = "/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis/Spock";
+        sbatch_path = "/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis/Spock/";
         sbatch_name = [];               
         stack_suffix = '.ome_stack.mat' %the suffix used to take individual dff and ID for combining e.g. '_dff.mat' for corrected recs and '_dff_uncorrected.mat' for uncorrected recs
         delete_singlefiles = 0; %flag to delete individual recording sections after done concatenating
@@ -27,7 +27,7 @@ classdef general_params_corticaldynamics
         fps = 30;
         denoise_powerfrac = 0.5;
         denoise_pxlfrac = 0.01; %fraction of pixels to use. 1% seems good. Can gut check with ImpactOfPCADenoise function in gutcheck directory
-        w_deconvolution = 'none'; %type of deconvolution (if none, then will filter by below parameters)
+        w_deconvolution = 'fNN_all'; %type of deconvolution (if none, then will filter by below parameters)
         w_nstd = 1; %number of standard deviations for thresholding if using w_deconvolution = 'simple_filter';
         w_filter_freq = [0.1 4]; %frequency range to filter widefield data if using no deconvolution
         w_filter_type = 'lowpass'; 
@@ -35,7 +35,7 @@ classdef general_params_corticaldynamics
         w_norm_val = 99; %either the precentile or the value (if bounded) to normalize to
         w_chunk_dur = 60 %duration of training/testing chunks for fitting seqNMF in seconds
         w_approx_chunk_num = round(162000/(60*30)/2); %(total duration/w_chunk_dur*fps)/2 (for test and train split) This is used in pipeline to parallelize motifs fittings spock jobs without knowing the exact chunk number used. Unused will just fail as spock jobs.         
-        w_pca_denoise = 1; %boolean
+        w_pca_denoise = 0; %boolean
         temporalbin=1;
         
         %CNMF Defaults        

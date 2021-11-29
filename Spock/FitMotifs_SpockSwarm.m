@@ -18,7 +18,7 @@ for i = 1:num_chunks
         'sbatch_path',"/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis/Spock/"); %cutoff for spock priority is 4hrs (240s), then 48 (2879) hours 
     
     response = ssh2_command(s_conn,...
-        ['cd /jukebox/buschman/Rodent\ Data/Wide\ Field\ Microscopy/Widefield_Imaging_Analysis/Spock/DynamicScripts/ ;',... %cd to directory
+        ['cd /jukebox/buschman/Projects/Cortical\ Dynamics/Cortical\ Neuropixel\ Widefield\ Dynamics/DynamicScripts/ ;',... %cd to directory
         sprintf('sbatch --dependency=afterok:%s %s',dependency_id,script_name)]);
     
     swarm_id{i} = erase(response.command_result{1},'Submitted batch job ');

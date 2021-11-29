@@ -26,12 +26,12 @@ probe_coords = probe_coords.probe_coords;
 mask = repmat(imresize(opts.mask,[68 68]),1,1,size(stack,3));
 stack(mask==0)=0;
 
-opts.method = 'movingavg';
+opts.method = 'movingavg'; opts.method_window = 120;
 dff = makeDFF(stack, opts, 'dff', opts.method_window);
 dff(isnan(dff))=0;
 for i = 1:size(dff,3); dff(:,:,i) = imgaussfilt(dff(:,:,i),'filtersize',[5 5]); end
 dff(mask==0)=NaN;
-opts.method = 'zscore';
+opts.method = 'zscore'; opts.method_window = 120;
 dfs = makeDFF(stack, opts, 'dff', opts.method_window);
 dfs(isnan(dfs))=0;
 for i = 1:size(dfs,3); dfs(:,:,i) = imgaussfilt(dfs(:,:,i),'filtersize',[5 5]); end

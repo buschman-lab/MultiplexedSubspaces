@@ -25,8 +25,6 @@ params.radius = 2; %pixel radius around probe tip
 params.offset = {[0,0]}; %optional moves center of DFF circle for probes at angles. [x,y]
 [dff,~] = CompileData_deconvolution({dff_corrected,dff_uncorrected},[],params); %first is correct, second is uncorrected
 
-% dff{2} = filterstack(dff{2}, 15, [0.1 4], 'lowpass', 1, 0);
-
 %Compile ephys data (time bin to match corrected FPS). If depths have not
 %been added then run AddVerticalDepthsToSpikeOpts. before continuing
 fprintf('\n\t Compiling Ephys Data')
@@ -107,7 +105,7 @@ for i = 1:numel(t)
     for j = 1:numel(st)
         grp{i,j} = j;
         [stats_lr{i,j},lrpred{j}] = Deconvolve_Test(dff_test{j},st_test{j},'lr_gcamp',trained_opts{j});        
-        [stats_glm{i,j},glmpred{j}] = Deconvolve_Test(dff_test{j},st_test{j},'glm',trained_opts{j},1);
+        [stats_glm{i,j},glmpred{j}] = Deconvolve_Test(dff_test{j},st_test{j},'glm',trained_opts{j});
         [stats_fNN{i,j},fNNpred{j}] = Deconvolve_Test(dff_test{j},st_test{j},'feedforward',trained_opts{j});
         [stats_none{i,j},nonepred{j}] = Deconvolve_Test(dff_test{j},st_test{j},'none',trained_opts{j});
     end
@@ -117,7 +115,7 @@ for i = 1:numel(t)
     for j = 1:numel(st)
         grp{i,j} = j;
         [stats_lr_train{i,j},lrpred_train{j}] = Deconvolve_Test(dff_train{j},st_train{j},'lr_gcamp',trained_opts{j});        
-        [stats_glm_train{i,j},glmpred_train{j}] = Deconvolve_Test(dff_train{j},st_train{j},'glm',trained_opts{j},1);
+        [stats_glm_train{i,j},glmpred_train{j}] = Deconvolve_Test(dff_train{j},st_train{j},'glm',trained_opts{j});
         [stats_fNN_train{i,j},fNNpred_train{j}] = Deconvolve_Test(dff_train{j},st_train{j},'feedforward',trained_opts{j});
         [stats_none_train{i,j},nonepred_train{j}] = Deconvolve_Test(dff_train{j},st_train{j},'none',trained_opts{j});
     end    

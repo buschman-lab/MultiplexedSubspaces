@@ -21,11 +21,11 @@ errorbar(2,nanmean(in),sem(in,2),'linestyle','none','linewidth',2,'Color',[0.3 0
 %plot the distribution
 x = 0.75+rand(numel(in),1)/2;
 for i = 1:numel(x); plot([x(i),x(i)+1],[out(i),in(i)],'linewidth',0.75,'color',[0.1 0.1 0.1 0.5],'marker','.','markersize',9,'linestyle','none'); end
-line([1,2],[0.7 0.7],'linewidth',2,'color',[0.1 0.1 0.1]);
+line([1,2],[1 1],'linewidth',2,'color',[0.1 0.1 0.1]);
 pval = ranksum(in,out);
-text(1.5,0.7,sprintf('%0.3f',pval),'Rotation',0,'HorizontalAlignment','center','VerticalAlignment','bottom','fontsize',14);
+text(1.5,1,sprintf('%0.3f',pval),'Rotation',0,'HorizontalAlignment','center','VerticalAlignment','bottom','fontsize',14);
 ylabel('fstat');
-ylim([0 0.7])
+ylim([0 1])
 set(gca,'units','centimeters','position',[2 2 2.5 4],'xlim',[0.5 2.5]); fp.FormatAxes(gca); 
 saveCurFigs(gcf,'-svg','grouped_fstat_correlationcraniotocontra',savedir,1); close all
 

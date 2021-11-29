@@ -15,8 +15,8 @@ col = {fp.c_none,fp.c_lr,fp.c_glm,fp.c_ff};
 for i = 1:4
     if i ==1; trace_data = traces.nonepred; 
     elseif i ==2; trace_data = traces.lrpred; 
-    elseif i ==3; trace_data = traces.glmpred;
-    elseif i ==4; trace_data = cellfun(@(x) cat(1,NaN(floor((numel(traces.glmpred{1})-numel(x))/2),1),x),traces.fNNpred,'UniformOutput',0); %need to add back the offset from fitting the network)
+    elseif i ==3; trace_data = traces.glmpred;        
+    elseif i ==4; trace_data = cellfun(@(x) cat(1,zeros(floor((numel(traces.glmpred{1})-numel(x))/2),1),x),traces.fNNpred,'UniformOutput',0); %need to add back the offset from fitting the network)
     end
     figure; hold on; 
     for j = 1:2
@@ -52,7 +52,7 @@ plot(x,traces.sttrue,'color','k','linestyle','-','linewidth',1);
 xlim([15,30]); fp.FormatAxes(gca); grid on
 fp.FigureSizing(gcf,[3 2 10 3],[10 10 15 7]); box on        
 saveCurFigs(gcf,{'-dpng','-dsvg'},'exampletruetrace',savedir,0); close gcf     
-
+%%
 data = load(statsfn);
 close all; 
 labels = {'none','lr','glm','fNN'};
@@ -60,10 +60,18 @@ col = {fp.c_none,fp.c_lr,fp.c_glm,fp.c_ff};
 figure; hold on; 
 grp = data.grp;
 for i = 1:4    
-    if i ==1; data_rho = [data.stats_none.rho]; 
-    elseif i ==2; data_rho = [data.stats_lr.rho]; 
-    elseif i ==3; data_rho = [data.stats_glm.rho];
-    elseif i ==4; data_rho = [data.stats_fNN.rho];
+    if i ==1
+        temp = [data.stats_none{:}];
+        data_rho = cat(1,temp.rho);
+    elseif i ==2
+        temp = [data.stats_lr{:}];
+        data_rho = cat(1,temp.rho);
+    elseif i ==3
+        temp = [data.stats_glm{:}];
+        data_rho = cat(1,temp.rho);       
+    elseif i ==4
+        temp = [data.stats_fNN{:}];
+        data_rho = cat(1,temp.rho);        
     end    
     idx = rand(1,sum(grp==1))/8;
     x = data_rho(grp==1);
@@ -77,8 +85,8 @@ for i = 1:4
     for j = 1:sum(grp==1)
         plot([i+idx(j)-0.06,i+idx(j)-0.06+0.4],[x(j),y(j)],'color',[0.5 0.5 0.5 0.5],'linewidth',1);
     end
-    errorbar(i,nanmean(x),sem(x,2),'LineWidth',1.5,'Color','k');
-    errorbar(i+.4,nanmean(y),sem(y,2),'LineWidth',1.5,'Color','k');
+    errorbar(i,nanmean(x),sem(x,1),'LineWidth',1.5,'Color','k');
+    errorbar(i+.4,nanmean(y),sem(y,1),'LineWidth',1.5,'Color','k');
     %get the mean and ci of the difference
     d = nanmean(x-y);
     ci = bootci(1000,@nanmean,x-y);
@@ -107,7 +115,7 @@ for i = 1:4
     if i ==1; trace_data = traces.nonepred_train; 
     elseif i ==2; trace_data = traces.lrpred_train; 
     elseif i ==3; trace_data = traces.glmpred_train;
-    elseif i ==4; trace_data = cellfun(@(x) cat(1,NaN(floor((numel(traces.glmpred_train{1})-numel(x))/2),1),x),traces.fNNpred_train,'UniformOutput',0); %need to add back the offset from fitting the network)
+    elseif i ==4; trace_data = cellfun(@(x) cat(1,zeros(floor((numel(traces.glmpred_train{1})-numel(x))/2),1),x),traces.fNNpred_train,'UniformOutput',0); %need to add back the offset from fitting the network)
     end
     figure; hold on; 
     for j = 1:2

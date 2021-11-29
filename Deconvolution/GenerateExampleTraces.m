@@ -33,8 +33,8 @@ switch norm_method
         %train all methods - optionally can adjust num neurons to mapmin
         trained_opts = Deconvolve_Train(dff_train,st_train,'all',1000,params.bindata);                 
     case 'std'
-        dff_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),dff,'UniformOutput',0);
-        dff_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),dff,'UniformOutput',0);            
+        dff_train = cellfun(@(x) x(1:n,:),dff,'UniformOutput',0);
+        dff_test = cellfun(@(x) x(n+1:end,:),dff,'UniformOutput',0);            
         st_train = cellfun(@(x) x(1:n,:)./std(x(1:n,:)),st,'UniformOutput',0);
         st_test = cellfun(@(x) x(n+1:end,:)./std(x(n+1:end,:)),st,'UniformOutput',0);  
         %train all methods - optionally can adjust num neurons to std

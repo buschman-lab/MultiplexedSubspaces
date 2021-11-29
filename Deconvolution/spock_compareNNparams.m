@@ -1,17 +1,37 @@
-function spock_compareNNparams(type,block)
-fprintf('working on block %d',block);
+function spock_compareNNparams(type,block,rec)
+fprintf('working on block %d rec %d',block,rec);
 
-%addpath
-addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Ephys'));
-addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/GenUtils'));
-addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis'));
+%addpaths for spock
+if ispc
+   load('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging\restingstate_processed_fn.mat','dff_list','spike_opts_list') 
+else
+   addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Ephys'))
+   addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/GenUtils'))
+   addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis'))
+   load('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/PreprocessedImaging/restingstate_processed_fn.mat','dff_list_bucket','spike_opts_list_bucket')   
+   dff_list = dff_list_bucket;
+   spike_opts_list = spike_opts_list_bucket;
+end   
 
-%load data
-% temp = load('/jukebox/buschman/Projects/Cortical\ Dynamics/Cortical\ Neuropixel\ Widefield\ Dynamics/analysisplayground/temp_data/decondata.mat');
-temp = load('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/analysisplayground/temp_data/decondata.mat');
-trace_probe_train=temp.trace_probe_train;
-spikes_probe_train = temp.spikes_probe_train;
+%compile imaging data
+fprintf('\n\t Compiling Imaging Data')
+params.bindata = 0; %temporally bin the data?
+params.radius = 2; %pixel radius around probe tip    
+params.offset = {[2,0],[0,-1],[1,-1],[0 0]}; %moves center of DFF circle for probes at angles. [x,y]
+[dff,~] = CompileData_deconvolution(dff_list(rec),[],params);
+close all; 
 
+params.mua = 1; %1= use both 'good' and 'mua' units. 0 = just 'good'
+params.depth = [0 600]; %depth from surface of probe
+%compile spiking data
+[~,st,~] = CompileData_deconvolution([],spike_opts_list(rec),params);   
+
+%split train/test (additional train,validation,test occurs within train)
+st = cellfun(@(x) x(1:end,:)./std(x(1:end,:)),st,'UniformOutput',0);               
+
+%evaulate the fit on the first probe for the first 10 minutes
+% spikes_probe_train = st{1}(1:30*60*30,1);
+% trace_probe_train = dff{1}(1:30*60*30,1);
 
 switch type
     case 1
@@ -61,11 +81,11 @@ switch type
     case 2 %feedfoward
         %CreateDifferentData
         fprintf('FeedForward')
-        n_hiddenlayer = [{20},{10},{40},{80},{100}];
-        win = [60];
+        n_hiddenlayer = [{20},{10},{5},{[10,4]}];
+        win = [60,120];
         trainFcn = {'trainlm'}; % 'trainbr'
         hiddenfunc_list = {'radbasn','softmax','tansig'};
-        outputfunc_list = {'poslin','purelin','tansig'};
+        outputfunc_list = {'purelin'};
         % trainFcn = {'trainlm','trainbr'}; % 'trainbr'
 %         hiddenfunc_list = {'poslin','radbas','radbasn','satlin','softmax','tansig','tribas','purelin'};
 %         outputfunc_list = {'hardlims','logsig','netinv','poslin','radbas','radbasn','satlin','softmax','tansig','tribas','purelin'};
@@ -102,7 +122,9 @@ switch type
 end
 
 fprintf('\n\t saving')        
-save(sprintf('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/analysisplayground/temp_data/block%d.mat',block),'rho','e','y_train','t_true','params','block','rho_gen','e_gen')
+savedir = '/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/Analysis/Deconvolution/CompareNNParams/';
+if ~exist(savedir,'dir'); mkdir(savedir); end
+save([savedir, sprintf('rec%dblock%d.mat',block)],'rho','e','y_train','t_true','params','block','rho_gen','e_gen');
 fprintf('\n\t done')
 
 

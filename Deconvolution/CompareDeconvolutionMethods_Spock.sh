@@ -11,7 +11,7 @@
 
 cd "/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis/Deconvolution"
 module load matlab/R2019b
-matlab -batch "CompareDeconvolutionMethods(6,$SLURM_ARRAY_TASK_ID,'std')"
+matlab -batch "CompareDeconvolutionMethods(2,$SLURM_ARRAY_TASK_ID,'std')"
 
 # Camden: if running '1' use mean (comparing depths) and again with std
 # Array 1-9 for 1, but Array 1 for remainder

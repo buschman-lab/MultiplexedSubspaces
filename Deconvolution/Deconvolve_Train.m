@@ -47,13 +47,14 @@ for cur_rec = 1:n_rec
                     trained_opts_cur_rec(cur_probe).narxparams = params;
                     %to test: stPred{i}(:,j) = cell2mat(netc(dff_test,xic,aic));
                 case 'glm' %linear deconvolution using glm kernel ... this is least squares... can test by comparing kernel of fitlm with glmfit
-                    winglm = win+1; %size of the kernel window in frames +1(def = 1 sec=30)
-                    predictors = createRollingWindow(trace_probe, winglm); %t-n:t-1
-                    response =  spikes_probe(ceil(winglm/2):end-floor(winglm/2)); % get the middle timepoint in window  
-                    kernel = glmfit(predictors,response); %mean centering not needed here since you don't care about intercept
+                    fprintf('\n\t glm')
+                    predictors = createRollingWindow(trace_probe, win); %t-n:t-1
+                    response =  spikes_probe(ceil(win/2):end-floor(win/2)); % get the middle timepoint in window  
+                    mdl = fitglm(predictors,response); %mean centering not needed here since you don't care about intercept
+                    kernel = mdl.Coefficients.Estimate(2:end);
                     trained_opts_cur_rec(cur_probe).glmkernel = kernel(2:end); %remove intercept  
-                    trained_opts_cur_rec(cur_probe).glmkernelintercept = kernel(1);
-                    %to test: stPred = {convn(padarray(dff',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid')'};   
+                    trained_opts_cur_rec(cur_probe).glmmodel = mdl; 
+                    trained_opts_cur_rec(cur_probe).glmwin = win;
                 case 'feedforward' %linear deconvolution using glm kernel
                     %shallow feedforward
                     fprintf('\n\t feedforward')
@@ -63,7 +64,7 @@ for cur_rec = 1:n_rec
                     params.win = win; %size of timepoints to use. 60 is best
                     params.verbose = 0; 
                     params.hiddenfnc = 'tansig'; %tansig, softmax, and radbasn, are all good
-                    params.outputfnc = 'purelin'; %pure linear performs best, poslin is comparable but forces postive outpu               
+                    params.outputfnc = 'purelin'; %pure linear performs best, 
                     net = train_feedforward_nn(trace_probe',spikes_probe',params); %train 
                     trained_opts_cur_rec(cur_probe).shallowfeedforward = net;
                     trained_opts_cur_rec(cur_probe).feedforwardparams = params; 
@@ -92,13 +93,15 @@ for cur_rec = 1:n_rec
 
                     %glm
                     fprintf('\n\t glm')
-                    winglm = win+1; %size of the kernel window in frames (def = 1 sec=30)
-                    predictors = createRollingWindow(trace_probe, winglm); %t-n:t-1
-                    response =  spikes_probe(ceil(winglm/2):end-floor(winglm/2)); % get the middle timepoint in window  
-                    kernel = glmfit(predictors,response); %mean centering not needed here since you don't care about intercept
+                    predictors = createRollingWindow(trace_probe, win); %t-n:t-1
+                    response =  spikes_probe(ceil(win/2):end-floor(win/2)); % get the middle timepoint in window  
+                    mdl = fitglm(predictors,response); %mean centering not needed here since you don't care about intercept
+                    kernel = mdl.Coefficients.Estimate(2:end);
                     trained_opts_cur_rec(cur_probe).glmkernel = kernel(2:end); %remove intercept  
-                    trained_opts_cur_rec(cur_probe).glmkernelintercept = kernel(1);
-
+                    trained_opts_cur_rec(cur_probe).glmmodel = mdl;
+                    trained_opts_cur_rec(cur_probe).glmwin = win;
+      
+                    
                     %shallow feedforward
                     fprintf('\n\t feedforward')
                     params = [];

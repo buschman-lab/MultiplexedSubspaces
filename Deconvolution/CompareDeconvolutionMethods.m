@@ -137,11 +137,11 @@ switch type %different comparisons to run
         deconv_stats_train = cat(1,stats_train{:});
         type = {'lr_gcamp','lr_glm','glm','feedforward','none'};      
         fprintf('\n\tsaving')
-        %save off
+        %save off        
         save([savedir filesep sprintf('within_comparedepths%s%d.mat',norm_method,block)],'type','deconv_stats','nunits_train','bad_probe_idx',...
-            'nunits_test','badprobe','trained_opts','params','depths','block','train_idx','test_idx','norm_method','deconv_stats_train','n_neurons');
+            'nunits_test','badprobe','params','depths','block','train_idx','test_idx','norm_method','deconv_stats_train','n_neurons');
                 
-    case 2 %generalizability within recording, across sites same depth       
+    case 2 %generalizability within recording, across sites same depth   | AND SAVE THE GLM MODEL/TRAINING OPTIONS    
         fprintf('\n\t Comparing within rec/mouse across sites')
         params.mua = 1; %1= use both 'good' and 'mua' units. 0 = just 'good'
         params.depth = [0 600]; %depth from surface of probe
@@ -223,8 +223,9 @@ switch type %different comparisons to run
 
         fprintf('\n\tsaving')
         %save off        
-        save([savedir filesep sprintf('within_xsites%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx','badprobe','trained_opts',...
-            'params','block','train_idx','test_idx','norm_method','n_neurons');
+        %save the glm model and training options for this one        
+        save([savedir filesep sprintf('within_xsites%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx','badprobe',...
+            'params','block','trained_opts','train_idx','test_idx','norm_method','n_neurons','-v7.3');
         
     case 3 %generalizability across recording, same site/animal/depth
         fprintf('\n\t Comparing across rec, within mouse/sites')
@@ -313,9 +314,9 @@ switch type %different comparisons to run
         type = {'lr_gcamp','lr_glm','glm','feedforward','none'};      
 
         fprintf('\n\tsaving')
-        %save off        
+        %save off       
         save([savedir filesep sprintf('xrec_samesites%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx',...
-            'badprobe','trained_opts','params','block','train_idx','test_idx','norm_method','n_neurons');
+            'badprobe','params','block','train_idx','test_idx','norm_method','n_neurons');
                 
     case 4 %generalizability across animals, same site/depth
         fprintf('\n\t Comparing across animal, within sites')
@@ -415,11 +416,11 @@ switch type %different comparisons to run
         type = {'lr_gcamp','lr_glm','glm','feedforward','none'};      
 
         fprintf('\n\tsaving')
-        %save off        
+        %save off             
         save([savedir filesep sprintf('xanimals_withinsites%s.mat',norm_method)],'type','deconv_stats',...
-            'bad_probe_idx','badprobe','trained_opts','params','block','train_idx','test_idx','norm_method','n_neurons');        
+            'bad_probe_idx','badprobe','params','block','train_idx','test_idx','norm_method','n_neurons');        
     
-    case 5 %training data (add glm 
+    case 5 %training data 
         fprintf('\n\t Comparing within animal, on the training data')
         params.mua = 1; %1= use both 'good' and 'mua' units. 0 = just 'good'
         params.depth = [0 600]; %depth from surface of probe
@@ -498,7 +499,7 @@ switch type %different comparisons to run
         fprintf('\n\tsaving')
         %save off        
         save([savedir filesep sprintf('training%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx','badprobe',...
-            'trained_opts','params','block','train_idx','test_idx','norm_method','n_neurons');   
+            'params','block','train_idx','test_idx','norm_method','n_neurons');   
         
     case 6 %train across sites within recording
         fprintf('\n\t training within recording. Compare on test data')
@@ -598,9 +599,10 @@ switch type %different comparisons to run
         type = {'lr_gcamp','glm','feedforward','none'};      
 
         fprintf('\n\tsaving')
-        %save off        
+        %save off     
+  
         save([savedir filesep sprintf('train_xsites%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx',...
-            'badprobe','trained_opts','params','block','train_idx','test_idx','norm_method','n_neurons');    
+            'badprobe','params','block','train_idx','test_idx','norm_method','n_neurons');    
         
     case 7 %train across sites and animals and compare to withheld
         fprintf('\n\t training across sites within animals. Compare on train data')
@@ -705,8 +707,9 @@ switch type %different comparisons to run
 
         fprintf('\n\tsaving')
         %save off        
+     
         save([savedir filesep sprintf('train_xsites_evaluatedontrainingdata%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx',...
-            'badprobe','trained_opts','params','block','train_idx','test_idx','norm_method','n_neurons');          
+            'badprobe','params','block','train_idx','test_idx','norm_method','n_neurons');          
 
     case 8
         fprintf('\n\t training across animals and across sites. Compare on test data')
@@ -811,9 +814,9 @@ switch type %different comparisons to run
         deconv_stats = cat(1,stats{:});
         type = {'lr_gcamp','glm','feedforward','none'};      
 
-        fprintf('\n\tsaving')
-        %save off        
-        save([savedir filesep sprintf('train_xeverything%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx','badprobe','trained_opts','params','block','train_idx','test_idx','norm_method','n_neurons');          
+        fprintf('\n\tsaving')        
+        %save off              
+        save([savedir filesep sprintf('train_xeverything%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx','badprobe','params','block','train_idx','test_idx','norm_method','n_neurons');          
     case 9
         fprintf('\n\t training across animals and across sites. Compare on train data')
         params.mua = 1; %1= use both 'good' and 'mua' units. 0 = just 'good'
@@ -919,8 +922,8 @@ switch type %different comparisons to run
         type = {'lr_gcamp','glm','feedforward','none'};      
 
         fprintf('\n\tsaving')
-        %save off        
-        save([savedir filesep sprintf('train_xeverything_evaluatetraining%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx','badprobe','trained_opts',...
+        %save off    
+        save([savedir filesep sprintf('train_xeverything_evaluatetraining%s.mat',norm_method)],'type','deconv_stats','bad_probe_idx','badprobe',...
             'params','block','train_idx','test_idx','norm_method','n_neurons');                 
         
     otherwise 

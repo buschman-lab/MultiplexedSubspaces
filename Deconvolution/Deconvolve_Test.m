@@ -21,7 +21,8 @@ switch method
         params = trained_opts.feedforwardparams;
         net =trained_opts.shallowfeedforward;
         x = createRollingWindow(trace_probe', params.win)'; %t-n:t-1        
-        stPred = net(x)';        
+        stPred = net(x)';          
+        stPred(stPred<0)=0; %convert purelin to relu/poslin
         timepoints(ceil(params.win/2):end-floor(params.win/2))=1; % get the middle timepoint in window  
     case 'lr_glm' %lucy richarson deconvolution with glm kernel
         kernel = trained_opts.glmkernel; 
@@ -34,15 +35,13 @@ switch method
         stPred = lucric(trace_probe-min(trace_probe),gamma,1,win); 
         timepoints(1:end)=1;         
     case 'glm'
-        fprintf('\naddGLMint %d',addGLMint);
-        kernel = flipud(trained_opts.glmkernel);
-        if addGLMint ==1
-            fprintf('\n\t\n\nadding the intercept');
-            stPred = convn(padarray(trace_probe',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid')+trained_opts.glmkernelintercept;             
-        else
-            stPred = convn(padarray(trace_probe',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid');             
-        end
-        timepoints(1:end)=1;
+        fprintf('\naddGLMint %d',addGLMint);        
+        win = trained_opts.glmwin;
+        x = createRollingWindow(trace_probe', win); %t-n:t-1   
+        mdl = trained_opts.glmmodel;
+        stPred = predict(mdl,x); 
+        stPred = stPred+abs(min(stPred)); %make all positive
+        timepoints(ceil(win/2):end-floor(win/2))=1; % get the middle timepoint in window  
     case 'none'
         stPred = trace_probe;
         timepoints(1:end)=1;        

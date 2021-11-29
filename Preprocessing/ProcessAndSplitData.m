@@ -59,7 +59,7 @@ switch gp.w_deconvolution
     case 'only_filter'
         fprintf('\n\tFiltering data')
         data = filterstack(data, opts.fps, gp.w_filter_freq, gp.w_filter_type, 1, 0);
-    case 'fNN' %feedforward neural network trained per animal
+    case 'fNN_permouse' %feedforward neural network trained per animal
         fprintf('loading pretrained neural network');
         %load train nn(see GeneratefNN_spock.sh)        
         if ispc 
@@ -74,9 +74,13 @@ switch gp.w_deconvolution
         params = trained_opts{net_indx}.feedforwardparams;
         net =trained_opts{net_indx}.shallowfeedforward;
         %loop through each pixel
-        for px = 1:size(data,2)            
+        for px = 1:size(data,2)   
+            if mod(px,round(0.1*size(data,2) )) ==0
+                fprintf('\t%g%% Complete\n', round(px./size(data,2)*100,2));
+            end              
             xtemp = createRollingWindow(data(:,px), params.win)'; %t-n:t-1        
-            stPred = net(xtemp)';        
+            stPred = net(xtemp)';                    
+            stPred(stPred<0)=0; %convert purelin to poslin/relu
             %NaN pad to match timepoints
             data(:,px)=NaN;
             data(ceil(params.win/2):end-floor(params.win/2),px)=stPred;
@@ -85,6 +89,32 @@ switch gp.w_deconvolution
         padidx = sum(isnan(data),2)==size(data,2); 
         data(padidx,:)=[];
         z =  size(data,1);
+    case 'fNN_all' %feedforward neural network trained across mice
+        fprintf('loading pretrained neural network');
+        %load train nn(see GeneratefNN_spock.sh)        
+        if ispc 
+            load(['Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging' filesep gp.fit_nn_fn],'trained_opts');
+        else
+            load(['/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/PreprocessedImaging' filesep gp.fit_nn_fn],'trained_opts');
+        end       
+        params = trained_opts{1}.feedforwardparams;
+        net =trained_opts{1}.shallowfeedforward;
+        %loop through each pixel
+        for px = 1:size(data,2)   
+            if mod(px,round(0.1*size(data,2) )) ==0
+                fprintf('\t%g%% Complete\n', round(px./size(data,2)*100,2));
+            end            
+            xtemp = createRollingWindow(data(:,px), params.win)'; %t-n:t-1        
+            stPred = net(xtemp)';        
+             stPred(stPred<0)=0; %convert purelin to poslin/relu
+            %NaN pad to match timepoints
+            data(:,px)=NaN;
+            data(ceil(params.win/2):end-floor(params.win/2),px)=stPred;
+        end
+        %remove pad
+        padidx = sum(isnan(data),2)==size(data,2); 
+        data(padidx,:)=[];
+        z =  size(data,1);        
     case 'none'
         fprintf('doing nothing');
             

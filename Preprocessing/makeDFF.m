@@ -8,6 +8,9 @@ if strcmp(opts.method,'mean')
     avgproj  = nanmean(stack,3);
 elseif strcmp(opts.method,'median')
     avgproj  = nanmedian(stack,3);
+elseif strcmp(opts.method,'mean_zscore')
+    avgproj = repmat(nanmean(stack,3),[1,1,size(stack,3)]);
+    stdproj = repmat(nanstd(stack,[],3),[1,1,size(stack,3)]);
 elseif strcmp(opts.method,'mode')
     avgproj  = mode(stack,3);
 elseif strcmp(opts.method,'movingavg') 
@@ -29,7 +32,7 @@ for i = 1:size(stack,3)
             dff(:,:,i) = ((double(stack(:,:,i))-avgproj(:,:,i))./avgproj(:,:,i))*100;
 %             dff(:,:,i) = ((double(stack(:,:,i))-avgproj(:,:,i)));
         end
-    elseif strcmp(opts.method,'zscore')
+    elseif strcmp(opts.method,'zscore') | strcmp(opts.method,'mean_zscore')
         if strcmp(type,'fractional')%get fractional 
             error('fractional dfs not support when zscoring')
         else %get dff

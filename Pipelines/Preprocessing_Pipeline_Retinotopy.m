@@ -33,7 +33,9 @@ addpath(genpath('Z:\Rodent Data\Wide Field Microscopy\fpCNMF'));
 addpath(genpath('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\GithubRepo\Widefield_Imaging_Analysis\'));
 
 %configure preprocessing options
-opts = ConfigurePreProcessing('crop_w',540,'vasc_std',1,'save_uncorrected',1,'fixed_image','first','method','baseline');
+opts = ConfigurePreProcessing('crop_w',540,'vasc_std',1,'save_uncorrected',1,...
+    'fixed_image','first','method','mean_zscore','wavelength_pattern',[1,2],'fps',15,'savecompressed',1,...
+    'mask_brain_outline_dir',[fileparts(which('ConfigurePreProcessing.m')) filesep 'brainoutline_small.mat']);
 
 %load general params (this is for anything after preprocessing)
 parameter_class = 'general_params_retinotopy';
@@ -47,11 +49,11 @@ end
 
 
 %% Manual Portion 
-rec_path = 'Z:\Rodent Data\Wide Field Microscopy\Neuropixels_Widefield_CorticalDynamics\Retinotopy\Mouse360_10_14_2021';
+rec_path = 'Z:\Rodent Data\Wide Field Microscopy\Neuropixels_Widefield_CorticalDynamics\Retinotopy\Mouse332_06_02_2021';
 warning('can only be used on one recording (i.e. one set of folders) as a time');
 %select folders to process and grab the first file from each rec.
 %EXAMPLE DATA: Select 'folders' and then select 'Z:\Rodent Data\WideField Microscopy\ExampleData\Mouse431_10_17_2019\431-10-17-2019_1'
-[file_list_first_stack,folder_list_raw] = GrabFiles('Pos0.ome.tif',1,{rec_path});
+[file_list_first_stack,folder_list_raw] = GrabFiles('Pos0.ome.tif',0,{rec_path});
 
 %Grab reference images for each. Preload so no delay between loop.
 ref_img = GetReferenceImage(file_list_first_stack{1},opts.fixed_image);
@@ -79,7 +81,7 @@ prepro_log.frame_index = parseRetinoTiming(LogFn{1},'removeHemo',0);
 %stimulus type info
 [LogFn,~] = GrabFiles('stimInfo.mat',0,log_folder);
 temp = load(LogFn{1});
-prepro_log.stimInfo = temp.stim_type;
+prepro_log.stimInfo = temp.stim_type; close; 
 
 %save off the options to overarching folder
 save([log_folder{1} filesep 'prepro_log'],'prepro_log')
@@ -101,7 +103,7 @@ for cur_trial = 1:numel(folder_trials) %trials in separate folders
 
    %Run job
    response = ssh2_command(s_conn,...
-       ['cd /jukebox/buschman/Rodent\ Data/Wide\ Field\ Microscopy/Widefield_Imaging_Analysis/Spock/DynamicScripts/ ;',... %cd to directory
+       ['cd /jukebox/buschman/Projects/Cortical\ Dynamics/Cortical\ Neuropixel\ Widefield\ Dynamics/DynamicScripts/ ;',... %cd to directory
        sprintf('sbatch %s',script_name)]); 
 
    %get job id

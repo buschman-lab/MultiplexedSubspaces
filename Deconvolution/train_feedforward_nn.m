@@ -31,8 +31,10 @@ t =  fr(ceil(params.win/2):end-floor(params.win/2)); % get the middle timepoint 
 
 % Create a Nonlinear Autoregressive Network with External Input
 net = feedforwardnet(params.n_hiddenlayer,params.trainFcn);
-net.layers{1}.transferFcn = params.hiddenfnc; %hidden layer
-net.layers{2}.transferFcn = params.outputfnc; %hidden layer
+for i = 1:size(params.n_hiddenlayer,2)
+    net.layers{i}.transferFcn = params.hiddenfnc; %hidden layer
+end
+net.layers{end}.transferFcn = params.outputfnc; %hidden layer
 
 % Choose Input and Feedback Pre/Post-Processing Functions
 % Settings for feedback input are automatically applied to feedback output

@@ -38,13 +38,13 @@ for i = 1:numel(data_dur) %loop through each method
    n = size(data_dur{i},2);
    shadedErrorBar(1:n,nanmean(data_dur{i}),sem(data_dur{i}),'lineprops',{'color',col{i},'linewidth',2});      
 end
-set(gca,'XTickLabel',unique_dur,'xlim',[0.5,numel(unique_dur)+0.5]);
+set(gca,'xtick',1:n,'XTickLabel',unique_dur,'xlim',[0.5,numel(unique_dur)+0.5]);
 ylabel('Rho')
 xlabel('Window Duration (sec)')
 fp.FigureSizing(gcf,[3 2 6 6],[])
 fp.FormatAxes(gca);
 p.LineWidth=1; box on 
-% saveCurFigs(gcf,{'-dpng','-dsvg'},sprintf('Rec%d_P%d_%dzoom',cur_rec,cur_probe,cur_method),savedir,0); close all
+saveCurFigs(gcf,{'-dpng','-dsvg'},'normalizationwindow','Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Normalization',0); close all
 
 %% out of curiousity, plot the glm kernels
 kernel = cellfun(@(x) load(x,'trained_opts'),fn,'UniformOutput',0); 
@@ -54,11 +54,11 @@ kernel = cellfun(@(x) [x.trained_opts{:}.glmkernel],kernel,'UniformOutput',0);
 %plot the kernels for each distance
 col = repmat(linspace(0,0.7,numel(unique_dur)),3,1);
 figure; hold on; 
-for i = 1:numel(unique_dur)
+for i = 1:numel(unique_dur)    
     temp = [kernel{dur==unique_dur(i)}];
-    shadedErrorBar(1:size(temp,1),nanmean(temp,2),sem(temp,2),'lineprops',{'color',col(:,i),'linewidth',2});        
-    pause()
+    shadedErrorBar(1:size(temp,1),nanmean(temp,2),sem(temp,2),'lineprops',{'color',col(:,i),'linewidth',2});                
 end %function end
+saveCurFigs(gcf,{'-dpng','-dsvg'},'normalizationwindow_glmkernel','Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Normalization',0); close all
 %%
     
     

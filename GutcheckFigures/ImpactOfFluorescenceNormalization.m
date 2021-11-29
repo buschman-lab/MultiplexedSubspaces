@@ -50,9 +50,9 @@ saveCurFigs(gcf,'-png',[fig_header,'baseline_dff_std'],savedir,1); close all
 
 % Plot the variance of the recording with craniotomies (dff and dfs)
 [stack,opts] = GrabAFewMinutes(craniotomy_file,0); %dff_flag==1-->hemo 2=nohemo 0=nothing
-opts.method = 'movingavg';
+opts.method = 'movingavg'; opts.method_window = 120;
 dff = makeDFF(stack, opts, 'dff', opts.method_window);
-opts.method = 'zscore';
+opts.method = 'zscore'; opts.method_window = 120;
 dfs = makeDFF(stack, opts, 'dff', opts.method_window);
 plotVarianceImage(dff,'std'); colorbar; %caxis([0 0.25])
 saveCurFigs(gcf,'-png',[fig_header,'cranio_dff_std'],savedir,1); close all

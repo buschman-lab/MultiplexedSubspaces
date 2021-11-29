@@ -25,6 +25,7 @@ for cur_trace = 1:n %trace loop
             net =trained_opts.shallowfeedforward;
             x = createRollingWindow(y', params.win)'; %t-n:t-1        
             ypred_temp = net(x)';        
+            ypred_temp(ypred_temp<0)=0; %convert purelin to relu/poslin
             timepoints(ceil(params.win/2):end-floor(params.win/2))=1; % get the middle timepoint in window  
         case 'lr_glm' %lucy richarson deconvolution with glm kernel
             kernel = trained_opts.glmkernel; 
@@ -36,14 +37,14 @@ for cur_trace = 1:n %trace loop
             gamma = trained_opts.LRgamma;
             ypred_temp = lucric(y-min(y),gamma,1,win); 
             timepoints(1:end)=1;           
-        case 'glm'
-            kernel = flipud(trained_opts.glmkernel);
-            if addGLMint
-                ypred_temp = convn(padarray(y',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid')+trained_opts.glmkernelintercept;             
-            else
-                ypred_temp = convn(padarray(y',[0,floor(length(kernel)/2)],'replicate','both')',kernel,'valid');             
-            end            
-            timepoints(1:end)=1;
+        case 'glm'            
+            fprintf('\naddGLMint %d',addGLMint);        
+            params = trained_opts.feedforwardparams;
+            x = createRollingWindow(y', params.win); %t-n:t-1  
+            mdl = trained_opts.glmmodel;
+            ypred_temp = predict(mdl,x);
+            ypred_temp = ypred_temp+abs(min(ypred_temp)); %make all positive
+            timepoints(ceil(params.win/2):end-floor(params.win/2))=1; % get the middle timepoint in window  
         case 'none'
             ypred_temp = y;
             timepoints(1:end)=1;        
@@ -56,5 +57,5 @@ for cur_trace = 1:n %trace loop
 end %trace loop
 
 
-end %function end
+end %function endfprintf('\naddGLMint %d',addGLMint);        
 

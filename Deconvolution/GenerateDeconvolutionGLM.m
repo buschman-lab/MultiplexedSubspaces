@@ -139,11 +139,16 @@ else
             stats{i} = Deconvolve_Test(dff{test_idx(i,1)}(:,test_idx(i,2)),st{test_idx(i,1)}(:,test_idx(i,2)),'glm',trained_opts{train_idx(i,1)}(train_idx(i,2)));
         end
     end %rec
+    for i = 1:numel(trained_opts)
+        for j = 1:4
+            trained_opts{i,1}(j).glmmodel = [];
+        end
+    end     
 
 end
 fprintf('\n\tsaving')
 %save off        
 save([savedir filesep 'fit_GLM'],'stats','bad_probe_idx',...
-    'badprobe','trained_opts','params','train_idx','test_idx','norm_method','n_neurons');          
+    'badprobe','trained_opts','params','train_idx','test_idx','norm_method','n_neurons','-v7.3');          
 
 end %function

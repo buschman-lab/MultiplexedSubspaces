@@ -1,4 +1,4 @@
-function SweepNormalizationWindowLength(mouse)
+ function SweepNormalizationWindowLength(mouse)
 %Camden MacDowell - timeless
 %Cycles through recordings and sweeps the normalization window length.
 %Saves off for subsequent use on
@@ -71,8 +71,8 @@ function [stack,opts] = GrabAFewMinutes(file_list,dff_flag)
        stack = HemodynamicCorrection(stack, opts);
     elseif dff_flag==2 %uncorrected
         [~,stack] = HemodynamicCorrection(stack, opts);       
-    else %filter to remove
-        stack = filterstack(stack, 30, [0.1 4], 'lowpass', 1, 0);
+    else
+%         stack = filterstack(stack, 30, [0.1 4], 'lowpass', 1, 0);
     end
     
     mask = repmat(imresize(opts.mask,[68 68]),1,1,size(stack,3)); 
