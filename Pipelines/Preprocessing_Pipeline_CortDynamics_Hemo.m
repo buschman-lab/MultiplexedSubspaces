@@ -211,18 +211,32 @@ for cur_file = 1:numel(file_list_preprocessed)
     file_list_motifs{cur_file} = swarm_motifs;
 end
 
-%if you want to see what the postprocessed data looks like then run
-%InspectPreprocessedData(PreprocessedDataFilepath,'postprocessed')
+%% If you want to rerun the motif fitting
+%if you need to restart from this point: 
+% [file_list_processed,~] = GrabFiles('\w*_processed.mat'); %select the preprocessed data (not the '_processed');
+% 
+% % NEED TO WAIT FOR ABOVE TO COMPLETE
+% file_list_motifs = cell(1,numel(file_list_processed));
+% for cur_file = 1:numel(file_list_processed)  
+%     %Fit motifs and cross-validate (parallellize by chunk)
+%     [swarm_id, swarm_motifs] = FitMotifs_SpockSwarm(file_list_processed{cur_file},[],s_conn,parameter_class);
+%     job_id{cur_file} = [swarm_id{:}]; 
+%     file_list_motifs{cur_file} = swarm_motifs;
+% end
+% %
+% %if you want to see what the postprocessed data looks like then run
+% %InspectPreprocessedData(PreprocessedDataFilepath,'postprocessed')
+%%
 
-%% Cluster Motifs
-save_dir_motif_fits = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging\MotifFits\';
+% Cluster Motifs
+save_dir_motif_fits = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\MotifDiscovery\';
 [file_path_motifs, file_header_motifs] = fileparts(file_list_motifs{1}(1));
-header = 'Mouse332_RestingState_NP_06_07_2021'; %file_header_motifs(1:regexp(file_header_motifs,'_','start','once'));%to do by recording
+header = ''; %leave blank to do by all animals %file_header_motifs(1:regexp(file_header_motifs,'_','start','once'));%to do by recording
 
 %Find Basis Motifs and Refit to the entire data set
 script_name = WriteBashScript(parameter_class,sprintf('%d',1),'ClusterW_Spock',{ConvertToBucketPath(file_path_motifs),header,ConvertToBucketPath(save_dir_motif_fits),parameter_class},...
     {"'%s'","'%s'","'%s'","'%s'"},...
-    'sbatch_time',2879,'sbatch_memory',64,...
+    'sbatch_time',2879,'sbatch_memory',64,... %2879
     'sbatch_path',"/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis/Spock/");
 
 if ~isempty(swarm_id) % Run job with dependency

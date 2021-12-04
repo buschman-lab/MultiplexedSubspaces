@@ -16,10 +16,15 @@ for i = 1:num_chunks
     script_name = WriteBashScript(parameter_class,sprintf('motifchunk%d',i),'FitMotifs_Spock',{ConvertToBucketPath(fn),ConvertToBucketPath(save_fn{i}),i,parameter_class},{"'%s'","'%s'","%d","'%s'"},...
         'sbatch_time',2879,'sbatch_memory',12,...
         'sbatch_path',"/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis/Spock/"); %cutoff for spock priority is 4hrs (240s), then 48 (2879) hours 
-    
-    response = ssh2_command(s_conn,...
-        ['cd /jukebox/buschman/Projects/Cortical\ Dynamics/Cortical\ Neuropixel\ Widefield\ Dynamics/DynamicScripts/ ;',... %cd to directory
-        sprintf('sbatch --dependency=afterok:%s %s',dependency_id,script_name)]);
+    if ~isempty(dependency_id)
+        response = ssh2_command(s_conn,...
+            ['cd /jukebox/buschman/Projects/Cortical\ Dynamics/Cortical\ Neuropixel\ Widefield\ Dynamics/DynamicScripts/ ;',... %cd to directory
+            sprintf('sbatch --dependency=afterok:%s %s',dependency_id,script_name)]);
+    else
+        response = ssh2_command(s_conn,...
+            ['cd /jukebox/buschman/Projects/Cortical\ Dynamics/Cortical\ Neuropixel\ Widefield\ Dynamics/DynamicScripts/ ;',... %cd to directory
+            sprintf('sbatch %s',script_name)]);
+    end
     
     swarm_id{i} = erase(response.command_result{1},'Submitted batch job ');
     if i ~=num_chunks

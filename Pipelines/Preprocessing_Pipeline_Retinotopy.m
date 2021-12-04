@@ -49,11 +49,11 @@ end
 
 
 %% Manual Portion 
-rec_path = 'Z:\Rodent Data\Wide Field Microscopy\Neuropixels_Widefield_CorticalDynamics\Retinotopy\Mouse332_06_02_2021';
+rec_path = 'Z:\Rodent Data\Wide Field Microscopy\Neuropixels_Widefield_CorticalDynamics\Retinotopy\Mouse334_06_04_2021';
 warning('can only be used on one recording (i.e. one set of folders) as a time');
 %select folders to process and grab the first file from each rec.
 %EXAMPLE DATA: Select 'folders' and then select 'Z:\Rodent Data\WideField Microscopy\ExampleData\Mouse431_10_17_2019\431-10-17-2019_1'
-[file_list_first_stack,folder_list_raw] = GrabFiles('Pos0.ome.tif',0,{rec_path});
+[file_list_first_stack,folder_list_raw] = GrabFiles('Pos0.ome.tif',1,{rec_path});
 
 %Grab reference images for each. Preload so no delay between loop.
 ref_img = GetReferenceImage(file_list_first_stack{1},opts.fixed_image);
@@ -86,7 +86,7 @@ prepro_log.stimInfo = temp.stim_type; close;
 %save off the options to overarching folder
 save([log_folder{1} filesep 'prepro_log'],'prepro_log')
 
-%% Preprocessing. Results in a single hemo corrected, masked recording for each day in the 'preprocessed' folder
+% Preprocessing. Results in a single hemo corrected, masked recording for each day in the 'preprocessed' folder
 
 %run as a loop of spock jobs
 [opts_path,~] = GrabFiles('prepro_log.m',0,log_folder); 
@@ -113,6 +113,8 @@ for cur_trial = 1:numel(folder_trials) %trials in separate folders
    end   
 end
 
+%Load all and save to the projects directory
+
 %% (need to write spock for this)
 %load all the files
 fn = arrayfun(@(x) GrabFiles('stack.mat',0,x),folder_trials,'UniformOutput',0);
@@ -134,11 +136,11 @@ minlength = min(cellfun(@(x) size(x,3),data,'UniformOutput',1));
 
 %data 
 data = cellfun(@(x) x(:,:,1:minlength),data,'UniformOutput',0);
-
+%%
 %combine by stim type
 data_avg = arrayfun(@(x) nanmean(cat(4,data{stimInfo==x}),4),unique(stimInfo),'UniformOutput',0);
 
-%% extract retinotopy positions for each pixel
+% extract retinotopy positions for each pixel
 Fs = 15;
 T=1/Fs;
 horz_degree = 60/5; %degree per sec
@@ -160,9 +162,9 @@ for j = 1:4
         xw_phase = angle(xw)*180/pi;
         f_domain = 0:(Fs/2)/(length(xw)-1):Fs/2;
         if j<=2
-            temp_phase(i,:) = nanmean(xw_phase(2));
+            temp_phase(i,:) = nanmedian(xw_phase(2));
         else
-            temp_phase(i,:) = nanmean(xw_phase(2));
+            temp_phase(i,:) = nanmedian(xw_phase(2));
         end
     end
     phase_img(:,:,j) = conditionDffMat(temp_phase',nanpxs);
@@ -187,7 +189,7 @@ VFS(id) = 0;
 hh = fspecial('gaussian',size(VFS),3);
 hh = hh/sum(hh(:));
 VFS = ifft2(fft2(VFS).*abs(fft2(hh)));  %Important to smooth before thresholding below
-%%
+
 [~,name] = fileparts(fn{1});
 name = erase(name,'_1_stack');
 % load('Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\MesoscaleDynamics_2020_repo_depreciated_with_redundancies\Code_From_Local_Machine\FigureMask.mat')
