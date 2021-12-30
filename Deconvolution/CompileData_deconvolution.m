@@ -23,7 +23,7 @@ if ~isempty(dff_list)
     for cur_file = 1:numel(dff_list)    
         fprintf('\n\t working on imaging data for file %d of %d',cur_file, numel(dff_list));
         dff_fn = dff_list{cur_file};
-       
+               
         %load imaging data
         data = load(dff_fn);
         dff = data.dff;
@@ -110,9 +110,8 @@ if ~isempty(spike_opts_list)
 %             %Use angled depth along probe
 %             spikes.clust_info.d_surface = SpikeDepth(spikes.clust_info,spike_opts); 
 %             IDs = spikes.clust_info.id(spikes.clust_info.d_surface>params.depth(1) & spikes.clust_info.d_surface<params.depth(2));  
-            %use vertical depth
-            IDs = spikes.clust_info.id(spikes.clust_info.vert_depth>params.depth(1) & spikes.clust_info.vert_depth<params.depth(2));  
-            st = spikes.clust_info.spike_times(ismember(spikes.clust_info.spike_cluster,IDs)); 
+            %use vertical depth            
+            IDs = spikes.clust_info.id(spikes.clust_info.vert_depth>params.depth(1) & spikes.clust_info.vert_depth<params.depth(2));   
             n_neurons(cur_file,cur_probe) = numel(IDs);
 
             %bin to the framerate of the imaging
@@ -120,25 +119,33 @@ if ~isempty(spike_opts_list)
             formatSpec = '%f';   
             im_times = fscanf(fileID,formatSpec);
 
-            %mua per bin. Binning bins 'to the left' (1st bin = everything
-            %between the first and second camera frame', which is the same
-            %things that the camera does (i.e. frame one is all the
-            %exposure between first edge and second edge)
-            st = [histcounts(st,im_times),0]; %since k=nedges-1
-               
-%             %remove slow fluctuations (This makes no sense, don't do
-%             this. only keeping for th efiltering code
-%             d = designfilt('highpassiir','FilterOrder',4,'PassbandFrequency',0.02,'PassbandRipple',...
-%                 0.1,'Samplerate',floor(nanmedian(diff(im_times))*1000),'DesignMethod','cheby1');
-%             st = filtfilt(d,st)+nanmean(st);                
+            %firing rate of each neuron or mua
+            st_all = NaN(numel(IDs),numel(im_times)-1);
+            for cur_n = 1:numel(IDs)
+                st = spikes.clust_info.spike_times(ismember(spikes.clust_info.spike_cluster,IDs(cur_n)));
+                %firing rate. Binning bins 'to the left' (1st bin = everything
+                %between the first and second camera frame', which is the same
+                %things that the camera does (i.e. frame one is all the
+                %exposure between first edge and second edge)            
+                st = histcounts(st,im_times)./diff(im_times)'; 
+                %compute the firing rate of the whole population
+                st_all(cur_n,:) = st;   %since k=nedges-1                              
+            end %neuron loop            
+            
+            %combine across population
+            st = nanmean(st_all,1);                        
             
             %temporally bin
             if params.bindata ==1  
-                st = st(1:2:end)+st(2:2:end);
-            end           
-            
+                if isodd(numel(st))
+                    st = (st(1:2:end-1)+st(2:2:end))/2;
+                else
+                    st = (st(1:2:end)+st(2:2:end))/2;
+                end
+            end              
+
             %pad with single sample at end to match for ease
-            st_probe{cur_file}(:,cur_probe) = st';            
+            st_probe{cur_file}(:,cur_probe) = cat(1,st',0); %pad with a single zero at end since k=nedges-1
         end
     end %file loop
 else

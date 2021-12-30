@@ -7,6 +7,7 @@ opts.BregmaX = 1.97; %conversion ratio for finding location to plot bregma
 opts.BregmaY = 2.27; %conversion ratio for finding locatio to plot bremga
 opts.MaskDir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\GithubRepo\Widefield_Imaging_Analysis\Preprocessing\brainoutline_small.mat'; %the mask used for figure plotting
 opts.caxis = [0 95]; %percentile of maximum intensity
+opts.caxis_flag = 0; %flag to make caxis a value not a percentile
 %Process optional inputs
 opts = ParseOptionalInputs(opts,varargin);
 
@@ -30,8 +31,12 @@ nY = size(frame,1);
 bX = nX/opts.BregmaX+1;
 bY = nY/opts.BregmaY;
     
-frame = imgaussfilt(frame,'filterdomain','spatial','FilterSize',[5,5]);
-climits = [prctile(frame(:),opts.caxis(1)),prctile(frame(:),opts.caxis(2))];
+frame = SpatialGaussian(frame,5,2);
+if opts.caxis_flag == 0
+    climits = [prctile(frame(:),opts.caxis(1)),prctile(frame(:),opts.caxis(2))];
+else
+    climits = opts.caxis;
+end
             
 %loop through each hemisphere
 for hemi = 1:2

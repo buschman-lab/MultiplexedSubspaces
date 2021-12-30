@@ -32,7 +32,6 @@ s_conn = ssh2_config('spock.princeton.edu',username,password);
 addpath(genpath('Z:\Rodent Data\Wide Field Microscopy\fpCNMF'));
 addpath(genpath('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\GithubRepo\Widefield_Imaging_Analysis'));
 
-
 % configure preprocessing options (hemo) %MAKE SURE TO CHECK THAT RECORDING IS FOLLOWING THE EXPECTED WAVELENGTH PATTERN
 % opts = ConfigurePreProcessing('crop_w',540,'vasc_std',0.5,'save_uncorrected',1,...
 %     'fixed_image','first','method','zscore','method_window',120,'wavelength_pattern',[2,1],'fps',15,'savecompressed',1,...
@@ -132,40 +131,40 @@ for cur_fold = 1:numel(folder_list_raw)
     [file_list_raw,~] = GrabFiles('.tif',0,folder_list_raw(cur_fold)); 
     [opts_list,~] = GrabFiles('prepro_log.m',0,folder_list_raw(cur_fold)); 
     
-    %Create spock bash script for each file and run it
-    job_id = cell(1,numel(file_list_raw));
-    for cur_file = 1:numel(file_list_raw)
-        input_val = {ConvertToBucketPath(file_list_raw{cur_file}), ConvertToBucketPath(opts_list{1})};
-        script_name = WriteBashScript(parameter_class,sprintf('%d_%d',cur_fold,cur_file),'Spock_Preprocessing_Pipeline',input_val,{"'%s'","'%s'"},...
-            'sbatch_time',60,'sbatch_memory',8);  %
-        
-        %Run job
-        response = ssh2_command(s_conn,...
-            ['cd /jukebox/buschman/Projects/Cortical\ Dynamics/Cortical\ Neuropixel\ Widefield\ Dynamics/DynamicScripts/ ;',... %cd to directory
-            sprintf('sbatch %s',script_name)]); 
-        
-        %get job id
-        job_id{cur_file} = erase(response.command_result{1},'Submitted batch job ');
-        if cur_file ~=numel(file_list_raw)
-            job_id{cur_file} = [job_id{cur_file} ','];
-        end
-    end    
-        
-%     %Once each folder is done, combine all the stacks and do hemocorrection
+%     %Create spock bash script for each file and run it
+%     job_id = cell(1,numel(file_list_raw));
+%     for cur_file = 1:numel(file_list_raw)
+%         input_val = {ConvertToBucketPath(file_list_raw{cur_file}), ConvertToBucketPath(opts_list{1})};
+%         script_name = WriteBashScript(parameter_class,sprintf('%d_%d',cur_fold,cur_file),'Spock_Preprocessing_Pipeline',input_val,{"'%s'","'%s'"},...
+%             'sbatch_time',60,'sbatch_memory',8);  %
+%         
+%         %Run job
+%         response = ssh2_command(s_conn,...
+%             ['cd /jukebox/buschman/Projects/Cortical\ Dynamics/Cortical\ Neuropixel\ Widefield\ Dynamics/DynamicScripts/ ;',... %cd to directory
+%             sprintf('sbatch %s',script_name)]); 
+%         
+%         %get job id
+%         job_id{cur_file} = erase(response.command_result{1},'Submitted batch job ');
+%         if cur_file ~=numel(file_list_raw)
+%             job_id{cur_file} = [job_id{cur_file} ','];
+%         end
+%     end    
+%         
+% %     %Once each folder is done, combine all the stacks and do hemocorrection
     [~,header] = fileparts(ConvertToBucketPath(folder_list_raw{cur_fold}));
     file_list_preprocessed{cur_fold} = [save_dir_processed header 'dff_combined.mat']; 
     script_name = WriteBashScript(parameter_class,sprintf('%d_combine',cur_fold),'Spock_CombineStacks',{ConvertToBucketPath(folder_list_raw{cur_fold}),ConvertToBucketPath(file_list_preprocessed{cur_fold}),parameter_class},{"'%s'","'%s'","'%s'"},...
         'sbatch_time',60,'sbatch_memory',64);    
-    
-    % Run job with dependency
-    response = ssh2_command(s_conn,...
-        ['cd /jukebox/buschman/Projects/Cortical\ Dynamics/Cortical\ Neuropixel\ Widefield\ Dynamics/DynamicScripts/ ;',... %cd to directory
-        sprintf('sbatch --dependency=afterok:%s %s',[job_id{:}],script_name)]); 
-    
-    % Run job with no dependency
+%     
+%     % Run job with dependency
 %     response = ssh2_command(s_conn,...
 %         ['cd /jukebox/buschman/Projects/Cortical\ Dynamics/Cortical\ Neuropixel\ Widefield\ Dynamics/DynamicScripts/ ;',... %cd to directory
-%         sprintf('sbatch %s',script_name)]); 
+%         sprintf('sbatch --dependency=afterok:%s %s',[job_id{:}],script_name)]); 
+%     
+    % Run job with no dependency
+    response = ssh2_command(s_conn,...
+        ['cd /jukebox/buschman/Projects/Cortical\ Dynamics/Cortical\ Neuropixel\ Widefield\ Dynamics/DynamicScripts/ ;',... %cd to directory
+        sprintf('sbatch %s',script_name)]); 
 end
 
 %if you want to see what the preprocessed data looks like then run
@@ -211,7 +210,7 @@ for cur_file = 1:numel(file_list_preprocessed)
     file_list_motifs{cur_file} = swarm_motifs;
 end
 
-%% If you want to rerun the motif fitting
+% If you want to rerun the motif fitting 
 %if you need to restart from this point: 
 % [file_list_processed,~] = GrabFiles('\w*_processed.mat'); %select the preprocessed data (not the '_processed');
 % 
@@ -229,9 +228,9 @@ end
 %%
 
 % Cluster Motifs
-save_dir_motif_fits = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\MotifDiscovery\';
+save_dir_motif_fits = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\MotifDiscovery';
 [file_path_motifs, file_header_motifs] = fileparts(file_list_motifs{1}(1));
-header = ''; %leave blank to do by all animals %file_header_motifs(1:regexp(file_header_motifs,'_','start','once'));%to do by recording
+header = 'M'; %leave blank to do by all animals %file_header_motifs(1:regexp(file_header_motifs,'_','start','once'));%to do by recording
 
 %Find Basis Motifs and Refit to the entire data set
 script_name = WriteBashScript(parameter_class,sprintf('%d',1),'ClusterW_Spock',{ConvertToBucketPath(file_path_motifs),header,ConvertToBucketPath(save_dir_motif_fits),parameter_class},...
@@ -239,10 +238,10 @@ script_name = WriteBashScript(parameter_class,sprintf('%d',1),'ClusterW_Spock',{
     'sbatch_time',2879,'sbatch_memory',64,... %2879
     'sbatch_path',"/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis/Spock/");
 
-if ~isempty(swarm_id) % Run job with dependency
+if ~isempty(job_id) % Run job with dependency
     response = ssh2_command(s_conn,...
         ['cd /jukebox/buschman/Projects/Cortical\ Dynamics/Cortical\ Neuropixel\ Widefield\ Dynamics/DynamicScripts/ ;',... %cd to directory
-        sprintf('sbatch --dependency=afterok:%s %s',[swarm_id{:}],script_name)]);    
+        sprintf('sbatch --dependency=afterok:%s %s',[job_id{:}],script_name)]);    
 else
    response = ssh2_command(s_conn,...
         ['cd /jukebox/buschman/Projects/Cortical\ Dynamics/Cortical\ Neuropixel\ Widefield\ Dynamics/DynamicScripts/ ;',... %cd to directory
@@ -251,22 +250,28 @@ end
 
 
 %% Refit the motifs built from all the animals to the data
+%manually remove noise clusters... optionally also go back through and have their representation removed from the data, but having the underlying motifs removed 
+[file_list_processed,~] = GrabFiles('\w*_processed.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\DeconvolvedImaging'}); %select the preprocessed data (not the '_processed');
 job_id = [];
-% Spock_RefitBasisMotifs_Swarm(file_list_processed,'Z:\Rodent Data\Wide Field Microscopy\ExampleData\',job_id,s_conn,parameter_class);
-%set up save directories
-save_dir_motifs = 'Z:\Projects\Cortical Dynamics\Mouse Models of Autism\SHANK Cohort 2020\RefitVPABasisMotifs\'; %target savedirector
+%set up save directory
+save_dir_motifs = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\BasisMotifFits'; %target savedirector
 if ~exist(save_dir_motifs,'dir')
     mkdir(save_dir_motifs);
 end
-Spock_RefitBasisMotifs_Swarm(file_list_processed,'Z:\Rodent Data\Wide Field Microscopy\VPA Experiments_Spring2018\VPA_Mesomapping\FitMotifs_deconvolution\ALL',job_id,s_conn,parameter_class,save_dir_motifs);
-
+%Refit basis motifs per mouse
+mouseid = MouseNumFromPath(file_list_processed,'Mouse_'); 
+unique_mice = unique(mouseid);
+for i = 1:numel(unique_mice)
+    basis_path = GrabFiles(['Mousepermouse_basis_motifs\w*',num2str(unique_mice(i)),'.mat'],0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\MotifDiscovery'}); 
+    Spock_RefitBasisMotifs_Swarm(file_list_processed(mouseid==unique_mice(i)),basis_path{1},job_id,s_conn,parameter_class,save_dir_motifs);
+end
 
 
 %%
 
 %Run clean up script and close out connection
 ssh2_close(s_conn);
-clear username password sconn
+clear username password s_conn
 
 
 

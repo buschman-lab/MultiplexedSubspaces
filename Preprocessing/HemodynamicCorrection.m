@@ -66,7 +66,7 @@ function [dff, dff_b, dff_v] = HemodynamicCorrection(stack, opts)
     [dff_b,~] = makeDFF(stack_b, opts);
     
     %Subtraction correction DFF = dff_b-dff_v;
-    dff = dff_b-dff_v;    
+    dff = dff_b-dff_v;        
     
 %     %calculate the dff for each (as in mussal et al., 2019/sexena 2020)
 %     [dff,~] = makeDFF(stack_b-stack_v_corrected, opts);

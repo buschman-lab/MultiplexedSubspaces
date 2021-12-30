@@ -1,11 +1,11 @@
-classdef general_params_corticaldynamics  
+classdef temp9  
     properties
         %Path Options
         local_bucket = 'Z:\';
         spock_bucket = '\jukebox\buschman\';
         repo_path = 'Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\GithubRepo\Widefield_Imaging_Analysis\';        
         dynamic_script_path = 'Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\DynamicScripts\';
-        processing_intermediates = 'Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\MotifDiscovery\'; %location of the intermediate files in the processing pipeline
+        processing_intermediates = 'Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\MotifDiscoveryParams\L45\'; %location of the intermediate files in the processing pipeline
         figure_save_directory = 'Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging\processingfigures\'; %directory to save off figures during processing
         
         %fit neural network file name
@@ -31,18 +31,17 @@ classdef general_params_corticaldynamics
         w_nstd = 1; %number of standard deviations for thresholding if using w_deconvolution = 'simple_filter';
         w_filter_freq = [0.1 4]; %frequency range to filter widefield data if using no deconvolution
         w_filter_type = 'lowpass'; 
-        w_normalization_method = 'none'; %pixelwise, full, or bounded, or none
+        w_normalization_method = 'full'; %pixelwise, full, or bounded
         w_norm_val = 99; %either the precentile or the value (if bounded) to normalize to
         w_chunk_dur = 60 %duration of training/testing chunks for fitting seqNMF in seconds
         w_approx_chunk_num = round(162000/(60*30)/2); %(total duration/w_chunk_dur*fps)/2 (for test and train split) This is used in pipeline to parallelize motifs fittings spock jobs without knowing the exact chunk number used. Unused will just fail as spock jobs.         
         w_pca_denoise = 0; %boolean
-        temporalbin=1; %bin the data
-        rawkernel = [7,3]; %to remove speckle noise, kernel size of median filter in space (needs to be odd) and time
+        temporalbin=1;
         
         %CNMF Defaults        
         reverse_fit = 0; 
         K = 30;
-        L = 15;
+        L = 45;
         non_penalized_iter = 0;
         max_non_penalized_iter =1; 
         w_update_iter = 1;
@@ -61,12 +60,12 @@ classdef general_params_corticaldynamics
         sparse_W = 0;
       
         %General clustering Parameters
+        clust_nobleed = 1; %whether to allow smoothign to bleed into masked regions
         clust_method = 'PhenoCluster';
-        clust_smooth_kernel = []; %[3,1]; %[space, time] kernel size
+        clust_smooth_kernel = [1,1,0.1]; %default = [1,1,0.1]
         clust_community_fraction = [0.01:0.05:1]; %if numel()>1 then will sweep and determine the best fraction per motif using the autofit_method
         autofit_method = 'autocorrelation'; %stvar or autocorrelation
         clust_removepad = 0;
-        use_single_hemi = 1; %use only one hemisphere when clustering (for craniotomies). 1 = left (not flipped), 2 = right, 0 = both
 
         %PhenoCluster parameters
         clust_knn = 15;
@@ -88,7 +87,7 @@ classdef general_params_corticaldynamics
         pixel_dim = [68,68];        
         originaldimensions = [68,68];        
         verbose = 1;       
-        smt_kernel = []; %Size of smoothing kernel if resmoothing data when refitting motifs. If numel() >2 then code will choose best value. Leave blank for nosmoothing
+        smt_kernel = [1 1]; %Use the ConfirmSmoothingLevel to check. If numel() >2 then code will choose best value. Leave blank for nosmoothing
 
         
     end

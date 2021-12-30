@@ -7,18 +7,25 @@ function Spock_CombineStacks(folder_path,save_fn,parameter_class)
 %      try       
     [stack, opts] = CombineStacks(folder_path,parameter_class);
     
+    gp = loadobj(feval(parameter_class));
+    
     %legacy compatibility
     if ~isfield(opts,'savecompressed')
         opts.savecompressed=0;
     end
     
     %perform hemodynamic correction and make dff
-    if numel(unique(opts.wavelength_pattern))>1 %if multiple wavelengths used        
+    if numel(unique(opts.wavelength_pattern))>1 %if multiple wavelengths used                
+       fprintf('\n No median filtering');
        [dff, dff_b, ~] = HemodynamicCorrection(stack, opts); 
        %ImpactOfHemoCorrection(dff,dff_b,dff_h)
     else %Camden: do NOT add filterstack here... gums up the deconvolution with GLM (GLM kernel is then predominately the filter since the spiking is not filtered). 
-       fprintf('\n No hemodynamic correction');             
-       dff_b = makeDFF(stack, opts); 
+       fprintf('\n No hemodynamic correction');
+       %median filter space and time
+       stack = SpatialMedian(stack,gp.rawkernel(1));
+       stack = movmedian(stack,gp.rawkernel(2),3);   
+       fprintf('\n Done applying median filter');
+       dff_b = makeDFF(stack, opts);
        dff = [];
     end
 

@@ -9,96 +9,96 @@
 
 fp = fig_params_deconvolutionpaper; 
 %% Example Traces on trained or withheld data
-% %Camden | you're currently just using the first recording, first probe for example figures
-% savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\ExampleTracesTraining';
-% % savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\ExampleTracesWithheld';
-% col = [fp.c_none; fp.c_lr; fp.c_glm ;fp.c_ff];
-% fn = GrabFiles('deconvolved_traces_trained_datastd.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'}); %trained
-% % fn = GrabFiles('deconvolved_traces_withheld_datastd.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'}); savefn = 'withheld'; %withheld
-% data = load(fn{1});
-% labels = {'WF','LR','GLM','fNN'};
-% %loop through each rec and each probe and generate the figure
-% if ~exist(savedir,'dir'); mkdir(savedir); end
-% n_rec = size(data(1).st_test,2);
-% n_probe = size(data(1).st_test{1},2);
-% for cur_rec = 1%:n_rec
-%     for cur_probe = 1%:n_probe
-%        %concatenate data for this probe   
-%        close all
-%        ypred = [data(1).ypred_none{cur_rec}(:,cur_probe),data(1).ypred_lr{cur_rec}(:,cur_probe),...
-%            data(1).ypred_glm{cur_rec}(:,cur_probe),data(1).ypred_ff{cur_rec}(:,cur_probe)];
-%        y = data(1).st_test{cur_rec}(:,cur_probe);
-%        x = (1:size(ypred,1))/30;
-%        xvals = [60 360]; %window to plot (300sec is usually good length)
-%        subdur=20; %duration of the subplot in seconds
-%        posdur=190; %position of the subplot in seconds
-%        %plot each individually, including true, for 5 minutes 
-%        for cur_method = 1:size(ypred,2)+1        
-%            figure; hold on; 
-%            %add zoom box
-%            if cur_method==size(ypred,2)+1
-%               yvals = [floor(min(y(xvals(1):xvals(2)))),ceil(max(y(xvals(1):xvals(2))))];
-%            else
-%               yvals = [floor(min(ypred(xvals(1):xvals(2),cur_method))),ceil(max(ypred(xvals(1):xvals(2),cur_method)))];
-%            end           
-% %            r=rectangle('position',[posdur,-10,subdur,30],'FaceColor',[0.25 0.25 0.25 0.25],'EdgeColor','none');
-%            r=rectangle('position',[posdur,yvals(1),subdur,sum(abs(yvals))],'FaceColor',[0.25 0.25 0.25 0.25],'EdgeColor','none');
-%            plot([0 x(end)],[0 0],'color','k','linewidth',fp.line_width)
-%            if cur_method==size(ypred,2)+1
-%                p=plot(x,y,'linewidth',fp.line_width,'color','k');
-%            elseif cur_method >1 && cur_method <= size(ypred,2)
-% %                plot(x,y,'linewidth',fp.line_width,'color',[0.2 0.2 0.2, 0.1],'linewidth',1);
-%                p=plot(x,ypred(:,cur_method),'linewidth',fp.line_width,'color',col(cur_method,:));
-%            else
-%                p=plot(x,ypred(:,cur_method),'linewidth',fp.line_width,'color',col(cur_method,:));
-%            end
-%            if cur_method==1
-%                ylabel('\DeltaF/\sigma'); 
-%            elseif cur_method == size(ypred,2)+1
-%                ylabel({'Normalized','firing rate'});
-%            else
-%                ylabel({'Predicted','firing rate'});
-%            end           
-%            xlim(xvals);
-%            set(gca,'xtick',xvals(1):50:xvals(2),'xticklabel',0:50:diff(xvals))
-%            xlabel('Time (s)')                                     
-%            fp.FormatAxes(gca); grid on
-%            if cur_method==size(ypred,2)+1
-%                fp.SetTitle(gca,'Original')
-%            else
-%                fp.SetTitle(gca,labels{cur_method})
-%            end
-%            set(gca,'ylim',yvals)
-%            fp.FigureSizing(gcf,[3 2 20 3],[10 10 25 7])
-% %            ylim([0 4.5])
-%            %save off
-%            saveCurFigs(gcf,{'-dpng','-dsvg'},sprintf('Rec%d_P%d_%d',cur_rec,cur_probe,cur_method),savedir,0); 
-%            
-%            %zoom in, change size, add box
-%            delete(r); 
-%            xlim([posdur,posdur+subdur])
-%            fp.FigureSizing(gcf,[3 2 10 3],[10 10 15 7]) 
-%            p.LineWidth=1; box on 
-% %            ylim([0 5])
-%            saveCurFigs(gcf,{'-dpng','-dsvg'},sprintf('Rec%d_P%d_%dzoom',cur_rec,cur_probe,cur_method),savedir,0); close all
-%            
-%            %plot the distribution of values
-%            figure; hold on; 
-%            if cur_method==size(ypred,2)+1
-%                histogram(y,'numbins',50,'EdgeAlpha',0,'FaceColor','k');            
-%                xlabel('Firing Rate')
-%            else
-%                histogram(ypred(:,cur_method),'EdgeAlpha',0,'FaceColor',col(cur_method,:));
-%                xlabel('Predicted Firing Rate')
-%            end
-%            fp.FigureSizing(gcf,[3 2 3 3],[10 10 15 7]) 
-%            ytemp = get(gca,'ylim'); plot([0 0],ytemp,'color','k','linewidth',1,'linestyle','-')
-%            ylabel('# Values');            
-%            fp.FormatAxes(gca); grid on
-%            saveCurFigs(gcf,{'-dpng','-dsvg'},sprintf('Rec%d_P%d_%dhistogram',cur_rec,cur_probe,cur_method),savedir,0); close all           
-%        end
-%     end
-% end
+%Camden | you're currently just using the first recording, first probe for example figures
+savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\ExampleTracesTraining';
+% savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\ExampleTracesWithheld';
+col = [fp.c_none; fp.c_lr; fp.c_glm ;fp.c_ff];
+fn = GrabFiles('deconvolved_traces_trained_datastd.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'}); %trained
+% fn = GrabFiles('deconvolved_traces_withheld_datastd.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'}); savefn = 'withheld'; %withheld
+data = load(fn{1});
+labels = {'WF','LR','GLM','fNN'};
+%loop through each rec and each probe and generate the figure
+if ~exist(savedir,'dir'); mkdir(savedir); end
+n_rec = size(data(1).st_test,2);
+n_probe = size(data(1).st_test{1},2);
+for cur_rec = 1%:n_rec
+    for cur_probe = 1%:n_probe
+       %concatenate data for this probe   
+       close all
+       ypred = [data(1).ypred_none{cur_rec}(:,cur_probe),data(1).ypred_lr{cur_rec}(:,cur_probe),...
+           data(1).ypred_glm{cur_rec}(:,cur_probe),data(1).ypred_ff{cur_rec}(:,cur_probe)];
+       y = data(1).st_test{cur_rec}(:,cur_probe);
+       x = (1:size(ypred,1))/30;
+       xvals = [60 360]; %window to plot (300sec is usually good length)
+       subdur=20; %duration of the subplot in seconds
+       posdur=190; %position of the subplot in seconds
+       %plot each individually, including true, for 5 minutes 
+       for cur_method = 1:size(ypred,2)+1        
+           figure; hold on; 
+           %add zoom box
+           if cur_method==size(ypred,2)+1
+              yvals = [floor(min(y(xvals(1):xvals(2)))),ceil(max(y(xvals(1):xvals(2))))];
+           else
+              yvals = [floor(min(ypred(xvals(1):xvals(2),cur_method))),ceil(max(ypred(xvals(1):xvals(2),cur_method)))];
+           end           
+%            r=rectangle('position',[posdur,-10,subdur,30],'FaceColor',[0.25 0.25 0.25 0.25],'EdgeColor','none');
+           r=rectangle('position',[posdur,yvals(1),subdur,sum(abs(yvals))],'FaceColor',[0.25 0.25 0.25 0.25],'EdgeColor','none');
+           plot([0 x(end)],[0 0],'color','k','linewidth',fp.line_width)
+           if cur_method==size(ypred,2)+1
+               p=plot(x,y,'linewidth',fp.line_width,'color','k');
+           elseif cur_method >1 && cur_method <= size(ypred,2)
+%                plot(x,y,'linewidth',fp.line_width,'color',[0.2 0.2 0.2, 0.1],'linewidth',1);
+               p=plot(x,ypred(:,cur_method),'linewidth',fp.line_width,'color',col(cur_method,:));
+           else
+               p=plot(x,ypred(:,cur_method),'linewidth',fp.line_width,'color',col(cur_method,:));
+           end
+           if cur_method==1
+               ylabel('\DeltaF/\sigma'); 
+           elseif cur_method == size(ypred,2)+1
+               ylabel({'Normalized','firing rate'});
+           else
+               ylabel({'Predicted','firing rate'});
+           end           
+           xlim(xvals);
+           set(gca,'xtick',xvals(1):50:xvals(2),'xticklabel',0:50:diff(xvals))
+           xlabel('Time (s)')                                     
+           fp.FormatAxes(gca); grid on
+           if cur_method==size(ypred,2)+1
+               fp.SetTitle(gca,'Original')
+           else
+               fp.SetTitle(gca,labels{cur_method})
+           end
+           set(gca,'ylim',yvals)
+           fp.FigureSizing(gcf,[3 2 20 3],[10 10 25 7])
+%            ylim([0 4.5])
+           %save off
+           saveCurFigs(gcf,{'-dpng','-dsvg'},sprintf('Rec%d_P%d_%d',cur_rec,cur_probe,cur_method),savedir,0); 
+           
+           %zoom in, change size, add box
+           delete(r); 
+           xlim([posdur,posdur+subdur])
+           fp.FigureSizing(gcf,[3 2 10 3],[10 10 15 7]) 
+           p.LineWidth=1; box on 
+%            ylim([0 5])
+           saveCurFigs(gcf,{'-dpng','-dsvg'},sprintf('Rec%d_P%d_%dzoom',cur_rec,cur_probe,cur_method),savedir,0); close all
+           
+           %plot the distribution of values
+           figure; hold on; 
+           if cur_method==size(ypred,2)+1
+               histogram(y,'numbins',50,'EdgeAlpha',0,'FaceColor','k');            
+               xlabel('Firing Rate')
+           else
+               histogram(ypred(:,cur_method),'EdgeAlpha',0,'FaceColor',col(cur_method,:));
+               xlabel('Predicted Firing Rate')
+           end
+           fp.FigureSizing(gcf,[3 2 3 3],[10 10 15 7]) 
+           ytemp = get(gca,'ylim'); plot([0 0],ytemp,'color','k','linewidth',1,'linestyle','-')
+           ylabel('# Values');            
+           fp.FormatAxes(gca); grid on
+           saveCurFigs(gcf,{'-dpng','-dsvg'},sprintf('Rec%d_P%d_%dhistogram',cur_rec,cur_probe,cur_method),savedir,0); close all           
+       end
+    end
+end
 
 %% plot the deconvolution kernel for the glm
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\glmkernel';
@@ -210,7 +210,7 @@ col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load fit Across Sites uM 
 fn = GrabFiles('within_xsite\w*std\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
 [data,lags,xcorr_trace,type] = LoadResults(fn{1},{'lr_gcamp','glm','feedforward','none'});%get the desired depth 
-% labels = {'WF','LR','GLM','fNN'};
+labels = {'WF','LR','GLM','fNN'};
 
 %reverse skew
 data{3} = -1*data{3};
@@ -453,7 +453,7 @@ col = [{fp.c_none},{fp.c_lr},{fp.c_glm},{fp.c_ff}];
 %load example traces and plot
 
 %load data
-fn = GrabFiles('within_compare\w*mean\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
+fn = GrabFiles('within_compare\w*std\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\Deconvolution'});
 n=7;
 fn = fn(1:7);
 data = cell(numel(fn),3);
@@ -493,11 +493,11 @@ for i = 1:3 %loop through statistics
     set(gca,'XTickLabelRotation',45)
     xlim([075 1325])
 end
-saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('depthcorr'),savedir,0); close all
+% saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('depthcorr'),savedir,0); close all
 figure; hold on; 
 shadedErrorBar(depths,n_neurons_avg,n_neurons_sem,'lineprops',{'linestyle','-','color',[0.5 0.5 0.5]});
 xlim([075 1325])
-saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('depthneu'),savedir,0); close all
+% saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('depthneu'),savedir,0); close all
 
 %% compare the superficial and deep
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Deconvolution\superficial_vs_deep';

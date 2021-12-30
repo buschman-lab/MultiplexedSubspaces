@@ -3,19 +3,25 @@ function RefitBasisMotifs(fn, basis_dir,chunk,parameter_class,save_dir)
 %Add paths
 if ispc
     addpath(genpath('Z:\Rodent Data\Wide Field Microscopy\fpCNMF'));
-    addpath(genpath('Z:\Rodent Data\Wide Field Microscopy\Widefield_Imaging_Analysis'));
+    addpath(genpath('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\GithubRepo\Widefield_Imaging_Analysis'));
 else
     addpath(genpath('/jukebox/buschman/Rodent Data/Wide Field Microscopy/fpCNMF'));
-    addpath(genpath('/jukebox/buschman/Rodent Data/Wide Field Microscopy/Widefield_Imaging_Analysis'));
+    addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis'));    
 end
 
 gp = loadobj(feval(parameter_class)); 
 
 %load the basis motifs
-temp = load([basis_dir filesep 'basismotifs.mat'],'W_basis','noise_clusters');
-%ignore noise clusters when refitting (you could also refit these and then remove them and their representation in the data
+if exist(basis_dir,'file') %if accepting the basis dir as the complete path
+    temp = load(basis_dir,'W_basis','noise_clusters');
+else %legacy 
+    temp = load([basis_dir filesep 'basismotifs.mat'],'W_basis','noise_clusters');
+end
+%ignore noise clusters when refitting (you could also refit these and then remove them 
 W = temp.W_basis;
-W(:,temp.noise_clusters,:)=[];
+if isfield(temp,'noise_clusters')    
+    W(:,temp.noise_clusters,:)=[];
+end
 
 %load the data_train and the data_test data
 fprintf('\n\tLoadings Data\n'); 
@@ -74,5 +80,5 @@ residuals = data_test-tensor_convolve(w,H);
 
 save([save_dir filesep name 'test.mat'],'w','H','stats_refit','bad_pxl','residuals');
 
-
+fprintf('done')
 %save off

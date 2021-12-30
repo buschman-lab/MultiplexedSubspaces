@@ -22,8 +22,7 @@ w_var = [w_var{:}];
 %Loop through different smoothing levels
 sm_avg = zeros(1,numel(gp.smt_kernel));
 for i = 1:numel(gp.smt_kernel)
-    smt_kernel = [gp.smt_kernel(i) gp.smt_kernel(i)];
-    data_train_smooth = reshape(SpatialGaussian(conditionDffMat(data',find(bad_pxl==1)),smt_kernel),gp.pixel_dim(1)*gp.pixel_dim(2),size(data,2));
+    data_train_smooth = reshape(SpatialGaussian(conditionDffMat(data',find(bad_pxl==1)),gp.smt_kernel(i)),gp.pixel_dim(1)*gp.pixel_dim(2),size(data,2));
     data_train_smooth(bad_pxl,:) = [];
     sm_avg(i) = nanmean(nanvar(data_train_smooth,[],1),2);  
 end
@@ -31,7 +30,7 @@ end
 %get the closest value
 [~,idx] = min(abs(sm_avg-nanmean(w_var,2)));
 
-kernel = [gp.smt_kernel(idx),gp.smt_kernel(idx)];
+kernel = gp.smt_kernel(idx);
 
 end %function end
 
