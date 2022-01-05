@@ -226,11 +226,11 @@ end
 % %if you want to see what the postprocessed data looks like then run
 % %InspectPreprocessedData(PreprocessedDataFilepath,'postprocessed')
 %%
-
 % Cluster Motifs
-save_dir_motif_fits = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\MotifDiscovery';
-[file_path_motifs, file_header_motifs] = fileparts(file_list_motifs{1}(1));
-header = 'M'; %leave blank to do by all animals %file_header_motifs(1:regexp(file_header_motifs,'_','start','once'));%to do by recording
+save_dir_motif_fits = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\MotifDiscovery_temp';
+file_path_motifs = save_dir_motif_fits;
+% [file_path_motifs, file_header_motifs] = fileparts(file_list_motifs{1}(1));
+header = 'Mouse'; %leave blank to do by all animals %file_header_motifs(1:regexp(file_header_motifs,'_','start','once'));%to do by recording
 
 %Find Basis Motifs and Refit to the entire data set
 script_name = WriteBashScript(parameter_class,sprintf('%d',1),'ClusterW_Spock',{ConvertToBucketPath(file_path_motifs),header,ConvertToBucketPath(save_dir_motif_fits),parameter_class},...

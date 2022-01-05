@@ -5,7 +5,7 @@ classdef general_params_corticaldynamics
         spock_bucket = '\jukebox\buschman\';
         repo_path = 'Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\GithubRepo\Widefield_Imaging_Analysis\';        
         dynamic_script_path = 'Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\DynamicScripts\';
-        processing_intermediates = 'Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\MotifDiscovery\'; %location of the intermediate files in the processing pipeline
+        processing_intermediates = 'Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\MotifDiscovery_temp\'; %location of the intermediate files in the processing pipeline
         figure_save_directory = 'Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging\processingfigures\'; %directory to save off figures during processing
         
         %fit neural network file name
@@ -69,8 +69,8 @@ classdef general_params_corticaldynamics
         use_single_hemi = 1; %use only one hemisphere when clustering (for craniotomies). 1 = left (not flipped), 2 = right, 0 = both
 
         %PhenoCluster parameters
-        clust_knn = 15;
-        clust_louvain_restarts = 5; 
+        clust_knn = 10;
+        clust_louvain_restarts = 1; 
 
         %DBSCAN parameters
         clust_epsilon = 0.3; 

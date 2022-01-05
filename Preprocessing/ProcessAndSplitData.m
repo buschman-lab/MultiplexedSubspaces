@@ -33,6 +33,11 @@ else
     opts = gp;
 end
 %%
+% uncommit to add an additional mask here (i.e. if down-the-line, you realize that the edges of all animals in original mask were too geneous
+load('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/PreprocessedImaging/mask_posterioredge.mat');
+data = reshape(data,[68*68 size(data,3)]);
+data(mask(:)==1,:) = NaN;
+data = reshape(data,[68 68 size(data,2)]);
 
 %condition data and remove nan pxls
 [x,y,z] = size(data);

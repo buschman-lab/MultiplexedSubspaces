@@ -53,6 +53,17 @@ win = 30; %window length in frames
 prewin = 30; %window length in frames
 fr_max = 5; %max (normalized) firing rate for scaling
 
+%get the anatomical locations
+ccf_path = fileparts(EphysPath);
+ccf_path = load([ccf_path filesep 'probe_ccf_xvalidated.mat']);
+ccf_path.probe_ccf = ccf_path.probe_ccf(p_order);
+neu_area = arrayfun(@(n) MapAnatomicalLocation(ccf_path.st,ccf_path.probe_ccf(n),st_depth{n},1),1:numel(st_depth),'UniformOutput',0);
+%inverse labels to match the depth plotting (inversed)
+neu_area = cellfun(@(x)  x(linspace(numel(x),1,numel(x))), neu_area,'UniformOutput',0);
+%switch to acroynm
+neu_area = cellfun(@(x) AreaAcryonym(x,ccf_path.st), neu_area,'UniformOutput',0);
+anotation_type = 'detail'; %detailed structures or parent structure names
+
 %get the deconvolved roi and average spiking per probe
 x = sqrt(size(data_norm,1)+numel(nanpxs)); 
 r = 2;
@@ -81,7 +92,12 @@ fp = fig_params_deconvolutionpaper;
 
 %behavioral video
 v = VideoReader(BehavPath);
-
+if numel(EyeCrop)==5 %some are flipped, so add a throwaway 5th term to be passed into function
+    flipimg = 1;
+    EyeCrop = EyeCrop(1:4);
+else
+    flipimg=0;
+end
 
 %% Video 1 | Full data
 col = getColorPalet(4);
@@ -95,9 +111,8 @@ try
         close all; 
         figure('units','normalized','position',[0.2719 0.0657 0.6979 0.8398]); hold on; 
         set(gcf,'color','w')
-        t=tiledlayout(4,6,'TileSpacing','compact');
+        t=tiledlayout(4,6,'Padding','normal','TileSpacing','normal');
         title(t,figtitle)
-
 
         %plot the imaging frames
         nexttile([2,2]); hold on;
@@ -107,20 +122,20 @@ try
         ylim([6,62]); xlim([4,63]); axis equal    
         axis off            
         arrayfun(@(n) plot(probe_loc{n}(1,1)+offset{n}(1),probe_loc{n}(1,2)+offset{n}(2),'linewidth',1,'color',col(n,:),'marker','x','markersize',10),p_order,'UniformOutput',0)            
-
-        %Loop through probes
-        for cur_p = 1:4
+        
+        rng(4);
+        for cur_p = 1:4            
+            c = distinguishable_colors(80); 
             nexttile([TileSize(cur_p),1]); hold on;
             imagesc(st_norm{cur_p}(cur_f-prewin:cur_f+win,:)',[0 fr_max]);  
             set(gca,'ydir','reverse')
+            PlotProbeAnatomy(gca, neu_area{cur_p}, 0, anotation_type,1,2,c(randperm(size(c,1),size(c,1)),:));  
     %         colormap(flipud(gray))
-            colormap(gca,flipud(gray));
-            box off
+            colormap(gca,flipud(gray));            
             yvals = floor(linspace(1,size(st_norm{cur_p},2),10));
-            set(gca,'YTick',yvals,'YTickLabel',st_depth{cur_p}(yvals),'YTickLabelRotation',45);        
-            if cur_p ==1
-                ylabel('probe location (tip-surface | um)');
-            elseif cur_p == 4
+%             set(gca,'YTick',yvals,'YTickLabel',st_depth{cur_p}(yvals),'YTickLabelRotation',45);               
+            set(gca,'YTick','')
+            if cur_p == 4
                c = colorbar('southoutside');
                ylabel(c,'Normalized Firing Rate')
             end
@@ -129,20 +144,22 @@ try
             ymax = get(gca,'ylim');
             plot([prewin+1,prewin+1],ymax,'linewidth',1.5,'color','r','linestyle','--'); %plus 1 so that it is on the current frame
             %plot a line at 600uM
-            sup_cort = find(st_vert_depth{cur_p}>=600,1,'first');
-            plot([0,win+prewin+1],[sup_cort,sup_cort],'linewidth',1.5,'color','b','linestyle','-'); %plus 1 so that it is on the current frame
+%             sup_cort = find(st_vert_depth{cur_p}>=600,1,'first');
+%             plot([0,win+prewin+1],[sup_cort,sup_cort],'linewidth',1.5,'color','b','linestyle','-'); %plus 1 so that it is on the current frame
             title(sprintf('probe %d',cur_p),'fontweight','normal','color',col(p_order(cur_p),:))
             xlim([0,win+prewin+1]);  
             xvals =get(gca,'xlim');
-            set(gca,'xtick',[xvals(1) prewin+1 xvals(2)],'xticklabels',[-1*win/15,0 win/15]);
-            fp.FormatAxes(gca)
+            set(gca,'xtick',[xvals(1) prewin+1 xvals(2)],'xticklabels',[-1*win/15,0 win/15]);            
+            xlim([-10,win+prewin+1]);  
+            set(gca,'XColor','w','YColor','w')
+            fp.FormatAxes(gca)            
+            box off
         end %probe loop    
 
         %behavioral video
-        nexttile([2,2]); hold on; 
-        if numel(EyeCrop)==5 %some are flipped, so add a throwaway 5th term
-            frame = flipud(read(v,behavidx(cur_f)));
-            EyeCrop = EyeCrop(1:4);
+        nexttile([2,2]); hold on;         
+        if flipimg==1
+            frame = flipud(read(v,behavidx(cur_f)));            
         else
             frame = read(v,behavidx(cur_f));
         end

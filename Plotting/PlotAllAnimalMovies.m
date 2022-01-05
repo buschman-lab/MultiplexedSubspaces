@@ -1,3 +1,19 @@
+%331 - recording 1
+savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\RawDataVideos';
+figtitle = 'Mouse 331 Recording 1';
+ImgPath = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\DeconvolvedImaging\Mouse331_RestingState_NP_06_11_2021_1dff_combined_processed.mat';
+ImgProbeLoc = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging\Mouse331_RestingState_NP_06_11_2021_probe_coords.mat';
+EphysPath = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\ProcessedEphys\catgt_Mouse331_06_11_2021_RestingState_g1\ap_opts.mat';
+BehavPath = 'Z:\Rodent Data\Wide Field Microscopy\Neuropixels_Widefield_CorticalDynamics\RestingState_Neuropixels\Mouse331_06_11_2021\Cam_1_20210611-132100.avi';
+% BehavPath2 = 'Z:\Rodent Data\Wide Field Microscopy\Neuropixels_Widefield_CorticalDynamics\RestingState_Neuropixels\Mouse331_06_11_2021\Cam_0_20210611-132100.avi';
+preprocessedFLAG = 1; %if plotting the deconvolved or nondeconvolved data
+behavstr = [573,340542];
+% Rectangle on the behavioral video to crop to visualize eyeball
+EyeCrop = [255,220,65,60];
+
+CombinedEphysImagingVideo(ImgPath,BehavPath,EphysPath,ImgProbeLoc,EyeCrop,figtitle,savedir,behavstr,preprocessedFLAG)
+
+%332 - recording 1
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\RawDataVideos';
 figtitle = 'Mouse 332 Recording 1';
 ImgPath = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\DeconvolvedImaging\Mouse332_RestingState_NP_06_07_2021_1dff_combined_processed.mat';
@@ -17,6 +33,28 @@ ImgPath = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\
 CombinedEphysImagingVideo(ImgPath,BehavPath,EphysPath,ImgProbeLoc,EyeCrop,figtitle,savedir,behavstr,0)
 catch
 end
+
+%332 - recording 2
+savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\RawDataVideos';
+figtitle = 'Mouse 332 Recording 2';
+ImgPath = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\DeconvolvedImaging\Mouse332_RestingState_NP_06_08_2021_1dff_combined_processed.mat';
+ImgProbeLoc = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging\Mouse332_RestingState_NP_06_08_2021_probe_coords.mat';
+EphysPath = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\ProcessedEphys\catgt_Mouse332_06_08_2021_RestingState_g0\ap_opts.mat';
+BehavPath = 'Z:\Rodent Data\Wide Field Microscopy\Neuropixels_Widefield_CorticalDynamics\RestingState_Neuropixels\Mouse332_06_08_2021\Cam_1_20210608-124351.avi';
+% BehavPath2 = 'Z:\Rodent Data\Wide Field Microscopy\Neuropixels_Widefield_CorticalDynamics\RestingState_Neuropixels\Mouse332_06_08_2021\Cam_0_20210608-124351.avi';
+preprocessedFLAG = 1; %if plotting the deconvolved or nondeconvolved data
+behavstr = [577,340542];
+% Rectangle on the behavioral video to crop to visualize eyeball
+EyeCrop = [260,200,65,60,0];
+
+CombinedEphysImagingVideo(ImgPath,BehavPath,EphysPath,ImgProbeLoc,EyeCrop,figtitle,savedir,behavstr,preprocessedFLAG)
+
+try
+ImgPath = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging\Mouse332_RestingState_NP_06_08_2021_1dff_combined.mat';
+CombinedEphysImagingVideo(ImgPath,BehavPath,EphysPath,ImgProbeLoc,EyeCrop,figtitle,savedir,behavstr,0)
+catch
+end
+
 
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\RawDataVideos';
 figtitle = 'Mouse 334 Recording 1';
