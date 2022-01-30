@@ -17,7 +17,7 @@ classdef general_params_corticaldynamics
         sbatch_time = 59;
         sbatch_exclude = 'redshirt-n[12-49]';
         sbatch_memory = 16;
-        sbatch_matlabversion = 'R2019b';
+        sbatch_matlabversion = 'R2020b';
         sbatch_path = "/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis/Spock/";
         sbatch_name = [];               
         stack_suffix = '.ome_stack.mat' %the suffix used to take individual dff and ID for combining e.g. '_dff.mat' for corrected recs and '_dff_uncorrected.mat' for uncorrected recs
@@ -42,7 +42,7 @@ classdef general_params_corticaldynamics
         %CNMF Defaults        
         reverse_fit = 0; 
         K = 30;
-        L = 15;
+        L = 15; %15 for 15fps, 30 for 30fps
         non_penalized_iter = 0;
         max_non_penalized_iter =1; 
         w_update_iter = 1;
@@ -88,7 +88,7 @@ classdef general_params_corticaldynamics
         pixel_dim = [68,68];        
         originaldimensions = [68,68];        
         verbose = 1;       
-        smt_kernel = []; %Size of smoothing kernel if resmoothing data when refitting motifs. If numel() >2 then code will choose best value. Leave blank for nosmoothing
+        smt_kernel = [1,3,5]; %Size of smoothing kernel if resmoothing data when refitting motifs. If numel() >2 then code will choose best value. Leave blank for nosmoothing
 
         
     end

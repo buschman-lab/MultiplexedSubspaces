@@ -23,25 +23,31 @@ rho_null = cell(numel(orig_data),44);
 
 %loop through original data
 for cur_file = 1:numel(orig_data)
-    data = load(orig_data{cur_file},'data_test','data_train');    
+%     data = load(orig_data{cur_file},'data_test','data_train');    
     [~,fn] = fileparts(orig_data{cur_file});
     %loop through each fit
     idx = find(contains(motif_fits,fn)==1);
     for cur_fit = 1:numel(idx)
-       fit_data = load(motif_fits{idx(cur_fit)},'w','H');
+       fit_data = load(motif_fits{idx(cur_fit)},'w','H','stats_refit');
         
-       %match to test or train data
-       [~,temp_fn]= fileparts(motif_fits{idx(cur_fit)});
+       [onsets,onsets_mask,thresh_level]=MotifOnset(w,h,rho_frame,rho_lvl)
        
-       if contains(temp_fn,'test')
-           chunk = extractBetween(temp_fn,'chunk_','test');
-           [onsets{cur_file,cur_fit},onsets_mask{cur_file,cur_fit},thresh_level{cur_file,cur_fit},h_wf{cur_file,cur_fit},rho{cur_file,cur_fit},rho_null{cur_file,cur_fit}]=MotifOnset(fit_data.w,fit_data.H,data.data_test(:,:,str2double(chunk{1})));
-       elseif contains(temp_fn,'train')
-           chunk = extractBetween(temp_fn,'chunk_','train');           
-           [onsets{cur_file,cur_fit},onsets_mask{cur_file,cur_fit},thresh_level{cur_file,cur_fit},h_wf{cur_file,cur_fit},rho{cur_file,cur_fit},rho_null{cur_file,cur_fit}]=MotifOnset(fit_data.w,fit_data.H,data.data_train(:,:,str2double(chunk{1})));
-       else
-           error('no test or train data in file');
-       end
+%        %match to test or train data
+%        [~,temp_fn]= fileparts(motif_fits{idx(cur_fit)});
+%        
+%        if contains(temp_fn,'test')
+%            chunk = extractBetween(temp_fn,'chunk_','test');
+%            [onsets{cur_file,cur_fit},onsets_mask{cur_file,cur_fit},thresh_level{cur_file,cur_fit},h_wf{cur_file,cur_fit},...
+%                rho{cur_file,cur_fit},rho_null{cur_file,cur_fit}]=MotifOnset(fit_data.w,fit_data.H,...
+%                data.data_test(:,:,str2double(chunk{1})),fit_data.stats_refit.rho_frame_per_motif);
+%        elseif contains(temp_fn,'train')
+%            chunk = extractBetween(temp_fn,'chunk_','train');           
+%            [onsets{cur_file,cur_fit},onsets_mask{cur_file,cur_fit},thresh_level{cur_file,cur_fit},h_wf{cur_file,cur_fit},...
+%                rho{cur_file,cur_fit},rho_null{cur_file,cur_fit}]=MotifOnset(fit_data.w,fit_data.H,...
+%                data.data_train(:,:,str2double(chunk{1})),fit_data.stats_refit.rho_frame_per_motif);
+%        else
+%            error('no test or train data in file');
+%        end
     end %fit loop
     
 end %file loop
@@ -88,7 +94,7 @@ for i = 1:n
     fp.FormatAxes(gca)    
     fp.FigureSizing(gcf,[3 3 3 4],[])
 
-    %plot the H timecourse
+    %plot the rho timecourse
 	figure; hold on;     
     plot(h_wf_cat(motif_idx==i,:)','color',[0.5 0.5 0.5 0.15],'linewidth',0.5)    
     xlabel('Time (frames)');

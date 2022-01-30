@@ -2,7 +2,7 @@ function RemoveNoiseClusters()
 %Basis motif figure/within animal clustering
 %Camden MacDowell - timeless
 
-cd('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\MotifDiscovery');
+cd('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\MotifDiscovery_temp');
 basis = 'Mouse_basis_motifs.mat';
 mouse_fn = {'Mousepermouse_basis_motifs331.mat','Mousepermouse_basis_motifs332.mat','Mousepermouse_basis_motifs334.mat'};
 
@@ -40,7 +40,7 @@ close all
 for i = 1:size(w_good,2)
     temp = reshape(w_good(:,i,:),[68 68 size(w_good,3)]);
     for j = 1:size(temp,3)
-        imagesc(temp(:,:,j),[0 prctile(temp(:),99.9)]);
+        imagesc(temp(:,:,j),[0 prctile(temp(:),99.99)]);
         title(sprintf('%d %d',i,j));
         pause();
     end

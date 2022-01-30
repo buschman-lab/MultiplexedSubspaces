@@ -3,6 +3,7 @@
 %data
 ephys_list = dir('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\ProcessedEphys'); 
 ephys_list(1:2)=[]; %remove '.' and '..'
+ephys_list(end)=[];
 ephys_list=arrayfun(@(n) fullfile(ephys_list(n).folder,ephys_list(n).name),1:size(ephys_list,1),'UniformOutput',0);
 [ap_fn,~] = GrabFiles('ap_opts.mat',0,ephys_list);
 [motif_fits,~] = GrabFiles('\w*chunk\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\BasisMotifFits'});
