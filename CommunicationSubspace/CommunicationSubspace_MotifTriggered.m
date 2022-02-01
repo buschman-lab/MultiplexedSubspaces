@@ -20,7 +20,7 @@ else
     addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Ephys'));
     savedir = '/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/analysisplayground/CCA/';
 end
-
+tic
 win=[-5 15]; %hardcoded write now. 
 %starting
 fprintf('Working on motif %d',motif);
@@ -39,7 +39,7 @@ neu_area = cat(2,neu_area{:});
 [motif_onset,~] = CompileMotifOnsets(motif_fits); %return 'chunk_names' if you want to confirm ordering is correct
 
 %parse motif onsets
-[~,trig_st] = ParseByOnset([],st_norm,motif_onset,win,3);
+[~,trig_st] = ParseByOnset([],st_norm,motif_onset,win,motif);
 
 %parse activity per parent region 
 [area_val, area_label] = ParseByArea(cat(1,trig_st{:}),neu_area,'parent');
@@ -58,36 +58,42 @@ U = cell(size(paired_areas,1),1);
 V = cell(size(paired_areas,1),1);
 r = cell(size(paired_areas,1),1);
 pval = cell(size(paired_areas,1),1);
-r_norm = cell(size(paired_areas,1),1);
+t = cell(size(paired_areas,1),1);
+best_idx = cell(size(paired_areas,1),1);
+aTheta_xv = cell(size(paired_areas,1),1);
+bTheta_xv = cell(size(paired_areas,1),1);
 for i = 1:size(paired_areas,1)
     fprintf('\n\tWorking on subspace pairing %d of %d',i,size(paired_areas,1));
     x = area_val{strcmp(area_label,area_label{paired_areas(i,1)}),:};
     y = area_val{strcmp(area_label,area_label{paired_areas(i,2)}),:};
     
     %Identify any significant CV(subspaces) between each population
-    [a{i},b{i},U{i},V{i},r{i},pval{i},r_norm{i}] = significantCVs(x,y,0.01,0);
+    [a{i},b{i},U{i},V{i},r{i},pval{i},t{i},best_idx{i},aTheta_xv{i},bTheta_xv{i}] = significantCVs_perTimePoint(x,y,0.05,0);
 end %subspace identification loop
 
-%pca loop
-for i = 1:size(paired_areas,1)
-    if ~isempty(r{i})
-        x = area_val{strcmp(area_label,area_label{paired_areas(i,1)}),:};
-        y = area_val{strcmp(area_label,area_label{paired_areas(i,2)}),:};
-        %Get local activity pattern: the neural coefficients from PCA
-        [xw,yw] = localActivity(x,y,3);
-        
-        %Angle between local and shared variance 
-        pca_theta(i,1) = AngleBetweenWeights(xw,a{i},'none'); 
-        pca_theta(i,2) = AngleBetweenWeights(yw,b{i},'none');  
 
-        %[pending] | percent variance captured by shared variance
-    end
-end %pca loop
+%to do: add the pca loop so done on the same time relationships as the CVs
+% %pca loop
+% for i = 1:size(paired_areas,1)
+%     if ~isempty(r{i})
+%         x = area_val{strcmp(area_label,area_label{paired_areas(i,1)}),:};
+%         y = area_val{strcmp(area_label,area_label{paired_areas(i,2)}),:};
+%         %Get local activity pattern: the neural coefficients from PCA
+%         [xw,yw] = localActivity(x,y,3);
+%         
+%         %Angle between local and shared variance 
+%         pca_theta(i,1) = AngleBetweenWeights(xw,a{i},'none'); 
+%         pca_theta(i,2) = AngleBetweenWeights(yw,b{i},'none');  
+% 
+%         %[pending] | percent variance captured by shared variance
+%     end
+% end %pca loop
 
 
 %% save off data
-save([savedir,sprintf('%s_motif%d',rec_name,motif)])
+save([savedir,sprintf('%s_newversion_motif%d',rec_name,motif)])
 fprintf('\ndone')
+toc
 
 end 
 

@@ -8,8 +8,9 @@ data = cellfun(@(x) load(x,'motif','a','b','U','V','r','r_norm','paired_areas','
 motif_cvs = cellfun(@(x) load(x,'motif_cvs'),fn);
 
 %% main
-
-
+motif_cvs = cat(2,motif_cvs.motif_cvs);
+cv_map = cvStrengthMap(data,motif_cvs,'r_norm');
+fh = visualizeStrengthMap(cv_map,data,[]);
 
 
 

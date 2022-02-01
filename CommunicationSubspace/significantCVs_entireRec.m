@@ -16,6 +16,9 @@ y = y-nanmean(y);
 r = r.^2;
 r_norm = r/sum(r);
 
+rng('default')
+[~,~,r_perm] = arrayfun(@(n) canoncorr(x(randperm(size(x,1),size(x,1)),:),y),1,'UniformOutput',0);    
+
 
 %return significant cvs
 sig_idx = stats.p<alpha;

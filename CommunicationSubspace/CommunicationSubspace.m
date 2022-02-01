@@ -21,7 +21,7 @@ else
     savedir = '/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/analysisplayground/CCA/';
 end
 
-win=[-5 15]; %hardcoded write now. 
+win=[0 15]; %hardcoded write now. 
 %starting
 fprintf('Working on motif %d',motif);
 
