@@ -1,4 +1,4 @@
-function cv_map = cvStrengthMap(data,motif_cvs,type)
+function cv_map = cvStrengthMap_entirerecCVs(data,motif_cvs,type)
 %Camden - timeless
 %data is a structure with the cv information per motif 
 %type is the map that you want to produce

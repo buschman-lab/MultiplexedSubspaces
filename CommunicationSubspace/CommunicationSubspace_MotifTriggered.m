@@ -1,4 +1,4 @@
-function CommunicationSubspace_MotifTriggered(motif,cur_rec)
+function CommunicationSubspace_MotifTriggered(motif,cur_rec,muaflag,useCCA)
 %Camden MacDowell - timeless
 %Runs through a pipeline of CCA analyses for a given motif
 %INPUTs
@@ -21,7 +21,7 @@ else
     savedir = '/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/analysisplayground/CCA/';
 end
 tic
-win=[-5 15]; %hardcoded write now. 
+win=[-2 9]; %hardcoded write now. 
 %starting
 fprintf('Working on motif %d',motif);
 %% Gathering Data
@@ -29,7 +29,9 @@ fprintf('Working on motif %d',motif);
 
 %load ephys data
 [st_mat,~,st_depth] = LoadSpikes(EphysPath,'bindata',1,'offset',15,'mua',0,'depth_type','probe'); 
-st_norm = cellfun(@(x) x./std(x),st_mat,'UniformOutput',0);
+% st_norm = cellfun(@(x) x./std(x),st_mat,'UniformOutput',0);
+st_norm = st_mat;
+st_norm = cellfun(@(x) x(1:2:end,:)+x(2:2:end,:),st_norm,'UniformOutput',0);
 
 %get the anatomical locations
 neu_area = LoadEphysAnatomicalLocations(EphysPath,st_depth);
@@ -37,63 +39,96 @@ neu_area = cat(2,neu_area{:});
 
 %get the motif onsets for all recordings
 [motif_onset,~] = CompileMotifOnsets(motif_fits); %return 'chunk_names' if you want to confirm ordering is correct
+motif_onset = cellfun(@(x) floor(x/2), motif_onset,'UniformOutput',0);
 
 %parse motif onsets
 [~,trig_st] = ParseByOnset([],st_norm,motif_onset,win,motif);
 
 %parse activity per parent region 
-[area_val, area_label] = ParseByArea(cat(1,trig_st{:}),neu_area,'parent');
+[area_val, area_label] = ParseByArea(cat(1,trig_st{:}),neu_area,'general');
+
+%remove neurons that fire less than 0.5spike/sec on average across trials
+[area_val, inactive_idx] = RemoveInactiveNeurons(area_val, 0.5/7.5);
 
 %clean up areas %third input is the min # of spikes to keep area
 [area_val, area_label] = CleanUpAreas(area_val, area_label, 10); 
 
 %% Main
-%analyze all pairs of regions
-paired_areas = nchoosek(1:numel(area_label),2); 
-%preallocate variables
-pca_theta = NaN(size(paired_areas));
-a = cell(size(paired_areas,1),1);
-b = cell(size(paired_areas,1),1);
-U = cell(size(paired_areas,1),1);
-V = cell(size(paired_areas,1),1);
-r = cell(size(paired_areas,1),1);
-pval = cell(size(paired_areas,1),1);
-t = cell(size(paired_areas,1),1);
-best_idx = cell(size(paired_areas,1),1);
-aTheta_xv = cell(size(paired_areas,1),1);
-bTheta_xv = cell(size(paired_areas,1),1);
-for i = 1:size(paired_areas,1)
-    fprintf('\n\tWorking on subspace pairing %d of %d',i,size(paired_areas,1));
-    x = area_val{strcmp(area_label,area_label{paired_areas(i,1)}),:};
-    y = area_val{strcmp(area_label,area_label{paired_areas(i,2)}),:};
+if useCCA
+    fprintf('USING CCA')
+    % analyze all pairs of regions
+    paired_areas = nchoosek(1:numel(area_label),2); 
+    %preallocate variables
+    a = cell(size(paired_areas,1),1);
+    b = cell(size(paired_areas,1),1);
+    U = cell(size(paired_areas,1),1);
+    V = cell(size(paired_areas,1),1);
+    r = cell(size(paired_areas,1),1);
+    r_baseline = cell(size(paired_areas,1),1);
+    pval = cell(size(paired_areas,1),1);
+    pval_robust = cell(size(paired_areas,1),1);
+    t = cell(size(paired_areas,1),1);
+    best_idx = cell(size(paired_areas,1),1);
+    aTheta_xv = cell(size(paired_areas,1),1);
+    bTheta_xv = cell(size(paired_areas,1),1);
+    xx_coef = cell(size(paired_areas,1),1);
+    yy_coef = cell(size(paired_areas,1),1);
+    a_pca = cell(size(paired_areas,1),1);
+    b_pca = cell(size(paired_areas,1),1);
+    for i = 1:size(paired_areas,1)
+        fprintf('\n\tWorking on subspace pairing %d of %d',i,size(paired_areas,1));
+        x = area_val{strcmp(area_label,area_label{paired_areas(i,1)}),:};
+        y = area_val{strcmp(area_label,area_label{paired_areas(i,2)}),:};
+
+        %normalize to baseline
+        x = normalizeToBaseline(x,[1:2],'mean');
+        y = normalizeToBaseline(y,[1:2],'mean');
+
+        %use post stimulus
+        x = x(:,3:end,:);
+        y = y(:,3:end,:);
+
+        [a{i},b{i},U{i},V{i},r{i},pval{i},~,aTheta_xv{i},bTheta_xv{i}] = significantCVs(x,y,0.01,0);
+    end %subspace identification loop
+    %% save off data
+    save([savedir,sprintf('%sCCA_muaflag%d_motif%d',rec_name,muaflag,motif)])
+%     saveCurFigs(get(groot, 'Children'),{'-dpng'},[rec_name,'CCAstrength',sprintf('motif %d',motif)],savedir,0); close all
+    fprintf('\ndone')
+    toc
+
+
+else %rrr
+    fprintf('USING RRR')
+    paired_areas = combvec(1:numel(area_label),1:numel(area_label))';
+    %preallocate variables
+    qOpt = cell(size(paired_areas,1),1);
+    qOpt_target = cell(size(paired_areas,1),1);
+    cvl_fa = cell(size(paired_areas,1),1);
+    rrr_B = cell(size(paired_areas,1),1);
+    cvl_rrr = cell(size(paired_areas,1),1);
+    cvl_ridge = cell(size(paired_areas,1),1);
+    for i = 1:size(paired_areas,1)
+        fprintf('\n\tWorking on subspace pairing %d of %d',i,size(paired_areas,1));
+        x = area_val{strcmp(area_label,area_label{paired_areas(i,1)}),:};
+        y = area_val{strcmp(area_label,area_label{paired_areas(i,2)}),:};
+
+        %normalize to baseline
+        x = normalizeToBaseline(x,[1:2],'mean');
+        y = normalizeToBaseline(y,[1:2],'mean');
+
+        %use post stimulus
+        x = x(:,3:end,:);
+        y = y(:,3:end,:);
+
+        [qOpt{i},qOpt_target{i},cvl_fa{i},rrr_B{i},cvl_rrr{i},cvl_ridge{i}] = RRR(x,y);
+    end %subspace identification loop
+    %% save off data
+    save([savedir,sprintf('%sRRR_muaflag%d_motif%d',rec_name,muaflag,motif)])
+%     saveCurFigs(get(groot, 'Children'),{'-dpng'},[rec_name,'CCAstrength',sprintf('motif %d',motif)],savedir,0); close all
+    fprintf('\ndone')
+    toc
     
-    %Identify any significant CV(subspaces) between each population
-    [a{i},b{i},U{i},V{i},r{i},pval{i},t{i},best_idx{i},aTheta_xv{i},bTheta_xv{i}] = significantCVs_perTimePoint(x,y,0.05,0);
-end %subspace identification loop
-
-
-%to do: add the pca loop so done on the same time relationships as the CVs
-% %pca loop
-% for i = 1:size(paired_areas,1)
-%     if ~isempty(r{i})
-%         x = area_val{strcmp(area_label,area_label{paired_areas(i,1)}),:};
-%         y = area_val{strcmp(area_label,area_label{paired_areas(i,2)}),:};
-%         %Get local activity pattern: the neural coefficients from PCA
-%         [xw,yw] = localActivity(x,y,3);
-%         
-%         %Angle between local and shared variance 
-%         pca_theta(i,1) = AngleBetweenWeights(xw,a{i},'none'); 
-%         pca_theta(i,2) = AngleBetweenWeights(yw,b{i},'none');  
-% 
-%         %[pending] | percent variance captured by shared variance
-%     end
-% end %pca loop
-
-
-%% save off data
-save([savedir,sprintf('%s_newversion_motif%d',rec_name,motif)])
-fprintf('\ndone')
-toc
+end %method if/else
 
 end 
 

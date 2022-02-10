@@ -3,7 +3,7 @@ function [r_test, dThetaA, dThetaB, deltaA, deltaB] = xvalidateCCA(x,y,n_folds)
 %to test the generalizability. Also returns the angle (dThetaA/dThetaB) between the full
 %model weights in each region and the model. 
 if nargin <3; n_folds = 10; end
-
+rng('default')
 c = cvpartition(size(x,1),'KFold',n_folds);
 %remove neu with zero var in any fold. They are ignored in CCA
 bad_idx = cell(n_folds,1);
@@ -15,7 +15,8 @@ x(:,unique([bad_idx{:,1}]))=[];
 y(:,unique([bad_idx{:,2}]))=[];
 
 %get weights of full model
-[a_full,b_full] = canoncorr(x,y);
+[a_full,b_full,r,~,~,stats] = canoncorr(x,y);
+% sig_idx = stats.p<0.05;
 
 %run cross validations
 r_test = NaN(n_folds,min(size(x,2),size(y,2)));
