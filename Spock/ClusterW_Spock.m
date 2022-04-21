@@ -30,11 +30,11 @@ saveCurFigs(handles,'-dpng',[file_name '_ClusteringMotifs'],save_dir,0); close a
 
 %create basis motifs per mouse
 mouseid = MouseNumFromPath(file_list,'Mouse_'); unique_mice = unique(mouseid);
-gp.clust_community_fraction = 1; gp.clust_removepad=1;
+gp.clust_community_fraction = 0.75; gp.clust_removepad=1;
 [W_mouse,core_comm_size,mouseid_all,cluster_idx_all] = WithinMouseBasisMotifs(W_orig,nanpxs_all,gp,mouseid,cluster_idx,idx_knn,lag_mat,lags,shift);
 %Make sure that the timecourse of the basis motifs are alligned across mice
 %(i.e. peak at same time)
-if sum(diff(cellfun(@(x) size(x,2),W,'UniformOutput',1)))==0 %no mouse-specific noise motifs 
+if sum(diff(cellfun(@(x) size(x,2),W_mouse,'UniformOutput',1)))==0 %no mouse-specific noise motifs 
    W_mouse = AllignW_AcrossMice(W_mouse);
 end
 for i = 1:numel(W_mouse)

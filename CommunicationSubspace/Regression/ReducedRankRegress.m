@@ -42,15 +42,22 @@ function [B, B_, V] = ReducedRankRegress(Y, X, dim, varargin)
 % 
 % OPTIONAL ARGUMENTS (NAME-VALUE PAIRS):
 % 
-% 'RidgeInit' - 'True' (default) or "False'. Use Lambda-Reduced Rank
-%               Regression.
+% 'RidgeInit' - 0(def) = vanilla RRR. 1 = Use regularized RRR. Autofit Lambda. 
+%               or input any number besides 0 or   that is actual lambda
+%               value (avoid long autofitting process when the lambda is
+%               already known from the full ridge model). 
+%  
 % 'Scale'     - 'True' (default) or "False'. Use variance scaling
-%               (z-scoring).
+%               (z-scoring). %edit by camden - only applies when using the
+%               ridgeInit
 % 
 % @ 2018 Joao Semedo -- joao.d.semedo@gmail.com
 
-useRidgeInit = false;
-scale = false;
+%updated by Camden MacDowell 2/17/2022 to enable autopassing of ridge
+%lambda 
+
+useRidgeInit = 0; 
+scale = true; %2/16/2022 updated defaults by cjm
 for i = 1:2:numel(varargin)
     switch upper(varargin{i})
         
@@ -85,19 +92,23 @@ p = size(X, 2);
 M = m( ones(n, 1), : );
 Z = (X - M);
 
-if useRidgeInit
+if useRidgeInit == 1 %autofit lambda for regularized RRR
     lambda = GetRidgeLambda(C_RIDGE_D_MAX_SHRINKAGE_FACTOR, X, ...
         'Scale', scale);
     lambdaOpt = RegressModelSelect(@RidgeRegress, Y, X, lambda, ...
         'Scale', scale);
     Bfull = RidgeRegress(Y, X, lambdaOpt, 'Scale', scale);
     Bfull = Bfull(2:end,:);
-else
+elseif useRidgeInit ==0 %vanilla RRR
     Bfull = Z\Y;
+else %accept useRidgeInit as the input lambda value
+    Bfull = RidgeRegress(Y, X, useRidgeInit, 'Scale', scale);
+    Bfull = Bfull(2:end,:);
 end
 
 Yhat = Z*Bfull;
 V = pca(Yhat);
+
 B_ = Bfull*V;
 
 % If any neurons were excluded, adjust B_ to the correct size.

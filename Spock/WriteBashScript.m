@@ -29,8 +29,10 @@ fprintf(fid,"\n%s",'#SBATCH -p all');
 fprintf(fid,"\n%s%d",'#SBATCH -t ',gp.sbatch_time);
 fprintf(fid,"\n%s%s",'#SBATCH --exclude=',gp.sbatch_exclude);
 fprintf(fid,"\n%s%dG",'#SBATCH --mem-per-cpu=',gp.sbatch_memory);
+fprintf(fid,"\n%s%s",'#SBATCH --array=',gp.sbatch_array);
 fprintf(fid,"\n%s",'#SBATCH --mail-type=END'); %just set the email and type
 fprintf(fid,"\n%s",'#SBATCH --mail-user=<temp@princeton.edu>'); %just set the email and type
+fprintf(fid,"\n%s",'module load gstreamer/1.14.0');  %need for readVideo 
 fprintf(fid,"\n%s%s",'module load matlab/',gp.sbatch_matlabversion); 
 fprintf(fid,'\n%s"%s"\n','cd ',gp.sbatch_path); %path of the matlab script
     

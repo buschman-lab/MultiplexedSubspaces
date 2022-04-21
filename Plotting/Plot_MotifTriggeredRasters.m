@@ -1,10 +1,12 @@
-function Plot_MotifTriggeredRasters(ImgPath,ImgProbeLoc,EphysPath,motif_fits)
+function Plot_MotifTriggeredRasters(cur_rec)
 %Camden - timeless
 %computes loads all data, computes motif onsets and plots the corresponding
 %spike rasters. See bottom of function for code to run across all animals
 %and recrodings. 
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\MotifTriggeredRaster';
 if ~exist(savedir,'dir'); mkdir(savedir); end
+
+[~,ImgPath,ImgProbeLoc,EphysPath,motif_fits] = LoadDataDirectories(cur_rec);
 
 %load ephys data
 [st_mat,~,st_depth] = LoadSpikes(EphysPath,'bindata',1,'offset',15,'mua',1,'depth_type','probe');
@@ -23,8 +25,8 @@ probe_loc = load(ImgProbeLoc); probe_loc = probe_loc.probe_coords;
 [motif_onset,~] = CompileMotifOnsets(motif_fits); %return 'chunk_names' if you want to confirm ordering is correct
 
 %load the motifs 
-W_basis = load('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\MotifDiscovery\Mouse_basis_motifs.mat','W_basis_Center');
-W_basis = W_basis.W_basis_Center; 
+W_basis = load('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\MotifDiscovery\Mouse_basis_motifs.mat','W_basis');
+W_basis = W_basis.W_basis;
 
 %add the motifs panels to the edge of the figure. 
 
@@ -83,6 +85,53 @@ end
 [~,temp] = fileparts(ImgPath);
 temp = erase(temp,'dff_combined_processed');
 saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('TrigRaster_rec%s',temp),savedir,0); close all
+
+%% plot the null
+[trig_dff,trig_st] = ParseNullPeriods(dff,st_norm,motif_onset,win,sum(abs(win+1)));
+
+figure('units','normalized','position',[0.2719 0.0657 0.6979 0.8398]); hold on; 
+set(gcf,'color','w')
+t=tiledlayout(5,5,'Padding','normal','TileSpacing','normal');
+title(t,sprintf('NULL Motif'))
+
+%plot the 5 panels of the motif along the left side
+col = getColorPalet(4);
+tileidx = [1,6,11,16,21];
+for i = 1:5
+    nexttile(tileidx(i)); hold on; 
+    set(gca,'ydir','reverse')
+    imagesc(zeros(68)); axis off; axis square;
+    colormap(gca,'magma')    
+end
+
+%plot the cortical area activity    
+for i =1:4
+   nexttile(i+1); hold on;
+   shadedErrorBar(1:size(trig_dff,2),nanmean(trig_dff(i,:,:),3),sem(trig_dff(i,:,:),3),'lineprops',{'color',col(i,:)});   
+   ylim([2 5])
+   line(get(gca,'xlim'),repmat(nanmean(dff(:,i)),2),'color','k','linestyle','--','linewidth',2); %line denoting avg fr   
+   line(repmat(abs(win(1))+1,2),get(gca,'ylim'),'color','r','linestyle',':','linewidth',2); %line showing onset   
+   if i == 1
+       ylabel('deconvolved FR');
+   end
+   title(sprintf('%s Probe',label{i}))
+end
+
+%plot the ephys 
+for i =1:4
+    nexttile([4,1]); hold on;
+    c = getColorPalet(50); 
+    imagesc(nanmean(trig_st{i},3),[0 2.5]); colormap(gca,flipud(gray));
+    set(gca,'ydir','reverse');         
+    PlotProbeAnatomy(gca, neu_area{i}, 0, 'parent',1,0,c(randperm(size(c,1),size(c,1)),:)); 
+    set(gca,'ylim',[0 size(trig_st{i},1)],'xlim',[0 size(trig_st{i},2)],'YTick','')
+    line(repmat(abs(win(1))+1,2),get(gca,'ylim'),'color','r','linestyle',':','linewidth',2); %line showing onset  
+end
+
+[~,temp] = fileparts(ImgPath);
+temp = erase(temp,'dff_combined_processed');
+saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('NULLTrigRaster_rec%s',temp),savedir,0); close all
+
 
 end %function
 

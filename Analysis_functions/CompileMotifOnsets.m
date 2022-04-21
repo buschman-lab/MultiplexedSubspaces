@@ -36,13 +36,15 @@ for cur_fit = 1:numel(motif_fits)
 end %fit loop
 
 %reorder: as of 2022 1/14/2022 it is test --> train so you want to reverse
+%this is corrected in LoadDataDirectories so just put a notification here
+%so commented out the reordering
 motif_onset = onsets; 
-motif_onset(1:2:end) = onsets(2:2:end); 
-motif_onset(2:2:end) = onsets(1:2:end); 
-temp = chunk_names; 
-temp(1:2:end) = chunk_names(2:2:end); 
-temp(2:2:end) = chunk_names(1:2:end);
-chunk_names = temp; 
+% motif_onset(1:2:end) = onsets(2:2:end); 
+% motif_onset(2:2:end) = onsets(1:2:end); 
+% temp = chunk_names; 
+% temp(1:2:end) = chunk_names(2:2:end); 
+% temp(2:2:end) = chunk_names(1:2:end);
+% chunk_names = temp; 
 
 %concatenate and add offset to match to true time
 offset = repmat((0:numel(chunk_names)-1)*size(fit_data.H,2),size(fit_data.H,1),1);

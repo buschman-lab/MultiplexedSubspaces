@@ -6,6 +6,8 @@ function vp = CompareViolins(data,fp,varargin)
     opts.connectline = []; %give a color vector if want to plot
     opts.plotspread=0;
     opts.sidebyside = 0; %flag to make it side by side
+    opts.plotaverage = 1;
+    opts.distWidth = 0.9;
     
     opts = ParseOptionalInputs(opts,varargin); 
     
@@ -32,12 +34,14 @@ function vp = CompareViolins(data,fp,varargin)
     else
         vp = distributionPlot(data','distWidth',fp.vp_dist_w,'color',opts.col,...
             'histOpt',1.1,'divfactor',opts.divfactor,'addSpread',opts.plotspread,'showMM',0,...
-            'xNames',opts.label,'xValues',opts.xpos);
+            'xNames',opts.label,'xValues',opts.xpos,'distWidth',opts.distWidth);
         hold on
-        set(vp{1},'FaceAlpha',fp.vp_alpha);        
-    
-        for i = 1:size(data,1)
-            line([opts.xpos(i)-0.075 opts.xpos(i)+0.075],[nanmedian(data(i,:)),nanmedian(data(i,:))],'Color',opts.col{i},'LineWidth',3)
+        set(vp{1}(~isnan(vp{1})),'FaceAlpha',fp.vp_alpha);        
+        
+        if opts.plotaverage
+            for i = 1:size(data,1)
+                line([opts.xpos(i)-0.075 opts.xpos(i)+0.075],[nanmedian(data(i,:)),nanmedian(data(i,:))],'Color',opts.col{i},'LineWidth',3)
+            end
         end
         xlim([0.5 size(data,1)+0.5]);    
     end

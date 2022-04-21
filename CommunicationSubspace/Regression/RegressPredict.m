@@ -48,8 +48,10 @@ case 'MSE'
 	loss = MeanSquaredError(Y, Yhat);
 case 'NSE'
 	loss = NormalizedSquaredError(Y, Yhat);
-case 'MVNSE'
-	loss = MvNormalizedSquaredError(Y, Yhat);
+case 'PEV'
+	loss = PercentExplainedVariance(Y, Yhat, 0,1);
+case 'MPEV' %average PEV per neuron
+	loss = PercentExplainedVariance(Y, Yhat, 1,1);        
 end
 
 end

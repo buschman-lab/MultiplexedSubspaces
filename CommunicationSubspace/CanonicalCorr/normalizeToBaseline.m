@@ -11,6 +11,11 @@ switch type
         x_norm = (x-nanmean(x(:,base_tp,:),2))./(nanstd(x(:,base_tp,:),[],2)+1);
     case 'mean'
         x_norm = x./(nanmean(x(:,base_tp,:),2)+1);
+    case 'meansubtract'
+        x_norm = x-nanmean(x(:,base_tp,:),2);
+    case 'none'
+        x_norm = x;
+
 end
 
 

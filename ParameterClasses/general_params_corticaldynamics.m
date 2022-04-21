@@ -17,6 +17,7 @@ classdef general_params_corticaldynamics
         sbatch_time = 59;
         sbatch_exclude = 'redshirt-n[12-49]';
         sbatch_memory = 16;
+        sbatch_array = '1';
         sbatch_matlabversion = 'R2020b';
         sbatch_path = "/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis/Spock/";
         sbatch_name = [];               

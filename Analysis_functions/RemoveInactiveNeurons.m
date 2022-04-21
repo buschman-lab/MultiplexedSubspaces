@@ -5,7 +5,7 @@ function [area_val, inactive_idx] = RemoveInactiveNeurons(area_val, min_fr)
 
 if nargin <2; min_fr = 0.5/15; end
 
-inactive_idx = cellfun(@(x) nanmean(x,[2,3])<min_fr, area_val,'UniformOutput',0);
+inactive_idx = cellfun(@(x) nanmean(x,[2,3])<=min_fr, area_val,'UniformOutput',0);
 
 area_val = cellfun(@(x,y) x(y==0,:,:),area_val,inactive_idx,'UniformOutput',0);
 

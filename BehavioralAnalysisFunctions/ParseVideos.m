@@ -1,7 +1,7 @@
 function [data_mean, data, roi] = ParseVideos(in_fn,roi_names,index,roi)
 if nargin <3; index = []; end
 if nargin <4; roi = []; end
-    
+%for 2018 experiments (VPA)    
 %load video 
 vid = VideoReader(in_fn);
 

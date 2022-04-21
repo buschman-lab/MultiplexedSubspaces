@@ -15,6 +15,11 @@ opts = ParseOptionalInputs(opts,varargin);
 mask = load(opts.MaskDir);
 mask = imresize(mask.brainoutline,size(frame));
 
+%this is temporary additional mask for 2022 data, since we remove that
+%posterior region
+temp = load('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging\mask_posterioredge.mat');
+mask = mask-temp.mask; mask(mask<0)=0;
+
 %break mask into l and r hemisphere
 temp = mask;
 temp(:,34:end) = 0;
@@ -23,7 +28,6 @@ temp = mask;
 temp(:,1:34) = 0;
 hemi_mask{2} = temp; 
 
-
 nX = size(frame,1);
 nY = size(frame,1);
     
@@ -31,7 +35,7 @@ nY = size(frame,1);
 bX = nX/opts.BregmaX+1;
 bY = nY/opts.BregmaY;
     
-frame = SpatialGaussian(frame,5,2);
+frame = SpatialGaussian(frame,3,1);
 if opts.caxis_flag == 0
     climits = [prctile(frame(:),opts.caxis(1)),prctile(frame(:),opts.caxis(2))];
 else

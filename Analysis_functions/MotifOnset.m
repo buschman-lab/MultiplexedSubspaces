@@ -4,8 +4,6 @@ function [onsets,onsets_mask,thresh_level,rho_thresh]=MotifOnset(w,h,rho_frame,r
 %adaptive thresholding finds the threshold level at which the
 %motif-triggered raw data is maximmally correlated with the motif.
 %Notes: 
-%1: It assumes a basis motif that has not been trimmed to match the
-%explicit length of individual motifs. .. this needs to be updated. 
 
 
 if nargin <5; rho_lvl = 0.2; end %minimum rho_lvl a motif has to achieve to be considered active

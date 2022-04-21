@@ -18,7 +18,7 @@ function CombinedEphysImagingVideo(ImgPath,BehavPath,EphysPath,ImgProbeLoc,EyeCr
 %Rectangle on the behavioral video to crop to visualize eyeball
 % EyeCrop = [260,180,65,60];
 
-%manual inspection revealed that the behavioral video is no sampling
+%manual inspection revealed that the behavioral video is not sampling
 %specifically at 60 hz. So take the start and stop time and space indices
 behavidx = round(linspace(behavstr(1),behavstr(2),81000));
 %adjust for the deconvolution

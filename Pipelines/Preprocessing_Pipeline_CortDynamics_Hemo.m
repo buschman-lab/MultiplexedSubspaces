@@ -262,7 +262,7 @@ end
 mouseid = MouseNumFromPath(file_list_processed,'Mouse_'); 
 unique_mice = unique(mouseid);
 for i = 1:numel(unique_mice)
-    basis_path = GrabFiles(['Mpermouse_basis_motifs\w*',num2str(unique_mice(i)),'.mat'],0,{save_dir_motif_fits}); %% CAMDEN: if running with a different prefix. this is where it is changed. i..e Mousepermouse_basis_motifs vs Mpermouse_basis_motifs
+    basis_path = GrabFiles(['Mousepermouse_basis_motifs\w*',num2str(unique_mice(i)),'.mat'],0,{save_dir_motif_fits}); %% CAMDEN: if running with a different prefix. this is where it is changed. i..e Mousepermouse_basis_motifs vs Mpermouse_basis_motifs
     Spock_RefitBasisMotifs_Swarm(file_list_processed(mouseid==unique_mice(i)),basis_path{1},job_id,s_conn,parameter_class,save_dir_motifs);
 end
 
