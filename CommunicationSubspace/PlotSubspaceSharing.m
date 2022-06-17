@@ -5,11 +5,11 @@ fp = fig_params_cortdynamics;
 %plot the percent sharing example between motifs across subspace dimensions
 %across recordings
 [~,area_label] = LoadVariable(data,'rrr_dim',[]);
-ndim = 10;
+ndim = 5;
 nrec = numel(beta);
 cur_a = find(strcmp(area_label,area_name));
 y = NaN(nrec,ndim);
-for cur_d = 1:10
+for cur_d = 1:ndim
    xbeta= arrayfun(@(n) squeeze(beta{n}(1).rsq(cur_a,:,:,cur_d)), 1:size(beta,2),'UniformOutput',0);
    xbeta = cat(3,xbeta{:});
    y(:,cur_d) = xbeta(motifs(1),motifs(2),:);
@@ -84,8 +84,7 @@ for cur_a = 1:numel(area_label)
                y(:,cur_d) = xbeta(m,mm,:);
             end
             z = squeeze(rrr_mdl(:,m,1:ndim));
-            %convert into rel percent of each dimension
-            z = [z(:,1),diff(z,[],2)];
+            z = ([z(:,1),diff(z,[],2)]); %%%%%%%./z(:,2);%uncomment to convert into rel percent of each dimension, out of the totalfrom all dimensions used 
             x = y; 
             x(x<0)=0;
             gen(cur_a,m,mm,:) = max(cumsum(x.*z,2)*100,[],2);
@@ -172,6 +171,8 @@ figure; statresults = multcompare(stats,'Display','on');
 %%
 %bootstrap distribution
 genavg = reshape(gen,size(gen,1),size(gen,2)*size(gen,3)*size(gen,4));
+%reorganize by decreasing median
+[~,idxsort] = sort(nanmean(genavg,2),'descend');
 genboot = pairedBootstrap(genavg',@nanmean);
 [~, area_name] = LoadVariable(data,'rrr_beta','VIS',1); %load betas
 figure; hold on;       
@@ -179,13 +180,13 @@ col = fp.c_area(ismember(area_name,area_label),:);
 col = arrayfun(@(n) col(n,:),1:size(col,1),'UniformOutput',0);
 %sort
 col = col(idxsort);
-CompareViolins(genboot(:,idxsort)',fp,'plotspread',0,'divfactor',0.5,'plotaverage',1,'col',col,'distWidth',0.75);
+CompareViolins(genboot(:,idxsort)',fp,'plotspread',0,'divfactor',0.2,'plotaverage',1,'col',col,'distWidth',0.75);
 % if ~isempty(xperm)
 %    CompareViolins(xperm(:,ind)',fp,'plotspread',0,'divfactor',spreadfactor(1),'plotaverage',0,'col',repmat({[0 0 0]},1,numel(ind)),'distWidth',spreadfactor(2)); 
 % end
 set(gca,'XTickLabel',area_label(idxsort),'XTickLabelRotation',45)
 yval = get(gca,'ylim');
-set(gca,'ylim',[35,yval(2)]);
+set(gca,'ylim',[55,yval(2)]);
 ylabel('% Generalization');
 fp.FormatAxes(gca);  box on; grid on
 fp.FigureSizing(gcf,[3 3 6 3],[10 10 10 10])
@@ -237,7 +238,7 @@ title({'% Generalization is not','due to dimensionality of subspace'},'fontweigh
 
 %% What is driving this? One hypothesis is that it's because a region is more of an integrator or segregator
 %compare V in with B out
-ndim = 10;
+
 y = NaN(nrec,cur_a,14,ndim);
 for cur_a = 1:8
     for cur_d = 1:ndim
@@ -291,7 +292,6 @@ title(sprintf('Similarity Underlies Generalizability'),'fontweight','normal')
 fp.FigureSizing(gcf,[3 2 4 4],[10 10 20 10])
 
 %% Now do in the opposite direction
-ndim = 10;
 y = NaN(nrec,cur_a,14,ndim);
 for cur_a = 1:8
     for cur_d = 1:ndim
@@ -343,7 +343,6 @@ fp.FigureSizing(gcf,[3 2 4 4],[10 10 20 10])
 
 
 %% Plot showing that effect was dominated at lower dimensions
-ndim = 10;
 y = NaN(nrec,numel(area_label),14,14,ndim);
 for cur_a = 1:numel(area_label)
     for m = 1:14

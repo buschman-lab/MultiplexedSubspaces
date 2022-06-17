@@ -1,4 +1,4 @@
-function [m,xint, xval,f] = AddLSline(x,y,xval,c,w)
+function [m,xint, xval] = AddLSline(x,y,xval,c,w)
 
 % p = polyfit(x,y,1); 
 % f = polyval(p,xval); 

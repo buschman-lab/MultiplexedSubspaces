@@ -34,12 +34,34 @@ for i = 1:ndim
         c = ctwo;
     end
     if sigflag && sum(~isnan(rho_sig(:,:,i)),'all')>1
-        PlotMesoFrame(rho_all(:,:,i)); %get color scaling
+        fH = PlotMesoFrame(rho_all(:,:,i)); %get color scaling
+        
+%         x = ~isnan(rho_sig(:,:,i));
+%         x = imfill(x,8,'holes');
+%         b = bwboundaries(x);
+%         
+%         for k=1:numel(b)
+%            plot(b{k}(:,2),b{k}(:,1),'color',fp.c_lr,'LineWidth',1);
+%         end
+        %change the alpha
+        
+        for k = 1:2
+            x = ~isnan(rho_sig(:,:,i));
+            y = get(fH{k},'AlphaData');
+            mask = y; 
+            mask(y==1)=0.60;
+            mask(x==1 & y==1)=1;        
+            set(fH{k},'AlphaData',mask)        
+        end     
+        
 %         cval = get(gca,'Clim');
-        PlotMesoFrame(rho_sig(:,:,i));
+        %Plot an outline
+%         PlotMesoFrame(rho_sig(:,:,i));
         set(gca,'Clim',c);
         colorbar
         fp.FigureSizing(gcf,[3 2 4 4],[10 10 10 10])
+        cc = colorbar;
+        set(cc,'ytick',get(cc,'ylim'));
     else
         PlotMesoFrame(rho_all(:,:,i));
         set(gca,'Clim',c);

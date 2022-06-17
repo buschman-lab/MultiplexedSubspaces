@@ -81,7 +81,9 @@ for cur_area = 1:numel(area_label)
             ex.rho = r;
             ex.d = d;
             ex.pev = pev;
-        end  
+        else
+            ex = [];
+        end
     end %motif loop
 
 end %area

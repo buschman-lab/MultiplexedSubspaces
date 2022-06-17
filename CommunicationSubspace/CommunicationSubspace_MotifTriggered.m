@@ -7,6 +7,8 @@ function CommunicationSubspace_MotifTriggered(motif,cur_rec,muaflag,useCCA)
 %EphysPath; the path of the ap_opts.mat file
 %motif_fits; paths to the BasisMotifFits for a given mouse. 
 
+%%Yes I know that this is horribly ugly code
+
 if ispc
     addpath(genpath('Z:\Rodent Data\Wide Field Microscopy\fpCNMF'));
     addpath(genpath('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\GithubRepo\Widefield_Imaging_Analysis'));

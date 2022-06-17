@@ -65,6 +65,19 @@ if ~exist(savedir,'dir'); mkdir(savedir); end
 RidgeRegressionExampleFigures(data,'VIS',[5,3])
 RidgeRegressionCombinedFigures(data)
 saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},'RegressionExample_IN',savedir,0); close all
+%load the shuffled models | THIS WILL TAKE DAYS, reccomend to do on spock. 
+% [fn,~] = GrabFiles('\w*shuf\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\RidgePermutations'});
+% temp = [];
+% for i = 1:numel(fn)
+%     try
+%         temp{i} = load(fn{i},'rsq');
+%     catch
+%     end
+%     
+% end
+% x = cellfun(@(x) x.rsq,temp,'UniformOutput',0);
+% x = cat(2,x{:});
+% max(x(:))
 
 %for OUT models
 RidgeRegressionExampleFigures(dataout,'VIS',[5,3])

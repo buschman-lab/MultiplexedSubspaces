@@ -1,6 +1,5 @@
 %Figure 3
 fp = fig_params_cortdynamics;
-ndim = 10; 
 %load data
 data = LoadCorticalNetworks(0);
 dataout = LoadCorticalNetworks(1);
@@ -9,42 +8,78 @@ dataout = LoadCorticalNetworks(1);
 
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\ExampleCorticalNetworks';
 if ~exist(savedir,'dir'); mkdir(savedir); end
-%vis and motif 5
-for cur_rec = [1,6] %make sure results are consistent across recordings
-    cur_motif = 5; cur_area = 8; 
-    Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,0,98) %(data,cur_rec,motif,area,sigflag)
-    saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d',cur_motif,cur_rec,cur_area),savedir,0); close all
-    Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,1,98) %(data,cur_rec,motif,area,sigflag)
-    saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_sig',cur_motif,cur_rec,cur_area),savedir,0); close all
-
-    %thalamus and motif 
-    cur_motif = 7; cur_area = 7; 
-    Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,0,98) %(data,cur_rec,motif,area,sigflag)
-    saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d',cur_motif,cur_rec,cur_area),savedir,0); close all
-    Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,1,98) %(data,cur_rec,motif,area,sigflag)
-    saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_sig',cur_motif,cur_rec,cur_area),savedir,0); close all
-
-    %PFC and motif 2
-    cur_motif = 2; cur_area = 3; 
-    Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,0,98) %(data,cur_rec,motif,area,sigflag)
-    saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d',cur_motif,cur_rec,cur_area),savedir,0); close all
-    Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,1,98) %(data,cur_rec,motif,area,sigflag)
-    saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_sig',cur_motif,cur_rec,cur_area),savedir,0); close all
-
-    %MOs and motif 8
+binarized = 1 ; %def = 0
+threshold = 0.25; %def = 0.25
+for cur_rec = 1 %make sure results are consistent across recordings
     cur_motif = 8; cur_area = 2; 
-    Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,0,98) %(data,cur_rec,motif,area,sigflag)
-    saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d',cur_motif,cur_rec,cur_area),savedir,0); close all
-    Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,1,98) %(data,cur_rec,motif,area,sigflag)
-    saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_sig',cur_motif,cur_rec,cur_area),savedir,0); close all
+%     Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,1,98) %(data,cur_rec,motif,area,sigflag)
+%     saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_sig',cur_motif,cur_rec,cur_area),savedir,0); close all
+    CorticalHexPlots(data,cur_rec,cur_motif,cur_area,'Threshold',threshold,'Binarize',binarized); 
+    title(sprintf('Binarized %d Thresh %0.2f',binarized,threshold),'fontweight','normal');
+    saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_barcode_thres%.0f',cur_motif,cur_rec,cur_area,threshold*10),savedir,0); close all
+    
+    cur_motif = 11; cur_area = 7; 
+%     Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,1,98) %(data,cur_rec,motif,area,sigflag)
+%     saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_sig',cur_motif,cur_rec,cur_area),savedir,0); close all
+    CorticalHexPlots(data,cur_rec,cur_motif,cur_area,'Threshold',threshold,'Binarize',binarized); 
+    title(sprintf('Binarized %d Thresh %0.2f',binarized,threshold),'fontweight','normal');
+    saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_barcode_thres%.0f',cur_motif,cur_rec,cur_area,threshold*10),savedir,0); close all
+    
+    cur_motif = 6; cur_area = 4; 
+%     Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,1,98) %(data,cur_rec,motif,area,sigflag)
+%     saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_sig',cur_motif,cur_rec,cur_area),savedir,0); close all 
+    CorticalHexPlots(data,cur_rec,cur_motif,cur_area,'Threshold',threshold,'Binarize',binarized); 
+    title(sprintf('Binarized %d Thresh %0.2f',binarized,threshold),'fontweight','normal');
+    saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_barcode_thres%.0f',cur_motif,cur_rec,cur_area,threshold*10),savedir,0); close all
+    
+    cur_motif = 14; cur_area = 3; 
+%     Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,1,98) %(data,cur_rec,motif,area,sigflag)
+%     saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_sig',cur_motif,cur_rec,cur_area),savedir,0); close all
+    CorticalHexPlots(data,cur_rec,cur_motif,cur_area,'Threshold',threshold,'Binarize',binarized); 
+    title(sprintf('Binarized %d Thresh %0.2f',binarized,threshold),'fontweight','normal');
+    saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_barcode_thres%.0f',cur_motif,cur_rec,cur_area,threshold*10),savedir,0); close all
 
+    cur_motif = 5; cur_area = 8; 
+%     Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,1,97) %(data,cur_rec,motif,area,sigflag)
+%     saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_sig',cur_motif,cur_rec,cur_area),savedir,0); close all
+    CorticalHexPlots(data,cur_rec,cur_motif,cur_area,'Threshold',threshold,'Binarize',binarized); 
+    title(sprintf('Binarized %d Thresh %0.2f',binarized,threshold),'fontweight','normal');
+    saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_barcode_thres%.0f',cur_motif,cur_rec,cur_area,threshold*10),savedir,0); close all
+
+    cur_motif = 9; cur_area = 8; 
+%     Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,1,98) %(data,cur_rec,motif,area,sigflag)
+%     saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_sig',cur_motif,cur_rec,cur_area),savedir,0); close all
+    CorticalHexPlots(data,cur_rec,cur_motif,cur_area,'Threshold',threshold,'Binarize',binarized); 
+    title(sprintf('Binarized %d Thresh %0.2f',binarized,threshold),'fontweight','normal');
+    saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_barcode_thres%.0f',cur_motif,cur_rec,cur_area,threshold*10),savedir,0); close all
+    
 end
+
+
+%% Plot the overlap (histogram) of subspace networks 
+savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\CorticalNetworkSummaryStats';
+Plot_OverlapAcrossDimensions(data,1); %do spatial correlation
+Plot_OverlapAcrossDimensions(data,0); %do spatial overlap
+saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('WithinSubspaceOverlap'),savedir,0); close all
+    
+%% Plot how many network individual neural pixels participated in
+savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\CorticalNetworkSummaryStats';
+Plot_NumberOfDimension(data); %do spatial correlation
+saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('DimensionsPerPixel'),savedir,0); close all
+
+
 %% Plot the overall strength and the size of the significance-thresholded network across dimensions
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\CorticalNetworkSummaryStats';
 if ~exist(savedir); mkdir(savedir); end
 Plot_CortNetworksSummaryStats(data)
 saveCurFigs(get(groot, 'Children'),{'-dsvg','-dpng'},'SumStats',savedir,0); close all
 
+
+%% Plot the overlap between dimensions across motifs
+savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\CorticalNetworkSummaryStats';
+if ~exist(savedir); mkdir(savedir); end
+Plot_MotifCorticalNetworkOverlap(data)
+saveCurFigs(get(groot, 'Children'),{'-dsvg','-dpng'},'XMotifOverlap',savedir,0); close all
 
 
 

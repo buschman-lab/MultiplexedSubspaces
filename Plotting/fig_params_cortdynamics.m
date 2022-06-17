@@ -18,7 +18,8 @@ classdef fig_params_cortdynamics
 
 
         %colors
-        c_area = getColorPalet(8);
+        c_area = [[0 .6 .3]; [.7 0 .7]; [1 .6 0];  [.1 .3 .9];  [1 .1 .1];...
+                [0.4 0.76 0.9]; [.4 .2 .7]; [.7 .2 .1]];
         c_none = [0.5 0.5 0.5]; %light blue
         c_lr = [0.3 0.7 1]; %light blue
         c_glm = [0.14 0.6412 0.2471] %dark green 0.1412    0.5412    0.2471

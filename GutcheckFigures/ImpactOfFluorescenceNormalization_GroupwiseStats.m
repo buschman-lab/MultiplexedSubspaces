@@ -22,7 +22,19 @@ errorbar(2,nanmean(in),sem(in,2),'linestyle','none','linewidth',2,'Color',[0.3 0
 x = 0.75+rand(numel(in),1)/2;
 for i = 1:numel(x); plot([x(i),x(i)+1],[out(i),in(i)],'linewidth',0.75,'color',[0.1 0.1 0.1 0.5],'marker','.','markersize',9,'linestyle','none'); end
 line([1,2],[1 1],'linewidth',2,'color',[0.1 0.1 0.1]);
-pval = ranksum(in,out);
+% pval = ranksum(in,out);
+rng('default');
+permstat = NaN(1,1000);
+for i = 1:1000     
+   % randomly shuffle within pairs
+   temp = out-in;
+   idx = randi(2,6,1);
+   temp(idx==2)=-1*temp(idx==2);     
+   permstat(i) = nanmean(temp);
+end
+truestat = nanmean(out-in);
+pval = sum([abs(permstat),abs(truestat)]>=abs(truestat))/(1+numel(permstat));
+    
 text(1.5,1,sprintf('%0.3f',pval),'Rotation',0,'HorizontalAlignment','center','VerticalAlignment','bottom','fontsize',14);
 ylabel('fstat');
 ylim([0 1])
@@ -43,7 +55,19 @@ b.CData(1,:) = [0.75 0.75 0.75];
 x = 0.75+rand(numel(dff),1)/2;
 for i = 1:numel(x); plot([x(i),x(i)+1],[dff(i),dfs(i)],'linewidth',0.75,'color',[0.1 0.1 0.1 0.5],'marker','.','markersize',9); end
 line([1,2],[10 10],'linewidth',2,'color',[0.1 0.1 0.1]);
-pval = signrank(dff,dfs);
+
+rng('default');
+permstat = NaN(1,1000);
+for i = 1:1000     
+   % randomly shuffle within pairs
+   temp = dff-dfs;
+   idx = randi(2,6,1);
+   temp(idx==2)=-1*temp(idx==2);     
+   permstat(i) = nanmean(temp);
+end
+truestat = nanmean(dff-dfs);
+pval = sum([abs(permstat),abs(truestat)]>=abs(truestat))/(1+numel(permstat));
+
 text(1.5,10,sprintf('%0.3f',pval),'Rotation',0,'HorizontalAlignment','center','VerticalAlignment','bottom','fontsize',14);
 ylabel('fstat');
 set(gca,'units','centimeters','position',[2 2 2.5 4],'xlim',[0.5 2.5]); fp.FormatAxes(gca); 

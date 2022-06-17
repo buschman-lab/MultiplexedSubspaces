@@ -4,19 +4,58 @@ thresh = 0.8;
 
 %all
 if isempty(area_name) %ccombined across areas
-    [rrr_d,~] = LoadVariable(data,'rrr_dim',[],thresh);
+    [rrr_d,area_label] = LoadVariable(data,'rrr_dim',[],thresh);
     col = fp.c_area; 
     localdim = LoadVariable(data,'svca',[],thresh);
-    %average across recordings
-    rrr_d = squeeze(nanmean(rrr_d,1));
-    localdim = squeeze(nanmean(localdim,1));
-    Plot_CorrelateValuesBetweenRecordings(rrr_d',localdim','combo',fp,'right','xlabel',{'Subspace Dimensionality'},...
-        'ylabel','Local dimensionality','color_flag',1,'corrtype','kendall','col',col,'addjitter',3)
-    plot([0 max(cat(1,rrr_d(:),localdim(:)))],[0 max(cat(1,rrr_d(:),localdim(:)))],'linestyle',':','color','k')
+%     %average across recordings
+%     rrr_d = squeeze(nanmean(rrr_d,1));
+%     localdim = squeeze(nanmean(localdim,1));
+    %show all models
+    localdim = reshape(localdim,size(localdim,1)*size(localdim,2),size(localdim,3));
+    rrr_d = reshape(rrr_d,size(rrr_d,1)*size(rrr_d,2),size(rrr_d,3));
+    %average within a recording
+%     rrr_d = squeeze(nanmean(rrr_d,2));
+%     localdim = squeeze(nanmean(localdim,2));   
+    figure; hold on; 
+    rng('default');
+    x = rrr_d(:)'; 
+    y = localdim(:)'; 
+    x = x+(rand(size(x,2),1)/2)'-0.5;
+    y = y+(rand(size(y,2),1)/2)'-0.5;
+    plot(x,y,'linestyle','none','marker','.','markersize',5,'color',[0.5 0.5 0.5])
+    xlabel('Subspace Dimensionality');
+    ylabel('Local dimensionality');
+    plot([0 max(cat(1,rrr_d(:),localdim(:)))],[0 max(cat(1,rrr_d(:),localdim(:)))],'linestyle',':','color',[0.8 0 0],'linewidth',2)
     xlim([0 15])
-    ylim([0 50])
+    ylim([0 65])
     title({'IN Subspace dimensionality is','lower than local dimensionality'},'fontweight','normal') 
-    fp.FigureSizing(gcf,[3 2 5 5],[10 10 20 10])
+    fp.FormatAxes(gca);
+    box on; grid off
+    fp.FigureSizing(gcf,[3 2 3.5 3.5],[10 10 20 10])    
+    %reorder 
+    x = localdim./rrr_d;
+    [xboot,stats] = pairedBootstrap(x,@nanmean);
+    [~,idx] = sort(nanmean(x),'descend');
+    xboot = xboot(:,idx);   
+    
+    %get full stats accross them all
+%     [~,statsall] = pairedBootstrap(x(:),@nanmean);
+    
+    % plot as a violin showing each region
+    col = arrayfun(@(n) col(n,:),1:size(col,1),'UniformOutput',0);
+    col = col(idx);
+    area_name = area_label(idx);
+
+    %flatten per area
+    figure; hold on;
+    vp = CompareViolins(xboot',fp,'col',col,'connectline',[],'plotspread',0,'divfactor',.5);
+    fp.FigureSizing(gcf,[3 2 6 3.5],[10 10 20 10]); 
+    set(gca,'XTickLabel',area_name,'XTickLabelRotation',45)
+    fp.FormatAxes(gca); box on; grid on
+    ylim([0 ceil(max(get(gca,'ylim')))])
+    plot(get(gca,'xlim'),[1 1],'linestyle','--','color',[0.8 0 0],'linewidth',2);
+    ylabel('Local D / Sub D');
+
 
 else
 

@@ -1,5 +1,6 @@
-function [cvl_ridge,rrr_B,rrr_V] = RRR_simple(x,y,lambda)
+function [cvl_ridge,rrr_B,rrr_V,cvl_rrr] = RRR_simple(x,y,lambda,xvalflag)
 if nargin <3; lambda = []; end %refit ridge lambda
+if nargin <3; xvalflag = 0; end %use cross validation (if you need rsq)
 if size(x,3)>1
     %subtract the psth
     x = x-nanmean(x,3);
@@ -35,11 +36,30 @@ if isempty(lambda)
 else
     cvl_ridge = [];
 end
-%% Reduced Rank Regression XVal
-rng('default')
-d = 1:min(numDimsUsedForPrediction(end),size(y,2));
-% Reduced Rank Regression Full with the optimal dimensionality
-[~,rrr_B,rrr_V] = ReducedRankRegress(y, x, d,'scale',false,'RIDGEINIT',lambda);
+
+if xvalflag == 1
+    rng('default')
+    d = 1:min(numDimsUsedForPrediction(end),size(y,2));
+    cvFun = @(Ytrain, Xtrain, Ytest, Xtest) RegressFitAndPredict...
+        (@ReducedRankRegress, Ytrain, Xtrain, Ytest, Xtest, ...
+        d, 'LossMeasure', lossMeasure,'scale',false,'RIDGEINIT',lambda);
+
+    % Cross-validation routine.
+    cvl_rrr = crossval(cvFun, y, x, ...
+          'KFold', cvNumFolds, ...
+        'Options', cvOptions);
+
+    rrr_B=[];    
+    rrr_V = [];
+    
+else
+    %% Reduced Rank Regression 
+    rng('default')
+    d = 1:min(numDimsUsedForPrediction(end),size(y,2));
+    % Reduced Rank Regression Full with the optimal dimensionality
+    [~,rrr_B,rrr_V] = ReducedRankRegress(y, x, d,'scale',false,'RIDGEINIT',lambda);
+    cvl_rrr =[];
+end
 
 end %function end
 

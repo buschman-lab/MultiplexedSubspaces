@@ -1,4 +1,4 @@
-function PlotMesoFrame(frame,varargin)
+function fH=PlotMesoFrame(frame,varargin)
 %camden macdowell - timeless
 %frame is a 68 x 68 pixel frame
 %Set options
@@ -41,7 +41,7 @@ if opts.caxis_flag == 0
 else
     climits = opts.caxis;
 end
-            
+fH = cell(1,2);            
 %loop through each hemisphere
 for hemi = 1:2
     %Black background (to smooth the pixelated edges)
@@ -54,10 +54,10 @@ for hemi = 1:2
 
 
     %Plot the raw data  
-    fH = imagesc(cur_img); hold on
+    fH{hemi} = imagesc(cur_img); hold on
 
     %Make background transparent
-    set(fH, 'AlphaData',hemi_mask{hemi});            
+    set(fH{hemi}, 'AlphaData',hemi_mask{hemi});            
 
     %Draw a smooth border to smooth the pixelations
     plot(s(1).ConvexHull(:,1),s(1).ConvexHull(:,2),'Color','w','LineWidth',3);

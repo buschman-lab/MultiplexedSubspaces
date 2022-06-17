@@ -78,6 +78,7 @@ for cur_d = 1:ndim
     %concatentate across trials and pca
     x = reshape(x,[size(x,1),size(x,2)*size(x,3)])';
     y = reshape(y,[size(y,1),size(y,2)*size(y,3)])';
+    
 
     %organize B so that most neurons are positively contributing positively
     if sum(B>0)<sum(B<0) 
@@ -86,6 +87,18 @@ for cur_d = 1:ndim
     
     %get projection
     xhat = x*B;
+    
+%     %To plot an example for one pixel
+%     figure; hold on; 
+%     plot(xhat(:),y(:,1102),'marker','.','color',[0.15 0.15 0.15],'markersize',3,'linestyle','none')
+%     AddLSline(xhat(:),y(:,1102),xhat(:),[0.8 0 0]);
+%     fp = fig_params_cortdynamics;
+%     ylabel('Subspace Activity');
+%     xlabel({'Deconvolved FR','of one pixel'});
+%     fp.FormatAxes(gca); box on; grid on
+%     fp.FigureSizing(gcf,[3 2 3.5 3.5],[2 10 10 10])
+%     saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('ExampleSchematic'),pwd,0); close all
+
     
     %get cortical network    
     rho = arrayfun(@(n) corr(xhat,y(:,n),'type','pearson'), 1:size(y,2));

@@ -1,14 +1,24 @@
 function GutCheckSimilarityInMotifOnsets(data)
 %gut check that motif onsets are different
 %data variable from ANalyze CCs. could also just use motifOnsets
+%data = load('Mouse 331 Recording 1CCA_muaflag1_GROUPEDmotif1.mat','motif_onset');
 onset = data(1).motif_onset;
 n = max(cellfun(@(x) max(x), onset));
 temp = zeros(numel(onset),n+16);
+%load motifs 
+W_basis = load('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\MotifDiscovery\Mouse_basis_motifs.mat','W_basis');  
+W_basis = W_basis.W_basis;
+fp = fig_params_cortdynamics;
+w = squeeze(nanmean(W_basis,1));
+
 for i = 1:numel(onset)
+    a = w(i,:);
+    a = (a-min(a))/(max(a)-min(a));
     for j = 1:numel(onset{i})
-        temp(i,onset{i}(j):(onset{i}(j)+15))=1;
+        temp(i,onset{i}(j):(onset{i}(j)+14))=a;
     end
 end
+temp(fp.noisemotif,:)=[];
 figure('units','normalized','position',[0.0063 0.5657 0.9865 0.3398]); 
 imagesc(temp); colormap(flipud(gray))
 set(gca,'xtick',1:(10*60*15):size(temp,2))
@@ -24,7 +34,7 @@ set(gca,'XTickLabel',round(get(gca,'xtick')/(60*15)))
 xlabel('time (min)'); ylabel('motif')
 title('(Zoomed) Motif onsets throughout recording','FontWeight','normal')
 %zoom in to minutes 8.5-9.5
-xlim([8.5*60*15, 10.5*60*15]);
+xlim([9.5*60*15, 10.5*60*15]);
 
 %% get the amount of overlap between motifs
 overlap_mat = NaN(numel(onset),numel(onset));

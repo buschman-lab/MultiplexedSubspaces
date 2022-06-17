@@ -45,75 +45,130 @@ for i = 1:7
     ylabel('% neurons');
     title(sprintf('%s dim %d r%d m%d',area_label{i},cur_d,cur_rec,cur_m),'fontweight','normal');    
 %     xlim([-20,numel(b)+20])
-    xlim([1,numel(b)])
+    xlim([1,numel(b)]) 
     camroll(-90)
     fp.FigureSizing(gcf,[3 2 0.75 4],[2 10 15 15])
     set(gca,'YAxisLocation','right')
 end
-saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('NeuronContributions_Prediction%s_dim%d',targ_area,cur_d),savedir,0); close all
-
+% saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('NeuronContributions_Prediction%s_dim%d',targ_area,cur_d),savedir,0); close all
 
 %% Get the fraction of top beta weights contributed by each area across motifs and recordings
-close all;
-targ_area='VIS';
-[~, area_all] = LoadVariable(data,'rrr_beta',targ_area,1); %load betas
-area_all(strcmp(area_all,targ_area))=[];
-cur_d = 1;
-%get top x% of beta weights
-cutoff = 0.250;
-nneu = NaN(6,14,7);
-eachneu = NaN(6,14,7);
-totneu = NaN(6,14);
-for cur_rec = 1:6
-    for cur_m = 1:14
-        [b,area,area_label] = loadVisBeta(data,cur_d,cur_rec,cur_m,targ_area);
-        totneu(cur_rec,cur_m) = numel(b);
-        y = arrayfun(@(n) nansum(area==n),unique(area),'UniformOutput',1);
-        idx = ceil(cutoff*numel(b));
-        temp = arrayfun(@(n) nansum(area(1:idx)==n),unique(area),'UniformOutput',1);
-        %adjust for recs missing locations
-        area_miss = ismember(area_all,area_label);
-        nneu(cur_rec,cur_m,area_miss)=temp;
-        eachneu(cur_rec,cur_m,area_miss)=y;
+preload data
+[~, area_all] = LoadVariable(data,'rrr_beta','VIS',1); %load betas
+ent = [];
+for cur_d = 1:3
+    for cur_area = 1:numel(area_all)
+        targ_area= area_all{cur_area};
+        B = cell(6,14);
+        AArea = cell(6,14);
+        AreaLabel = cell(6,14);
+
+        for cur_rec = 1:6
+            for cur_m = 1:14        
+                [B{cur_rec,cur_m},AArea{cur_rec,cur_m},AreaLabel{cur_rec,cur_m}] = loadVisBeta(data,cur_d,cur_rec,cur_m,targ_area);
+            end
+        end
+        
+        %sweep fractions
+        idx = 0:0.1:1;
+        x = NaN(7,numel(idx));
+        ci = NaN(7,2,numel(idx));
+        y = NaN(1,numel(idx));
+        xboot = NaN(7,1000,11);
+        for i = 1:numel(idx)
+            [~,~,stats,y(i)] = SubspaceUniformity(B,AArea,AreaLabel,data,targ_area,idx(i),1);
+            x(:,i) = stats.mean;
+            ci(:,:,i) = stats.ci';
+            xboot(:,:,i) = stats.xboot';            
+            %get the average entropy
+        end
+        ent(cur_d,cur_area,1:numel(idx)) = y;
+
+        %plot the chart
+        figure; hold on; 
+        col = fp.c_area; col = col(strcmp(area_all,area_all{cur_area})==0,:);
+        for i = 1:7    
+            tempci = abs(flipud(squeeze(ci(i,:,:))-x(i,:)));
+            shadedErrorBar(idx,x(i,:),tempci,'lineprops',{'color',[col(i,:) 0.75],'linewidth',2},'patchSaturation',0.15);
+        end
+        ylabel('Percentage of Population');
+        xlabel('Fraction of Beta weights');
+        fp.FormatAxes(gca); box on; grid on
+        fp.FigureSizing(gcf,[3 3 2.9 4],[10 10 12 10])
+        title(sprintf('%s dimesion %d',targ_area,cur_d));    
+        
+        %plot the AUC in a small panel
+        %mean auc
+        xx = x/100;
+        auc = NaN(1,size(x,1));
+        aucci = NaN(2,size(x,1));
+        aucboot = NaN(1000,size(x,1));
+        
+        for i = 1:size(x,1)
+            auc(i) = trapz(xx(i,:)/numel(xx(i,:)));
+            temp = squeeze(ci(i,1,:))/100;
+            aucci(1,i) = trapz(temp/numel(temp));
+            temp = squeeze(ci(i,2,:))/100;
+            aucci(2,i) = trapz(temp/numel(temp));
+            temp = squeeze(xboot(i,:,:));
+            temp = arrayfun(@(n) trapz((temp(n,:)/100)/numel(temp(n,:))),1:size(temp,1),'UniformOutput',1);
+            aucboot(:,i) = temp;
+        end
+        
+        %mini plot        
+        a = area_all(strcmp(area_all,area_all{cur_area})==0);
+        [auc,idx] = sort(auc,'descend');
+        a = a(idx);
+        col = fp.c_area; col = col(strcmp(area_all,area_all{cur_area})==0,:);
+        col = col(idx,:);
+        aucci = aucci(:,idx);
+        figure; hold on; 
+        for i = 1:numel(a)
+            errorbar(i,auc(i),auc(i)-aucci(1,i),aucci(2,i)-auc(i),'linestyle','none','marker','o',...
+                'MarkerEdgeColor','none','MarkerFaceColor',col(i,:),'markersize',2,'linewidth',1.5,'color',col(i,:),'CapSize',4)            
+        end
+        xlim([0 8])
+        plot([0,8],[0.5 0.5],'linestyle','--','color',[0.25 0.25 0.25],'linewidth',1);
+        ylim([0.35,0.6])
+        fp.FormatAxes(gca); box on; grid on
+        fp.FigureSizing(gcf,[3 3 1.5 1.5],[10 10 12 10]) 
+        
+        aucboot = aucboot(:,idx);
+        %do significance testing: 
+        pval = NaN(7,7);        
+        figure; hold on;        
+        for i = 1:size(pval,1)
+            for j= 1:size(pval,2)
+               temp = aucboot(:,i)-aucboot(:,j);
+               pval(i,j) = sum(temp>0)/numel(temp(~isnan(temp)));
+               plot(i,j,'marker','.');
+               text(i,j,sprintf('%0.3f',pval(i,j)),'FontWeight','normal','fontsize',10);
+            end
+        end
+        
+        
+        
     end
+    
+    e = squeeze(ent(cur_d,:,:));
+    figure; hold on; 
+    col = fp.c_area; 
+    p = repmat(idx,7,1);
+    nullent = arrayfun(@(n) -sum(p(:,n).*log2(p(:,n))),1:size(p,2)); 
+    plot(idx,ones(1,numel(idx)),'linestyle',':','color',[0.75 0.75 0.75],'linewidth',2)
+    for i = 1:8
+        plot(idx,e(i,:)./nullent,'color',col(i,:),'linewidth',2)
+    end
+    xlim([idx(2),idx(end-1)]);
+    ylabel('Relative Entropy');
+    xlabel('Fraction of Beta weights');
+    fp.FormatAxes(gca); box on; grid on
+    fp.FigureSizing(gcf,[3 3 2 3.15],[10 10 12 10])
+    title(sprintf('Uniformity of incoming \ninteractions Dimesion %d',cur_d));     
+
 end
 
-%gutcheck that this should be around 20%
-n = 100*squeeze(nansum(nneu,3))./totneu; %this 
-
-%Plot the relative contribution to betas normalized by the number
-%of neurons in that area
-x = 100*(nneu./eachneu);
-
-%convert back to zeros where appropriate since that NaN value we don't want
-%to loss. 
-x(eachneu==0)=0;
-% x = squeeze(nanmean(x,1));
-
-x = reshape(x,size(x,1)*size(x,2),size(x,3));
-
-% bootstrap across recordings and motifs
-[xboot,stats] = pairedBootstrap(x,@nanmean);
-
-% y = x./nansum(x,2); %This is the faction of the faction, which is a bit weird
-
-% make plot
-ContributionPlot(xboot,area_all,data,0.25);
-title(sprintf('Contribution to top %0.2f%% of beta weights',100*cutoff),'fontweight','normal');
-
- 
-%make a histogram of the relative number of neurons
-figure; hold on; 
-histogram(n(:),'BinWidth',0.5,'facecolor',[0.5 0.5 0.5],'edgecolor','none')
-xlabel(sprintf('%% of neurons to capture\n%0.2d%% of positive betas',100*cutoff));
-ylabel(sprintf('# of %s subspaces',targ_area))
-mu = nanmean(n(:));
-title(sprintf('%0.2f +/- %0.2f',mu,sem(n(:))),'fontweight','normal');
-fp.FigureSizing(gcf,[3 2 4 4],[2 10 15 15])
-fp.FormatAxes(gca); box on; grid off
-yvals = get(gca,'ylim');
-plot([mu,mu],yvals,'linewidth',1.5,'color','r');
-%%
+%
 set(gca,'ylim',[0 50],'ytick',[0,25,50])
 saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('AreaContributions_Prediction%s_dim%d',targ_area,cur_d),savedir,0); close all
 save([savedir,filesep,sprintf('AreaContributions_Prediction%s_dim%d',targ_area,cur_d)],'stats','n');
@@ -127,15 +182,30 @@ fp = fig_params_cortdynamics;
 %get beta in all areas predicting 
 targ_areas = {'PRE','VIS'};
 cur_d = 1;
-cur_rec = 5; 
-cur_m = 7;
+
+cur_rec = 2; 
+cur_m = 1; %def: 5
 % Plot and example: HIPP or RSP to VIS and SS boostrap confidence intervals and significance
 ExampleSubspaceGen(data,cur_rec,cur_m,cur_d,'HIPP',targ_areas)
-ExampleSubspaceGen(data,cur_rec,cur_m,cur_d,'THAL',targ_areas)
-ExampleSubspaceGen(data,cur_rec,cur_m,cur_d,'MOs',targ_areas)
-saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('ExampleSimilarities_Prediction%sand%s_dim%d',targ_areas{1},targ_areas{2},cur_d),savedir,0); close all
+% ExampleSubspaceGen(data,5,1,cur_d,'THAL',targ_areas)
+ExampleSubspaceGen(data,5,7,3,'MOs',{'VIS','SS'})
+targ_areas = {'VIS','SS'};
+ExampleSubspaceGen(data,cur_rec,cur_m,[2,4],'MOs',targ_areas)
+saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('ExampleProjections_%sand%s_dim%d',targ_areas{1},targ_areas{2},cur_d),savedir,0); close all
 
-
+%% plot examples of ones that are not particularly well shared
+% targ_areas = {'PRE','VIS'};
+% ExampleSubspaceGen(data,cur_rec,cur_m,[3,2],'HIPP',targ_areas)
+targ_areas = {'VIS','SS'};
+ExampleSubspaceGen(data,cur_rec,cur_m,[3,2],'MOs',targ_areas)
+fp.FigureSizing(gcf,[3 2 3 4],[2 10 15 15])
+% for i = 1:4
+%     for j= 1:4
+%         ExampleSubspaceGen(data,cur_rec,cur_m,[i,j],'MOs',targ_areas)
+%     end
+% end
+%%
+saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('ExampleNonShared%sand%s',targ_areas{1},targ_areas{2}),savedir,0); close all
 
 %% run across all recs, motifs, and areas
 close all; 
@@ -171,7 +241,179 @@ for cur_d = 1:2
     save([savedir,filesep,sprintf('CombinedSimilarityPlot%sand%s_dim%d.mat',targ_areas{1},targ_areas{2},cur_d)],'stats','permstats');
 end
 
+%% Plot similarity across all areas per dimension
+for cur_d = 1:10
+    r = SubspaceSimilarityFull(data,cur_d);
+    %equate sizes
+    m = max(cellfun(@numel,r));
+    rho = cellfun(@(x) cat(1,x,NaN(m-numel(x),1)),r,'UniformOutput',0);
+    rho = abs(cat(2,rho{:}));
+    rho_all{cur_d} = rho;
+    [rho,~] = pairedBootstrap(fisherZ(rho),@nanmean);
+    [~, area_label] = LoadVariable(data,'rrr_beta','VIS',1); %load betas
+    ContributionPlot(rho,area_label,data,[.2,0.65])
+    ylabel('Beta Rho_z')
+    title(sprintf('Dimension %d',cur_d),'fontweight','normal');
+    
+    %generate a graph
+    
+end
+saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},'BetaSimilarityAcrossDimensions',savedir,0); close all
+
+%% Plot the average
+rho = cat(3,rho_all{:});
+rho = rho(:,:,1:5);
+rho = fisherZ(rho);
+% rho = permute(rho,[2,1,3]);
+% rho = reshape(rho,size(rho,1),size(rho,2)*size(rho,3))';
+rho = nanmean(rho,3);
+[rho,~] = pairedBootstrap(rho,@nanmean);
+ContributionPlot(rho,area_label,data,[.2,0.65])
+set(gca,'ylim',[0.27,0.43])
+saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},'CombinedBetaSimilarityAcrossDimensions',savedir,0); close all
+
+
+%%
+fp = fig_params_cortdynamics;
+[~, area_name] = LoadVariable(data,'rrr_beta','VIS',1); %load betas
+figure; hold on;       
+col = fp.c_area(ismember(area_name,area_label),:);
+col = arrayfun(@(n) col(n,:),1:size(col,1),'UniformOutput',0);
+%sort
+[~,ind] = sort(nanmean(nneu),'descend');
+col = col(ind);
+CompareViolins(nneu(:,ind)',fp,'plotspread',0,'divfactor',spreadfactor(1),'plotaverage',1,'col',col,'distWidth',spreadfactor(2));
+% if ~isempty(xperm)
+%    CompareViolins(xperm(:,ind)',fp,'plotspread',0,'divfactor',spreadfactor(1),'plotaverage',0,'col',repmat({[0 0 0]},1,numel(ind)),'distWidth',spreadfactor(2)); 
+% end
+set(gca,'XTickLabel',area_label(ind),'XTickLabelRotation',45)
+fp.FormatAxes(gca);  box on; grid on; 
+fp.FigureSizing(gcf,[3 3 6 3],[10 10 14 10])    
+ylabel('% of population');
+
+
+
+
+%% Plot similar network engagement of two areas (based off shared representation in third area)
+for cur_d = 1:5
+   rmat = SubspaceSimilarityMatrix(data,cur_d);
+   %average per rec and across motifs
+   r = squeeze(nanmedian(nanmedian(abs(rmat),1),2));
+   %average across areas 
+   rfull = nanmedian(r,3);
+   %symmetric
+   rfull = tril(rfull.') + triu(rfull);
+   rfull(isnan(rfull))=0;
+   close all; figure; hold on; 
+   circularGraph(rfull.^2,'colormap',repmat([0.5 0.5 0.5],8,1),'label',data{1}(1).area_label,'normVal',0.15);
+   title(sprintf('Dim %d Subspace Networks (rsq range: %0.2f-%0.2f)',cur_d,min(rfull(rfull>0)).^2,max(rfull(:)).^2),'FontWeight','normal')
+   set(findall(gca, 'type', 'text'), 'visible', 'on')
+   saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('SubspaceNetworks_Combo_dim%d',cur_d),savedir,0); close all
+   % do for each region
+   for i = 1:8
+       %average across areas 
+       rfull = r(:,:,i);
+       %symmetric
+       rfull = tril(rfull.') + triu(rfull);
+       rfull(isnan(rfull))=0;
+       figure; hold on; 
+       circularGraph(rfull.^2,'colormap',repmat(fp.c_area(i,:),8,1),'label',data{1}(1).area_label,'normVal',0.25);
+       fp.FigureSizing(gcf,[3 3 6 6],[10 10 14 10])
+       saveCurFigs(get(groot, 'Children'),{'-dpng'},sprintf('SubspaceNetworks_Indi_%sdim%d',data{1}(1).area_label{i},cur_d),savedir,0); 
+       title(sprintf('Dim %d Subspace Networks (rsq range: %0.2f-%0.2f)',cur_d,min(rfull(rfull>0)).^2,max(rfull(:)).^2),'FontWeight','normal')
+       set(findall(gca, 'type', 'text'), 'visible', 'on') 
+       fp.FigureSizing(gcf,[3 3 6 6],[10 10 14 10])
+       saveCurFigs(get(groot, 'Children'),{'-dsvg'},sprintf('SubspaceNetworks_Indi_%sdim%d',data{1}(1).area_label{i},cur_d),savedir,0); close all
+   end  
+   
+end
+
+
+
+
+
 end %function 
+
+
+function [rmat] = SubspaceSimilarityMatrix(data,cur_d)
+    
+    area_label = data{1}(1).area_label;    
+    rmat = NaN(6,14,8,8,8);
+    rng('default');
+    %get all pairs of subspaces (average across motifs)   
+    for cur_rec = 1:6
+        fprintf('\nworking on rec %d',cur_rec);
+        areas = data{cur_rec}(1).area_label;
+        for cur_m = 1:14 
+            for f_a = 1:numel(areas)
+                for to_a = 1:numel(areas)
+                    if to_a>f_a
+                        %the following gives you the beta weights for two
+                        %different subspaces in all other regions
+                        [b,a] = loadBeta(data,cur_d,cur_rec,cur_m,areas(f_a));
+                        [bb,aa] = loadBeta(data,cur_d,cur_rec,cur_m,areas(to_a));
+                        id = intersect(unique(a),unique(aa));
+                        to_idx = find(strcmp(area_label,areas(to_a))==1);
+                        f_idx = find(strcmp(area_label,areas(f_a))==1);                        
+                        for i = 1:numel(id)
+                            temp = LoadActivity(data,cur_rec,cur_m,areas(id(i)));
+                            x = temp*b(a==id(i))';
+                            y = temp*bb(aa==id(i))';     
+                            idx = find(strcmp(area_label,areas(id(i)))==1);
+                            rmat(cur_rec,cur_m,f_idx,to_idx,idx) = (corr(x,y,'type','pearson')); %so the connection strength between areas based on how well shared in a third area. 
+                        end                        
+                    end
+                end
+            end
+        end
+    end
+    
+    
+
+
+end
+
+
+function [r,g] = SubspaceSimilarityFull(data,cur_d)
+    
+    rho = NaN(6,14,28,6);
+    grp = cell(6,14,28,6);
+    rng('default');
+    %get all pairs of subspaces    
+    for cur_rec = 1:6
+        area_label = data{cur_rec}(1).area_label;
+        p = nchoosek(1:numel(area_label),2);
+        for cur_m = 1:14 
+            for cur_p = 1:size(p,1)
+                [b,a] = loadBeta(data,cur_d,cur_rec,cur_m,area_label(p(cur_p,1)));
+                [bb,aa] = loadBeta(data,cur_d,cur_rec,cur_m,area_label(p(cur_p,2)));
+                id = intersect(unique(a),unique(aa));
+                for i = 1:numel(id)
+                    temp = LoadActivity(data,cur_rec,cur_m,area_label(id(i)));
+                    x = temp*b(a==id(i))';
+                    y = temp*bb(aa==id(i))';      
+                    rho(cur_rec,cur_m,cur_p,i) = (corr(x,y,'type','pearson'));
+                    grp(cur_rec,cur_m,cur_p,i) = area_label(id(i));
+                end
+            end
+        end
+    end
+
+    r = rho(:);
+    g = grp(:);
+    g(isnan(r))=[];
+    r(isnan(r))=[];
+    r = cellfun(@(x) r(strcmp(g,x)),unique(g),'UniformOutput',0);
+    area_label = data{1}(1).area_label;
+    %reorder to match area labels (shouldn't actually need this but good to
+    %check
+    idx = NaN(1,8);
+    for i = 1:8
+        idx(i) = find(ismember(unique(g),area_label{i}));
+    end
+    r = r(idx);
+
+end
 
 
 function [rho,rho_perm,grp,g,n,nn] = SubspaceSimilarity(data,cur_d,targ_area)
@@ -220,16 +462,23 @@ end
 
 function ExampleSubspaceGen(data,cur_rec,cur_m,cur_d,source_area,targ_areas)
 [~, area_all] = LoadVariable(data,'rrr_beta','VIS',1); %load areas
-[b,a,n] = loadBeta(data,cur_d,cur_rec,cur_m,targ_areas{1});
-[bb,aa,~] = loadBeta(data,cur_d,cur_rec,cur_m,targ_areas{2});
+if numel(cur_d)==2
+    [b,a,n] = loadBeta(data,cur_d(1),cur_rec,cur_m,targ_areas{1});
+    [bb,aa,~] = loadBeta(data,cur_d(2),cur_rec,cur_m,targ_areas{2});
+else
+    [b,a,n] = loadBeta(data,cur_d,cur_rec,cur_m,targ_areas{1});
+    [bb,aa,~] = loadBeta(data,cur_d,cur_rec,cur_m,targ_areas{2});
+end
 fp = fig_params_cortdynamics;
-temp = LoadActivity(data,cur_rec,cur_m,source_area);
-x = temp*b(a==find(strcmp(area_all,source_area)))';
-y = temp*bb(aa==find(strcmp(area_all,source_area)))';
+% temp = LoadActivity(data,cur_rec,cur_m,source_area);
+% x = temp*b(a==find(strcmp(area_all,source_area)))';
+% y = temp*bb(aa==find(strcmp(area_all,source_area)))';
+x = b(a==find(strcmp(area_all,source_area)))';
+y = bb(aa==find(strcmp(area_all,source_area)))';
 
 
 figure; hold on; 
-plot(x,y,'marker','.','color',fp.c_area(find(strcmp(area_all,source_area)==1),:),'markersize',fp.markersizesmall/2,'LineStyle','none');
+plot(x,y,'marker','.','color',fp.c_area(find(strcmp(area_all,source_area)==1),:),'markersize',fp.markersizebig*1.25,'LineStyle','none');
 AddLSline(x,y,x,'k');
 rho = corr(x,y);
 rng('default')
@@ -240,8 +489,13 @@ for i = 1:1000
 end
 p = sum(rho_boot<=0)/numel(rho_boot);
 ci = [prctile(rho_boot,2.5),prctile(rho_boot,97.5)];
-xlabel(sprintf('%s-%s \n subspace (Dim %d)',source_area,targ_areas{1},cur_d))
-ylabel(sprintf('%s-%s \n subspace (Dim %d)',source_area,targ_areas{2},cur_d))
+if numel(cur_d)==2
+    xlabel(sprintf('%s-%s \n subspace (Dim %d)',source_area,targ_areas{1},cur_d(1)))
+    ylabel(sprintf('%s-%s \n subspace (Dim %d)',source_area,targ_areas{2},cur_d(2)))
+else
+    xlabel(sprintf('%s-%s \n subspace (Dim %d)',source_area,targ_areas{1},cur_d))
+    ylabel(sprintf('%s-%s \n subspace (Dim %d)',source_area,targ_areas{2},cur_d))
+end
 title(sprintf('r %d m %d rho=%0.2f\np=%0.3f ci=%0.3f %0.3f',cur_rec,cur_m,rho,p,ci(1),ci(2)),'FontWeight','normal','fontsize',8)
 fp.FormatAxes(gca); box on; grid on; 
 fp.FigureSizing(gcf,[3 2 3 4],[2 10 15 15])
@@ -362,7 +616,6 @@ area = squeeze(area(cur_m,:));
 idx = isnan(area);
 area(idx)=[];
 b(idx)=[];
-
 end
 
 function x = LoadActivity(data,cur_rec,cur_m,targ_area)

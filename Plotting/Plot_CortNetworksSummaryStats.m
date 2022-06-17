@@ -2,7 +2,9 @@ function [stats] = Plot_CortNetworksSummaryStats(data)
 fp = fig_params_cortdynamics;
 
 
-%% plot the size of the significant network over time
+
+
+%% plot the size of the significant network over dimensions
 map = cat(2,data{:});
 %go through each one
 x = NaN(size(map,2),10);
@@ -18,6 +20,97 @@ end
 
 grp = cat(1,map(:).cur_a);
 unig = unique(grp);
+
+%% show that the first dimension spans the cortex
+figure; hold on;
+a = x(:,1);
+b = x(:,2:10);
+b(b<1)=[];
+b = b(:);
+bar(1,nanmean(a(:)),'FaceColor',fp.c_ff,'FaceAlpha',0.5,'edgecolor','none')
+bar(2,nanmean(b(:)),'FaceColor',[0.2 0.2 0.2],'FaceAlpha',0.5,'edgecolor','none')
+y = rand(1,size(a,1),1)/4+1-0.125;
+plot(y,a(:),'marker','.','markersize',0.5,'linestyle','none','color',fp.c_ff)
+y = rand(1,size(b,1),1)/4+2-0.125;
+plot(y,b(:),'marker','.','markersize',0.5,'linestyle','none','color',[0.2 0.2 0.2])
+% CompareViolins(a',fp,'plotspread',0,'divfactor',0.5,'plotaverage',1,'col',{fp.c_ff},'distWidth',0.75,'xpos',1);
+% CompareViolins(b(:)',fp,'plotspread',0,'divfactor',0.5,'plotaverage',1,'distWidth',0.75,'xpos',2);
+xlim([0.5 2.5])
+ylim([0 100])
+ylabel({'Network size','(% of dorsal cortex)'})
+xlabel('Dimension')
+set(gca,'xtick',[1,2],'ytick',[0:25:100])
+fp.FormatAxes(gca); box on; grid on; 
+fp.FigureSizing(gcf,[3 2 4 4],[2 10 10 10])
+
+% bootstrap to get their difference
+rng('default');
+d = NaN(1,1000);
+for i = 1:1000    
+    idx = datasample(1:numel(a),numel(a));
+    idxb = datasample(1:numel(b),numel(b));
+    d(i) = nanmean(a(idx))-nanmean(b(idxb));
+end
+p = sum(d<0)/numel(d);
+
+title(sprintf('%0.3f',p))
+
+figure; hold on;
+a = x(:,1);
+b = x(:,2:10);
+b(b<1)=[];
+b = b(:);
+a = cat(1,a,NaN(numel(b)-numel(a),1));
+temp = [a,b]';
+CompareViolins(temp,fp,'plotspread',0,'divfactor',1,'plotaverage',1,'col',{fp.c_ff,[0.2 0.2 0.2]},'distWidth',0.75,'sidebyside',1);
+xlim([0.75 1.25])
+ylim([0 100])
+ylabel({'Network size','(% of dorsal cortex)'})
+xlabel('Dimension')
+set(gca,'xtick','','ytick',[0:25:100])
+fp.FormatAxes(gca); box on; grid on; 
+fp.FigureSizing(gcf,[3 2 4 4],[2 10 10 10])
+
+% bootstrap to get their difference
+rng('default');
+d = NaN(1,1000);
+for i = 1:1000    
+    idx = datasample(1:numel(a),numel(a));
+    idxb = datasample(1:numel(b),numel(b));
+    d(i) = nanmean(a(idx))-nanmean(b(idxb));
+end
+p = sum(d<0)/numel(d);
+
+title(sprintf('%0.3f',p))
+
+
+%% Compare the size of subcortical to cortical 
+map = cat(2,data{:});
+%go through each one
+x = cell(1,8);
+for cur_a = 1:8
+    idx = find(cat(1,map(:).cur_a)==cur_a);
+    tempmap = map(idx); 
+    for j = 1:size(tempmap,2)
+    y = tempmap(j).rho_all;
+    p = tempmap(j).sig_thresh;    
+    p = tempmap(j).sig_thresh;   
+    for i = 1:10
+        temp = abs(y(:,:,i));
+        x{cur_a}(j,i) = 100*(sum(temp>p(i),'all')/sum(~isnan(temp(:))));        
+    end
+    end
+end
+
+figure; hold on
+for i = 1:8
+    xboot = x{i}(:);
+    xboot = pairedBootstrap(xboot,@nanmean);
+    CompareViolins(xboot',fp,'plotspread',0,'divfactor',0.2,'plotaverage',1,'distWidth',0.75,'xpos',i);    
+end
+xlim([0.5 8.5])
+
+
 
 %% plot by area
 figure; hold on;
@@ -76,8 +169,8 @@ for j = 1:size(map,2)
     temp = NaN(size(ysig,1),100);
     %get the overlap
     COUNT=1;
-    for i = 2:size(ysig,2)
-        for ii = 2:size(ysig,2)
+    for i = 1:size(ysig,2)
+        for ii = 1:size(ysig,2)
             if ii>i
                 x{j}(i,ii) = (2*sum((ysig(:,i)+ysig(:,ii))==2))/(sum(ysig(:,ii)==1)+sum(ysig(:,i)==1));
                 rho{j}(i,ii) = corr(ytemp(:,i),ytemp(:,ii),'rows','complete');
@@ -128,6 +221,7 @@ figure; hold on;
 histogram(100*nanmean(r),'binwidth',5,'Edgecolor',[0.5 0.5 0.5],'FaceColor',[0.5 0.5 0.5],'FaceAlpha',0.5);
 ylabel('# of cortical networks')
 mu = nanmean(r(:))*100;
+sem(r(:))*100
 yvals = get(gca,'ylim');
 plot([mu,mu],yvals,'linewidth',1.5,'color','r','linestyle','-')
 ci = bootci(1000,@nanmean,r(:))*100;
@@ -145,7 +239,7 @@ y = reshape(y,68,68);
 y(isnan(y))=0;
 PlotMesoFrame(y); %get color scaling
 set(gca,'ydir','reverse')
-set(gca,'clim',[0 8]); colorbar
+set(gca,'clim',[0 13]); colorbar
 % imagesc(y,[0 10]); colorbar
 % set(gca,'ydir','reverse'); colormap magma;
 fp.FormatAxes(gca); box on; 

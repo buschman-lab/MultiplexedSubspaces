@@ -47,8 +47,8 @@ end
 
 %% to run permutations on the ridge
 %need to manually run each motif, otherwise too many jobs and it hangs
-for cur_rec = 3:6
-    for cur_m = 10 %need to finish cur_m=10;
+for cur_rec = 1:6
+    for cur_m = 14 
         script_name = WriteBashScript(parameter_class,sprintf('%d',1),'RidgeRegressionPermutations',{'$SLURM_ARRAY_TASK_ID',cur_rec,cur_m},...
             {'%s','%d','%d'},...
             'sbatch_time',5,'sbatch_memory',12,'sbatch_array','1-1000',...
@@ -59,8 +59,20 @@ for cur_rec = 3:6
         sprintf('sbatch %s',script_name)]);            
     end
 end
-%%
 
+%% to run LOO analysis
+%load all the files
+[fn,~] = GrabFiles('\w*regRRR_muaflag1_GROUPEDmotif\d*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\CommunicationSubspace'});
+for i = 1:numel(fn)
+    script_name = WriteBashScript(parameter_class,sprintf('%d',1),'LeaveOneOutSubspaceFit',{ConvertToBucketPath(fn{i})},...
+        {"'%s'"},...
+        'sbatch_time',60,'sbatch_memory',12,'sbatch_array','1',...
+        'sbatch_path',"/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis/CommunicationSubspace/");
+
+    ssh2_command(s_conn,...
+    ['cd /jukebox/buschman/Projects/Cortical\ Dynamics/Cortical\ Neuropixel\ Widefield\ Dynamics/DynamicScripts/ ;',... %cd to directory
+    sprintf('sbatch %s',script_name)]);      
+end
 
 %close out connection
 ssh2_close(s_conn);
