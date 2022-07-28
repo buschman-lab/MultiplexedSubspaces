@@ -14,7 +14,7 @@ cur_motif = 1;
 % ndim = 10; 
 betas = loadBetas(data,cur_rec,cur_motif,ndim,area_label,0); 
 %row of beta is predictor
-area = 1;
+area = 2;
 fp = fig_params_cortdynamics;
 b = cat(2,betas{area,:}); %row 1 is HIPP
 

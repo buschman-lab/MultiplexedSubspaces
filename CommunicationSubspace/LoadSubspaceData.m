@@ -29,13 +29,13 @@ switch flag
             [fn,~] = GrabFiles([rec_name '\w*RRR_muaflag1_GROUPEDREVERSEmotif\d*.mat'],0,{folder}); 
             data{cur_rec} = cellfun(@(x) load(x,'cvl_ridge','cvl_rrr','inactive_idx','area_label','area_val','paired_areas','rrr_V','rrr_B','grouping','motif','st_depth'),fn);
         end           
-%     case 'paired'
-%         folder = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\CommunicationSubspace';
-%         for cur_rec = 1:6
-%             rec_name = LoadDataDirectories(cur_rec);
-%             [fn,~] = GrabFiles([rec_name '\w*RRR_muaflag1_m\w*.mat'],0,{folder}); 
-%             data{cur_rec} = cellfun(@(x) load(x,'cvl_ridge','cvl_rrr','inactive_idx','area_label','area_val','paired_areas','rrr_V','rrr_B','motif','st_depth'),fn);
-%         end        
+    case 'paired'
+        folder = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\CommunicationSubspace';
+        for cur_rec = 1:6
+            rec_name = LoadDataDirectories(cur_rec);
+            [fn,~] = GrabFiles([rec_name '\w*RRR_muaflag1_motif\d*.mat'],0,{folder}); 
+            data{cur_rec} = cellfun(@(x) load(x,'cvl_ridge','cvl_rrr','inactive_idx','area_label','area_val','paired_areas','rrr_V','rrr_B','motif','st_depth'),fn);
+        end        
 %     case 'out_grouped'
 %         folder = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\CommunicationSubspace';
 %         for cur_rec = 1:6

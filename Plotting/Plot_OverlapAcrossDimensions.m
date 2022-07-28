@@ -3,6 +3,32 @@ function Plot_OverlapAcrossDimensions(data_all,method)
 
 %%
 if nargin < 2; method = 1; end %def(1) use correlation 2=use overlap
+
+% %% get statistics for specific overlaps used in text
+% %rec 1, motif 8, area 2 (motor)
+% temp = ComputeOverLap(data_all{1},areas(2),8,method,1);
+% temp = reshape(temp,10,10);
+% 
+% %get the overlap between dimensions 4 and 8
+% a = temp(8,4)*100;
+% b = temp(9,6)*100;
+% c = nanmean([temp(9,8),temp(9,4),temp(8,6),temp(6,4)])*100;
+% 
+% rho = numPxls(data_all{1},2,8);
+% x = rho(:,:,[4,8,6,9]);
+% n = sum(~isnan(reshape(x,size(x,1)*size(x,2),size(x,3))));
+% n = n(1);
+% x = nansum(reshape(x,size(x,1)*size(x,2),size(x,3)))/n;
+% %%
+% y = binocdf(a*n,n,(x(1)*x(2)),'upper');
+% y = binocdf(b*n,n,(x(3)*x(4)),'upper');
+% %between
+% 1-binocdf(temp(6,4)*n,n,(x(1)*x(3)),'upper');
+% 1-binocdf(temp(9,4)*n,n,(x(1)*x(4)),'upper');
+% 1-binocdf(temp(8,6)*n,n,(x(2)*x(3)),'upper');
+% 1-binocdf(temp(9,8)*n,n,(x(2)*x(4)),'upper');
+
+%%
 ovrlap = NaN(6,8,14,45);
 for cur_rec = 1:6
     data = data_all{cur_rec}; 
@@ -13,6 +39,7 @@ for cur_rec = 1:6
         end
     end
 end
+
 %% do full histogram and overlay lines for each brain area. 
 fp = fig_params_cortdynamics;
 
@@ -45,7 +72,8 @@ for i = 1:8
     if method ==1
         y = smoothdata(N(:,i),'gaussian',10);
     else
-        y = smoothdata(N(:,i),'gaussian',3);
+%         y = smoothdata(N(:,i),'gaussian',3);
+        y = N(:,i);
     end
     plot(edges(1:end-1)+binsize/2,y,'linewidth',1,'color',col(i,:),'linestyle','-')
 end
@@ -67,7 +95,9 @@ title(sprintf('mu %0.4f CI = %0.4f',xavg,std(ovrlap(:))),'fontweight','normal');
 end
 
 
-function ovrlap = ComputeOverLap(data,cur_area,cur_motif,method)
+function ovrlap = ComputeOverLap(data,cur_area,cur_motif,method,flat)
+    if nargin <5; flat=0; end
+    
     %get the motif and area index
     idx = find(cat(1,data.cur_motif)==cur_motif & cat(1,data.cur_a)==cur_area);
 
@@ -114,10 +144,44 @@ function ovrlap = ComputeOverLap(data,cur_area,cur_motif,method)
             end            
         end
     end      
-    ovrlap = ovrlap(~isnan(ovrlap));
+    
+    if flat
+        ovrlap = ovrlap(:);
+    else
+        ovrlap = ovrlap(~isnan(ovrlap));
+    end
     
 end
 
+
+function rho = numPxls(data,cur_area,cur_motif)
+  
+    %get the motif and area index
+    idx = find(cat(1,data.cur_motif)==cur_motif & cat(1,data.cur_a)==cur_area);
+
+    rho_all = data(idx).rho_all; 
+    %direction of correlation is arbitrary. Flip so strongest are positive -
+    %that is our subspace network for this dimension. 
+    for i = 1:size(rho_all,3)
+        if nansum(rho_all(:,:,i),'all') < nansum(-1*rho_all(:,:,i),'all')
+            rho_all(:,:,i)=-1*rho_all(:,:,i);
+        end
+    end
+    %parse data structure
+    rho = rho_all; 
+    sig_thresh = data(idx).sig_thresh; 
+    %threshold and binarize
+    for i = 1:size(rho,3)
+       temp = rho(:,:,i);
+       temp(abs(temp)<sig_thresh(i))=0;
+       rho(:,:,i) = temp;
+    end
+    %binarize. anything that is significantly positively correlated is our network
+    rho(rho>0)=1; 
+    rho(rho<=0)=0;            
+
+    
+end
 
 
 

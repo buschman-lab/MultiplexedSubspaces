@@ -92,6 +92,15 @@ for cur_a = 1:numel(area_label)
     end
 end
 
+figure; hold on; 
+histogram(gen(:),'binwidth',2,'Facecolor',[0.5 0.5 0.5],'edgealpha',0);
+yvals = get(gca,'ylim');
+plot([nanmean(gen(:)),nanmean(gen(:))],yvals,'color','k','linestyle',':','linewidth',1.5);
+set(gca,'ylim',yvals);
+ylabel('# of Comparisons');
+xlabel({'Subspace Sharing Across Motifs','(% explained variance)'});
+fp.FormatAxes(gca);  box on; grid off
+fp.FigureSizing(gcf,[3 2 5 3],[10 10 10 10])
 
 for i = 1:8
     genavg = squeeze(nanmean(gen,4));
@@ -168,7 +177,13 @@ fp.FigureSizing(gcf,[3 3 6 3],[10 10 10 10])
 title(sprintf('p=%0.3d',p),'fontweight','normal')
 figure; statresults = multcompare(stats,'Display','on');
 
+%% Get the overall amount of generalization across entire dataset
+% temp = gen(:);
+% [~,stats] = pairedBootstrap(temp(:),@nanmean);
+
+
 %%
+
 %bootstrap distribution
 genavg = reshape(gen,size(gen,1),size(gen,2)*size(gen,3)*size(gen,4));
 %reorganize by decreasing median

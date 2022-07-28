@@ -8,7 +8,7 @@ dataout = LoadCorticalNetworks(1);
 
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\ExampleCorticalNetworks';
 if ~exist(savedir,'dir'); mkdir(savedir); end
-binarized = 1 ; %def = 0
+binarized = 1 ; %def = -2
 threshold = 0.25; %def = 0.25
 for cur_rec = 1 %make sure results are consistent across recordings
     cur_motif = 8; cur_area = 2; 
@@ -17,14 +17,14 @@ for cur_rec = 1 %make sure results are consistent across recordings
     CorticalHexPlots(data,cur_rec,cur_motif,cur_area,'Threshold',threshold,'Binarize',binarized); 
     title(sprintf('Binarized %d Thresh %0.2f',binarized,threshold),'fontweight','normal');
     saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_barcode_thres%.0f',cur_motif,cur_rec,cur_area,threshold*10),savedir,0); close all
-    
-    cur_motif = 11; cur_area = 7; 
-%     Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,1,98) %(data,cur_rec,motif,area,sigflag)
+    %%
+    cur_motif = 11;  cur_area = 7; %def 11
+    Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,1,98) %(data,cur_rec,motif,area,sigflag)
 %     saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_sig',cur_motif,cur_rec,cur_area),savedir,0); close all
-    CorticalHexPlots(data,cur_rec,cur_motif,cur_area,'Threshold',threshold,'Binarize',binarized); 
-    title(sprintf('Binarized %d Thresh %0.2f',binarized,threshold),'fontweight','normal');
-    saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_barcode_thres%.0f',cur_motif,cur_rec,cur_area,threshold*10),savedir,0); close all
-    
+%     CorticalHexPlots(data,cur_rec,cur_motif,cur_area,'Threshold',threshold,'Binarize',binarized); 
+%     title(sprintf('Binarized %d Thresh %0.2f',binarized,threshold),'fontweight','normal');
+%     saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_barcode_thres%.0f',cur_motif,cur_rec,cur_area,threshold*10),savedir,0); close all
+    %%
     cur_motif = 6; cur_area = 4; 
 %     Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,1,98) %(data,cur_rec,motif,area,sigflag)
 %     saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_sig',cur_motif,cur_rec,cur_area),savedir,0); close all 
@@ -62,6 +62,8 @@ Plot_OverlapAcrossDimensions(data,1); %do spatial correlation
 Plot_OverlapAcrossDimensions(data,0); %do spatial overlap
 saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('WithinSubspaceOverlap'),savedir,0); close all
     
+%% Get statistics for individual overlaps
+
 %% Plot how many network individual neural pixels participated in
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\CorticalNetworkSummaryStats';
 Plot_NumberOfDimension(data); %do spatial correlation
@@ -72,7 +74,7 @@ saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('DimensionsPerPixel'),savedir
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\CorticalNetworkSummaryStats';
 if ~exist(savedir); mkdir(savedir); end
 Plot_CortNetworksSummaryStats(data)
-saveCurFigs(get(groot, 'Children'),{'-dsvg','-dpng'},'SumStats',savedir,0); close all
+saveCurFigs(get(groot, 'Children'),{'-dsvg','-dpng'},'NetworkSize',savedir,0); close all
 
 
 %% Plot the overlap between dimensions across motifs
@@ -82,8 +84,38 @@ Plot_MotifCorticalNetworkOverlap(data)
 saveCurFigs(get(groot, 'Children'),{'-dsvg','-dpng'},'XMotifOverlap',savedir,0); close all
 
 
+%% Plot the tnse of the c
+savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\CorticalNetworkClustering';
+if ~exist(savedir); mkdir(savedir); end
+PlotNetworkTSNE(data)
+saveCurFigs(get(groot, 'Children'),{'-dsvg','-dpng'},'TSNEPlots',savedir,0); close all
 
+%% Additional Examples
+savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\ExampleCorticalNetworks_AdditionalExamples';
+if ~exist(savedir,'dir'); mkdir(savedir); end
+cur_rec = 2;
+cur_motif = 8; 
+cur_area = 8; 
+Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,1,98) %(data,cur_rec,motif,area,sigflag)
+saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_sig',cur_motif,cur_rec,cur_area),savedir,0); close all
 
+cur_rec = 2;
+cur_motif = 7; 
+cur_area = 1; 
+Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,1,98) %(data,cur_rec,motif,area,sigflag)
+saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_sig',cur_motif,cur_rec,cur_area),savedir,0); close all
+
+cur_rec = 1;
+cur_motif = 1; 
+cur_area = 5; 
+Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,1,98) %(data,cur_rec,motif,area,sigflag)
+saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_sig',cur_motif,cur_rec,cur_area),savedir,0); close all
+
+cur_rec = 6;
+cur_motif = 10; 
+cur_area = 6; 
+Plot_ExampleCorticalNetworks(data,cur_rec,cur_motif,cur_area,1,98) %(data,cur_rec,motif,area,sigflag)
+saveCurFigs(get(groot, 'Children'),'-dpng',sprintf('motif%d_rec%d_area%d_sig',cur_motif,cur_rec,cur_area),savedir,0); close all
 
 %% example across animals
 %vis and motif 5
@@ -202,6 +234,33 @@ end
 
 
 %%
+%Clustering using the overlap
+%     for i = 1:size(data{cur_rec},2)
+%         x = reshape(data{cur_rec}(i).rho_all,68*68,10);
+%         y = data{cur_rec}(i).sig_thresh;
+%         for j = 1:10
+%             if sum(x(:,j)<0)>sum(x(:,j)>0)
+%                 x(:,j) = x(:,j)*-1;
+%             end
+%             nanidx = isnan(x(:,j));
+%             x(x(:,j)<y(j))=0;
+%             x(nanidx,j)=NaN;
+%         end  
+%         xall{cur_rec,i} = x;
+%     end
+% xall = [];
+% for cur_rec = 1:6
+% %clustering using overlap is included at bottom of page
+%     x = arrayfun(@(n) reshape(data{cur_rec}(n).rho_all,68*68,10),1:size(data{cur_rec},2),'UniformOutput',0);
+%     xall{cur_rec} = cat(2,x{:});
+% end
+% x = cat(2,xall{:});
+% badidx = sum(isnan(x),2)>1;
+% x(badidx,:)=[];
+% % x(x>0)=1;
+% % x(x<0)=0;
+% % x(:,sum(x==0,1)==size(x,1))=[];
+
 
 % % Other random plots
 % % %% Plot the average autocorrelations

@@ -189,6 +189,7 @@ cur_m = 1; %def: 5
 ExampleSubspaceGen(data,cur_rec,cur_m,cur_d,'HIPP',targ_areas)
 % ExampleSubspaceGen(data,5,1,cur_d,'THAL',targ_areas)
 ExampleSubspaceGen(data,5,7,3,'MOs',{'VIS','SS'})
+%%
 targ_areas = {'VIS','SS'};
 ExampleSubspaceGen(data,cur_rec,cur_m,[2,4],'MOs',targ_areas)
 saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('ExampleProjections_%sand%s_dim%d',targ_areas{1},targ_areas{2},cur_d),savedir,0); close all

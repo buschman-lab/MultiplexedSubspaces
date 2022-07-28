@@ -2,6 +2,9 @@
 %Camden MacDowell
 
 
+
+
+
 %% Subspace uniformity (also look at PlotBetasFigure for individual plots)
 CompareSubspaceUniformity(1,1) %this plots the general networks. 
 
@@ -10,7 +13,7 @@ CompareSubspaceUniformity(1,1) %this plots the general networks.
 
 allmdls = NaN(1000,numel(fn));
 for i = 1:numel(fn)
-    load(fn{i});
+    load(fn{i},'ent');
     temp = ent(:,:,:,2:end-1); %ignore zero and 1
     temp = nanmean(temp,4); %average across fractions of betas
     temp = squeeze(nanmean(temp,1));%average across dimensions 
@@ -18,17 +21,25 @@ for i = 1:numel(fn)
     allmdls(1:numel(temp),i) = temp;
 end
 %%
-p = NaN(size(allmdls,1),1);
-for i = 1:size(allmdls,1)
-    a = allmdls(i,1);
-    b = allmdls(i,2:end);
+badidx = (allmdls(:,1)==0)+isnan(allmdls(:,1))==1;
+temp = allmdls;
+temp(badidx,:)=[];
+%remove with NaN and those with zeros
+p = NaN(size(temp,1),1);
+for i = 1:size(temp,1)
+    a = temp(i,1);
+    b = temp(i,2:end);
+    p(i) = sum([a,b]<=a)/1000;
 end
 
 
 
 %% Test whether the contributions are distributed across neural populations (with LOO analysis)
 %see LeaveOneOutSubspaceFit
+savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\LOOSubspaceFit';
+if ~exist(savedir,'dir'); mkdir(savedir); end
 stats = PlotLOOsubspaceFit();
+saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},'LOOmodels',savedir,0); close all
 
 
 %% Load subspace data
@@ -44,7 +55,7 @@ x = reshape(x,[size(x,1),size(x,2)*size(x,3)])';
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\PCANetworks';
 if ~exist(savedir,'dir'); mkdir(savedir); end
 PCANetworks_noProjection(data)
-saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},'PCAExamplesEffectiveDim',savedir,0); close all
+saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},'PCAExamplesEffectiveDim_MOS',savedir,0); close all
 
 %%if you ever want to rerun the SharedBeta
 % rsq = cellfun(@(x) SharedBetas_InternalValidation(x,0), data,'UniformOutput',0);
@@ -135,7 +146,7 @@ end
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\SubspaceSharing';
 if ~exist(savedir,'dir'); mkdir(savedir); end
 multicompresults = PlotSubspaceSharing(data,beta,'VIS',[5,14],1,data,rsq);
-saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},'SubspaceSharingIN_relativeexplainable',savedir,0); close all
+saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},'SubspaceSharingAcrossMotifs',savedir,0); close all
 
 
 % multicompresults = PlotSubspaceSharing(dataout,betaout,'VIS',[5,14],1,data,rsqout);

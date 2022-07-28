@@ -46,9 +46,6 @@ for cur_d = 1:10
         for cur_model = 1:size(ball,1)
             b = abs(ball(cur_model,:));
             a = area(cur_model,:);
-            if randseed >1
-                a = a(randperm(numel(a),numel(a))); %randomly permute the area labels
-            end
             [~,idx] = sort(b,'descend');
             b = b(idx);
             a = a(idx);
@@ -56,6 +53,9 @@ for cur_d = 1:10
             badidx = isnan(b);
             a(badidx)=[];
             b(badidx)=[];
+            if randseed >1
+                a = a(randperm(numel(a),numel(a))); %randomly permute the area labels
+            end            
 
             %sweep fractions            
             for i = 1:numel(sweepidx)
@@ -81,7 +81,7 @@ if verbose == 1
     fp = fig_params_cortdynamics;
     area_label = area_all;
     x = permute(strongest,[2,3,1,5,4]);
-    x = x(:,:,1,:,:);
+%     x = x(:,:,1,:,:)
     x = reshape(x,size(x,1),size(x,2)*size(x,3),size(x,4),size(x,5));
     y = NaN(size(x,1),size(x,2),size(x,3));
     for i = 1:size(x,1)
@@ -165,6 +165,28 @@ if verbose == 1
         title('second strongest');
     end
     
+    %plot the thrid relationship
+    w = [1,0.7,0.5];
+    yy = squeeze(nanmean(y,2));
+    %get the top contributions to each
+    for i = 1:size(yy,1)
+       temp = yy(i,:);
+       [~,idx] = maxk(temp,numel(w));
+       idx = idx(3);       
+       temp(idx)=w(3);
+       temp(~ismember(1:numel(temp),idx))=0;
+       yy(i,:) = temp;
+    end
+    for i = 1:size(yy,1)
+        a=yy;
+        a(~ismember(1:size(a,1),i),:)=0;
+        figure; hold on;    
+        circularGraph(a,'colormap',fp.c_area,'label',area_label,'normVal',0.4); %plot
+        set(findall(gca, 'type', 'text'), 'visible', 'on') 
+        fp.FigureSizing(gcf,[3 3 6 6],[10 10 14 10])
+        title('third strongest');
+    end    
+    
     %% Add plots
     fp = fig_params_cortdynamics;
     %plot entopy across dimensions
@@ -201,6 +223,9 @@ if verbose == 1
     saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},'SubspaceUniformityPlots',savedir,0); close all
 end
 
+
+%% If you want to evaluate the final data
+%load the entropy and average across all dimensions and sampled points
 
 
 

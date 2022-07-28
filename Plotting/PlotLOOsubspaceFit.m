@@ -42,14 +42,16 @@ posdata(data<=0)=NaN;
 shadedErrorBar(1:30,nanmean(posdata),sem(posdata),'lineprops',{'color',[0.25 0.25 0.25 0.75],'linewidth',2},'patchSaturation',0.075);
 ylabel({'Percentage of','Explainable Variance'});
 xlabel('Subspace Dimensions');
+ylim([0 10]);
 yyaxis right
 plot(1:30,no_contrib,'k','linewidth',2);
 ylabel({'Percent non-','contributory models'});
 set(gca,'YColor','k');
+xlim([0 30])
+ylim([0 20])
 fp.FormatAxes(gca); box on; grid on
 fp.FigureSizing(gcf,[3 2 5 5],[2 10 10 10])
 title({'PEV excludes','non-contributory models'},'fontweight','normal');        
-xlim([0 15])
 
 % %get the average contribution +/- SEM at the last dimension
 % stats.mean = nanmean(posdata(:,end));

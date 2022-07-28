@@ -54,6 +54,39 @@ savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\
 if ~exist(savedir,'dir'); mkdir(savedir); end
 Plot_MotifEphysActivity(1,1:14,1,'mean',savedir)
 
+
+%% plot the motifs clustering
+savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\MotifClustering';
+if ~exist(savedir,'dir'); mkdir(savedir); end
+load('Mousepermouse_basis_motifs331.mat','tcorr_mat','cluster_idx');
+idx = find(cluster_idx==2);
+tcorr_mat(idx,:)=[];
+tcorr_mat(:,idx)=[];
+cluster_idx(idx)=[];
+cluster_idx(cluster_idx>1)=cluster_idx(cluster_idx>1)-1;
+Plot_OrderedSimilarityMatrix(tcorr_mat,cluster_idx);
+set(gca,'clim',[0.2 0.6])
+load('Mousepermouse_basis_motifs332.mat','tcorr_mat','cluster_idx');
+idx = find(cluster_idx==2);
+tcorr_mat(idx,:)=[];
+tcorr_mat(:,idx)=[];
+cluster_idx(idx)=[];
+cluster_idx(cluster_idx>1)=cluster_idx(cluster_idx>1)-1;
+Plot_OrderedSimilarityMatrix(tcorr_mat,cluster_idx);
+set(gca,'clim',[0.2 0.6])
+Plot_OrderedSimilarityMatrix(tcorr_mat,cluster_idx);
+load('Mousepermouse_basis_motifs334.mat','tcorr_mat','cluster_idx');
+idx = find(cluster_idx==2);
+tcorr_mat(idx,:)=[];
+tcorr_mat(:,idx)=[];
+cluster_idx(idx)=[];
+cluster_idx(cluster_idx>1)=cluster_idx(cluster_idx>1)-1;
+Plot_OrderedSimilarityMatrix(tcorr_mat,cluster_idx);
+set(gca,'clim',[0.2 0.6])
+Plot_OrderedSimilarityMatrix(tcorr_mat,cluster_idx);
+saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},'ExampleMotifOnsets',savedir,0); close all
+
+
 %% Load subspace data
 data = LoadSubspaceData('in_grouped');
 dataout = LoadSubspaceData('out_grouped');

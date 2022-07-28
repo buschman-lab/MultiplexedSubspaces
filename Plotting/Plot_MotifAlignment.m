@@ -1,6 +1,6 @@
 function x = Plot_MotifAlignment(data)
 %Camden MacDowell
-%data is paired data
+%data is paired data | data = LoadSubspaceData('paired');
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Rotations';
 
 %%
@@ -16,7 +16,7 @@ close all
 cur_motif = [8,6];
 area  = {'SSp-bfd','SS','RSP'};
 [y,yy] = MainFunc(data,cur_rec,cur_motif,area);
-saveCurFigs(get(groot, 'Children'),{'-dsvg','-dpng'},sprintf('motif8_6_subspaces'),savedir,0); close all
+% saveCurFigs(get(groot, 'Children'),{'-dsvg','-dpng'},sprintf('motif8_6_subspaces'),savedir,0); close all
 %%
 cur_motif = [3,14];
 area  = {'MOs','SSp-bfd','THAL'};
@@ -40,6 +40,14 @@ cur_motif = [4,11];
 area  = {'MOs','PRE','SSp-bfd'}; %could also do HIPP
 [w,ww] = MainFunc(data,cur_rec,cur_motif,area);
 % saveCurFigs(get(groot, 'Children'),{'-dsvg','-dpng'},sprintf('motif4_11'),savedir,0); close all
+
+%%
+% close all
+% cur_motif = [9,11];
+% area  = {'SS','MOs','SSp-bfd'}; %could also do HIPP
+% [w,ww] = MainFunc(data,5,cur_motif,area);
+% saveCurFigs(get(groot, 'Children'),{'-dsvg','-dpng'},sprintf('motif4_11'),savedir,0); close all
+
 %%  Plot the combined statistics
 theta = cat(1,xx{:},yy{:},zz{:},qq{:},rr{:},ww{:});
 
@@ -112,7 +120,7 @@ end
 % compare the joint projections 
 PlotJointProjections(a,b,cur_motif,area,cur_rec);
 % get bootstrapped angle between projection
-JointProjectionAngle(a_all,b_all);
+JointProjectionAngle(a_all,b_all); %
 % compare these two motifs trialwise activity in each region
 CompareActivity(data,cur_rec,cur_motif,area,1);  
 % plot the anges
@@ -411,6 +419,10 @@ r = cellfun(@(x) fisherZ(x),rho,'UniformOutput',0);
 withinB = cellfun(@(x) abs(x(2)-x(3)),r,'UniformOutput',1);
 ABself = cellfun(@(x) abs(x(1)-x(2)),r,'UniformOutput',1);
 ABA = cellfun(@(x) abs(x(1)-x(3)),r,'UniformOutput',1);
+
+% withinB = cellfun(@(x) (x(2)-x(3)),r,'UniformOutput',1);
+% ABself = cellfun(@(x) (x(1)-x(2)),r,'UniformOutput',1);
+% ABA = cellfun(@(x) (x(1)-x(3)),r,'UniformOutput',1);
 r = [withinB(:),ABself(:),ABA(:)];
 r(isnan(r(:,1)),:)=[];
 [p,~,stats] = anova1(r,[],'off');
@@ -625,6 +637,15 @@ fp = fig_params_cortdynamics;
 rng('default');
 col = [0.1 0.1 0.8; 0.8 0.1 0.1];
 for i = 1:numel(area)
+    %compare the values to subtracted baseline (yes, this is what we
+    %shoudl've done from the start - easier than the division baseline
+    abase = StatCompareToBaselin(data,cur_rec,cur_motif(1),area{i}); 
+    bbase = StatCompareToBaselin(data,cur_rec,cur_motif(1),area{i});
+    abase = nanmean(squeeze(max(abase,[],2)),2);
+    bbase = nanmean(squeeze(max(bbase,[],2)),2);
+    [~,pabase] = ttest(abase,0,'tail','right');
+    [~,pbbase] = ttest(bbase,0,'tail','right');
+    
     a = loadFunc(data,cur_rec,cur_motif(1),area{i},0); 
     b = loadFunc(data,cur_rec,cur_motif(2),area{i},0); 
     %get average peak activity across neurons per area
@@ -639,7 +660,8 @@ for i = 1:numel(area)
     errorbar(2,nanmean(b),sem(b),'marker','o','linewidth',1,'color',[0.1 0.1 0.8],'MarkerFaceColor',[0.1 0.1 0.8],'MarkerSize',fp.markersizesmall);
     
     [~,p] = ttest(a,b);
-    title(sprintf('M %d & %d %s \n rec %d p=%0.4f \n %0.3f+/-%0.3f\n %0.3f+/-%0.3f',cur_motif(1),cur_motif(2),area{i},cur_rec,p,nanmean(a),sem(a),nanmean(b),nanmean(b)),'fontweight','normal');    
+    title(sprintf('M %d & %d %s \n rec %d p=%0.4f \n %0.3f+/-%0.3f\n %0.3f+/-%0.3f\n %0.3f %0.3f baseline',...
+        cur_motif(1),cur_motif(2),area{i},cur_rec,p,nanmean(a),sem(a),nanmean(b),nanmean(b),pabase,pbbase),'fontweight','normal');    
     set(gca,'XTickLabel',cur_motif,'xlim',[0.5 2.5])
     yval = get(gca,'ylim');
     set(gca,'ylim',[round(yval(1)-0.025,2),round(yval(2)+0.025,2)]);
@@ -799,6 +821,16 @@ end
 
 
 
+function x = StatCompareToBaselin(data,cur_rec,cur_motif,area_name)
+    area_label = data{cur_rec}(cur_motif).area_label;
+    area_val = data{cur_rec}(cur_motif).area_val;
+    x = area_val{strcmp(area_label,area_name)};
+
+    %to compare with baseline activity
+    x = normalizeToBaseline(x,[1:2],'meansubtract');
+
+end
+
 
 function x = loadFunc(data,cur_rec,cur_motif,area_name,flag)
     if nargin <5; flag = 1; end
@@ -807,7 +839,10 @@ function x = loadFunc(data,cur_rec,cur_motif,area_name,flag)
     x = area_val{strcmp(area_label,area_name)};
 
     %normalize to baseline
-    x = normalizeToBaseline(x,[1:2],'mean');
+%     x = normalizeToBaseline(x,[1:2],'mean');
+    
+    %to compare with baseline activity
+    x = normalizeToBaseline(x,[1:2],'meansubtract');
 
     %use post stimulus
     x = x(:,3:end,:);
