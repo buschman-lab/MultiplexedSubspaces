@@ -1,17 +1,17 @@
-function x = Plot_MotifAlignment(data)
+function x = Plot_MotifAlignment_reverse(data)
 %Camden MacDowell
 %data is paired data | data = LoadSubspaceData('paired');
 savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Rotations';
 
 %%
 close all
-cur_rec = 4;
+cur_rec = 6;
 cur_motif = [5,6];
 area  = {'VIS','PRE','SSp-bfd'}; %important | this should always go Starting Point --> Higher in Motif A --> Higher in Motif B; 
 [x,xx] = MainFunc(data,cur_rec,cur_motif,area);
 % saveCurFigs(get(groot, 'Children'),{'-dsvg','-dpng'},sprintf('motif5_6'),savedir,0); close all
 % saveCurFigs(gcf,{'-dsvg','-dpng'},sprintf('motif5_6_remake'),savedir,0); close all
-%%
+
 close all;
 rng('default')
 cur_rec = 6;
@@ -54,23 +54,21 @@ xpos=[1,2.5,3.5,4.5,5.5,6.5,7.5];
 
 theta_all = theta_all([1,2,6,3,7,5,4]);
 plotCombinedSubspaceAngles(theta_all,xpos)
-save('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\AgglomerativeMotifAngle\theta_all.mat','theta_all');
+%%
+save('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\AgglomerativeMotifAngle\theta_all_reverse.mat','theta_all');
 
 %%
-theta_all = {x(:),y(:),z(:),q(:),r(:),w(:)};
-plotSubspaceAngles(cat(1,theta_all{:}))
-%%
-saveCurFigs(get(groot, 'Children'),{'-dsvg','-dpng'},sprintf('CombinedStatistics_new'),savedir,0); close all
 
-%% Plot the combined H
+%% Plot the combination
 a = load('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\AgglomerativeMotifAngle\theta_all_reverse.mat');
 b = load('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\AgglomerativeMotifAngle\theta_all.mat');
 c = arrayfun(@(n) cat(1,a.theta_all{n},b.theta_all{n}),1:7,'UniformOutput',0);
 xpos=[1,2.5,3.5,4.5,5.5,6.5,7.5];
 plotCombinedSubspaceAngles(c,xpos);
 
-% savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Rotations';
-% saveCurFigs(get(groot, 'Children'),{'-dsvg','-dpng'},sprintf('CombinedStatistics_AggregateWithReverse'),savedir,0); close all
+savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Rotations';
+saveCurFigs(get(groot, 'Children'),{'-dsvg','-dpng'},sprintf('CombinedStatistics_AggregateWithReverse'),savedir,0); close all
+
 %% Run across all pairs of motifs and all pairs of recordings 
 %make sure recording actually fits the criteria that 1) they significantly
 %differ in at least one region (ttest) and that the direction is correct
@@ -79,106 +77,51 @@ plotCombinedSubspaceAngles(c,xpos);
 
 %all recordings
 %all triads of areas
-% a = nchoosek(1:8,3);
-% %get all orderings
-% a_all = NaN((size(a,1)*3),3);
-% COUNT = 1;
-% for i = 1:size(a,1)   
-%     for j = 1:3
-%         a_all(COUNT,:) = a(i,circshift([1,2,3],j-1));
-%         COUNT = COUNT+1;   
-%     end
-% end
-% %all pairs of motifs
-% m_all = nchoosek(1:14,2);
-% m_all = cat(1,m_all,fliplr(m_all));
-% 
-% area_label = {'HIPP','MOs','PRE','RSP','SS','SSp-bfd','THAL','VIS'};
-% combined_data = [];
-% COUNT = 1; 
-% 
-% for cur_rec = 4:6  
-%     fprintf('working on rec %d of %d',cur_rec, 6);
-%     for a = 1:size(a_all,1)
-%         fprintf('.')
-%         for m = 1:size(m_all,1)
-%            %check criteria
-%            try
-%            [crit,sig] = CompareActivity(data,cur_rec,m_all(m,:),area_label(a_all(a,:)),0);
-%            %is A>B and then B>A and at least one sig diff?
-%            if crit(1)==1 && crit(2) == 0 && sum(sig)>0 %then check the angles across recordings
-%               x = GetSubspaceAngleForRecordings(data,m_all(m,:),area_label(a_all(a,:)),cur_rec,0);
-%               x = cat(1,x{:});
-%               temp = x(:,1)-x(:,2);
-%               combined_data(COUNT).d = temp;
-%               combined_data(COUNT).rec = cur_rec;
-%               combined_data(COUNT).area = a_all(a,:);
-%               combined_data(COUNT).pair = m_all(m,:);
-%               combined_data(COUNT).reverse = 0;
-%               COUNT = COUNT+1;
-%               %do the reverse
-%               x = GetSubspaceAngleForRecordings(data,m_all(m,:),area_label(a_all(a,:)),cur_rec,1);
-%               x = cat(1,x{:});
-%               temp = x(:,1)-x(:,2);
-%               combined_data(COUNT).d = temp;
-%               combined_data(COUNT).rec = cur_rec;
-%               combined_data(COUNT).area = a_all(a,:);
-%               combined_data(COUNT).pair = m_all(m,:);  
-%               combined_data(COUNT).reverse = 1;
-%               COUNT = COUNT+1;             
-%            end     
-%            catch 
-%            end
-%         end
-%     end
-% end
-% save('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\AgglomerativeMotifAngle\combined_data.mat','combined_data');
+a = nchoosek(1:8,3);
+%get all orderings
+a_all = NaN((size(a,1)*3),3);
+COUNT = 1;
+for i = 1:size(areas,1)    
+    for j = 1:3
+        a_all(COUNT,:) = a(i,circshift([1,2,3],j-1));
+        COUNT = COUNT+1;   
+    end
+end
+%all pairs of motifs
+m_all = nchoosek(1:14,2);
+m_all = cat(1,m_all,fliplr(m_all));
 
-
-%% Plot the combineda = load('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\AgglomerativeMotifAngle\theta_all_reverse.mat');
-a = load('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\AgglomerativeMotifAngle\theta_all.mat');
-b = load('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\AgglomerativeMotifAngle\theta_all.mat');
-c = arrayfun(@(n) cat(1,a.theta_all{n},b.theta_all{n}),1:7,'UniformOutput',0);
-xpos=[1,2.5,3.5,4.5,5.5,6.5,7.5];
-c = c([1,3,2,4,5,6,7]);
-plotCombinedSubspaceAngles(c,xpos)
-
-savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Figures\Rotations';
-saveCurFigs(get(groot, 'Children'),{'-dsvg','-dpng'},sprintf('CombinedStatistics_aggregate'),savedir,0); close all
+area_label = {'HIPP','MOs','PRE','RSP','SS','SSp-bfd','THAL','VIS'};
+combined_data = [];
+COUNT = 1; 
+for cur_rec = 3  
+    for a = 1:size(a_all,1)
+        for m = 1:size(m_all,1)
+           %check criteria
+           try
+           [crit,sig] = CompareActivity(data,cur_rec,m_all(m,:),area_label(a_all(a,:)),0);
+           catch 
+           end
+           %is A>B and then B>A and at least one sig diff?
+           if crit(1)==1 && crit(2) == 0 && sum(sig)>0 %then check the angles across recordings
+              x = GetSubspaceAngleForRecordings(data,m_all(m,:),area_label(a_all(a,:)),cur_rec);
+              x = cat(1,x{:});
+              temp = x(:,1)-x(:,2);
+              combined_data(COUNT).d = temp;
+              combined_data(COUNT).rec = cur_rec;
+              combined_data(COUNT).area = a_all(a,:);
+              combined_data(COUNT).pair = m_all(m,:);
+              COUNT = COUNT+1;             
+           end           
+        end
+    end
+end
+save('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\AgglomerativeMotifAngle\combined_data_reverse.mat','combined_data');
 
 
 end
 
 %% subroutines
-function plotAllAngles(combined_data)
-fp = fig_params_cortdynamics;
-figure; hold on;
-% combined stats
-x = cat(1,combined_data(:).d);    
-%get a bootstrapped distribution
-[ci,thetaboot] = bootci(1000,@circ_mean, deg2rad(x));
-ci = rad2deg(ci);
-mu = rad2deg(circ_mean(thetaboot));
-err = rad2deg(circ_std(thetaboot));
-thetaboot = rad2deg(thetaboot);
-p = sum(thetaboot>=0)/numel(thetaboot);
-text(1,7,sprintf('%0.2f +/- %0.2f \n[%0.2f %0.2f] \n p=%0.4f',mu,err,ci(1),ci(2),p),'FontSize',5);
-CompareViolins(thetaboot',fp,'plotspread',0,'divfactor',0.5,'xpos',1,'col',{[0.25 0.25 0.25]});
-
-camroll(-90)
-set(gca,'xtick',xpos)
-xlim([0 xpos(end)+0.75])
-plot([0 xpos(end)+1],[0 0],'linestyle','-','color',[0.3 0.3 0.3],'linewidth',1.5)
-yvals = get(gca,'ylim');
-% ylim([floor(yvals(1)),max(ceil(yvals(2)),5)]);
-ylim([-10 5]);
-ylabel('\Delta theta');
-set(gca, 'YGrid', 'off', 'XGrid', 'on','GridAlpha',0.15);
-fp.FormatAxes(gca); box on; 
-fp.FigureSizing(gcf,[3 3 4 5.75],[10 10 14 10])
-
-end
-
 function plotCombinedSubspaceAngles(xx,xpos)
 fp = fig_params_cortdynamics;
 figure; hold on;
@@ -219,49 +162,16 @@ end
 
 
 
-function [x,xx] = MainFunc(data,cur_rec,cur_motif,area,reverseflag)
-if nargin <5; reverseflag = 0; end
-a = cell(1,3);
-b = cell(1,3);
-a_all = cell(1,3);
-b_all = cell(1,3);
+function [x,xx] = MainFunc(data,cur_rec,cur_motif,area)
+
 theta = cell(1,3);
 thetacon = cell(1,3);
 for i = 1:3
-    [~,~,y,yy,aa,bb,yyy] = RunPCA(data,cur_rec,cur_motif,area(i)); %y is the Motif A activity along Motif A PC1, YY is Motif B activity along motif A PC1, yyy is Motif B activity along Motif B PC1 (which is what we use for comparison later)
-    PlotExampleSubspaceRelationships(data,cur_rec,cur_motif,[area(i),area(ismember(1:3,i)==0)],y,yy,aa,bb,yyy)
-%     PlotProjection(y,yy,cur_motif,area(i),cur_rec,[1,2]);
-    a{i} = nanmean(y(:,1:3,:),3);
-    b{i} = nanmean(yy(:,1:3,:),3);
-    a_all{i} = squeeze(y(:,1,:));
-    b_all{i} = squeeze(yy(:,1,:));
-    %compare to subspace betas
-    [theta{i},thetacon{i}] = CompareToSubspace(data,cur_rec,cur_motif,[area(i),area(ismember(1:3,i)==0)],1000,i,reverseflag); %
+    [theta{i},thetacon{i}] = CompareToSubspace(data,cur_rec,cur_motif,[area(i),area(ismember(1:3,i)==0)],1000,i); %
 end
-% compare the joint projections 
-PlotJointProjections(a,b,cur_motif,area,cur_rec);
-% get bootstrapped angle between projection
-JointProjectionAngle(a_all,b_all); %
-% compare these two motifs trialwise activity in each region
-CompareActivity(data,cur_rec,cur_motif,area,1);  
+
 % plot the anges
 CompareAngles(theta,thetacon,area)
-% angle between joint distribution
-% thetaActivity = NaN(2,6);
-% for cur_rec = 1:6
-%     try
-%     [thetaActivity(1,cur_rec), thetaActivity(2,cur_rec)] = GetActivityAngleAcross(data,cur_motif,area,cur_rec);    
-%     catch
-%     end
-% end
-% 
-% %get the subspace 
-% for cur_rec = 1:6
-%     try 
-%     catch 
-%     end
-% end
-% plot angles subspace--> activity across recordings pairwise
 x = GetSubspaceAngleAcrossRecordings(data,cur_motif,area);
 
 plotSubspaceAngles(x)
@@ -473,13 +383,13 @@ set(gca,'ylim',yvals)
 end
 
 
-function x = GetSubspaceAngleForRecordings(data,cur_motif,area,cur_rec,reverseflag)
-if nargin <5; reverseflag=0; end
+function x = GetSubspaceAngleForRecordings(data,cur_motif,area,cur_rec)
+
 theta = cell(3,1);
 thetacon = cell(3,1);
 
 for i = 1:3
-   [theta{i,1},thetacon{i,1}] = CompareToSubspace(data,cur_rec,cur_motif,[area(i),area(ismember(1:3,i)==0)],1000,i,reverseflag); 
+   [theta{i,1},thetacon{i,1}] = CompareToSubspace(data,cur_rec,cur_motif,[area(i),area(ismember(1:3,i)==0)],1000,i); 
 end
 
 theta = cellfun(@(x) deg2rad(x),theta,'UniformOutput',0);
@@ -687,10 +597,8 @@ err = rad2deg(circ_std(theta,[],[],2));
 end
 
 
-function [theta,thetacon,B,c] = CompareToSubspace(data,cur_rec,cur_motif,area,nboot,cur_i,reverseflag)
+function [theta,thetacon,B,c] = CompareToSubspace(data,cur_rec,cur_motif,area,nboot,cur_i)
 if nargin <5; nboot = 1000; end
-if nargin <6; cur_i = 1; end
-if nargin <7; reverseflag=0; end
 rng('default');
 
 %load the data
@@ -701,30 +609,18 @@ b = loadFunc(data,cur_rec,cur_motif(2),area{1},0);
 %if going x to y or y to x then use motif a subspaces
 %CAMDEN - this looks like cur_i =1 and 2 are the same, but the area is
 %changing with each call of this function so they are not. See above. 
-if reverseflag==0
-    if cur_i ==1
-        B = loadCoef(data,cur_rec,cur_motif(1),area([1,2])); 
-        BB = loadCoef(data,cur_rec,cur_motif(2),area([1,3]));   
-    elseif cur_i==2
-        B = loadCoef(data,cur_rec,cur_motif(1),area([1,2])); 
-        BB = loadCoef(data,cur_rec,cur_motif(2),area([1,3]));    
-    elseif cur_i==3
-        B = loadCoef(data,cur_rec,cur_motif(2),area([1,2])); 
-        BB = loadCoef(data,cur_rec,cur_motif(1),area([1,3]));
-    end
-else
-    %This is reversed versus Plot_MOtifAlignment_reverse to show the
-    %generalizabiltiy. 
-    if cur_i ==1
-        B = loadCoef(data,cur_rec,cur_motif(2),area([1,2])); 
-        BB = loadCoef(data,cur_rec,cur_motif(1),area([1,3]));   
-    elseif cur_i==2
-        B = loadCoef(data,cur_rec,cur_motif(2),area([1,2])); 
-        BB = loadCoef(data,cur_rec,cur_motif(1),area([1,3]));    
-    elseif cur_i==3
-        B = loadCoef(data,cur_rec,cur_motif(1),area([1,2])); 
-        BB = loadCoef(data,cur_rec,cur_motif(2),area([1,3]));
-    end
+
+%This is reversed versus Plot_MOtifAlignment_reverse to show the
+%generalizabiltiy. 
+if cur_i ==1
+    B = loadCoef(data,cur_rec,cur_motif(2),area([1,2])); 
+    BB = loadCoef(data,cur_rec,cur_motif(1),area([1,3]));   
+elseif cur_i==2
+    B = loadCoef(data,cur_rec,cur_motif(2),area([1,2])); 
+    BB = loadCoef(data,cur_rec,cur_motif(1),area([1,3]));    
+elseif cur_i==3
+    B = loadCoef(data,cur_rec,cur_motif(1),area([1,2])); 
+    BB = loadCoef(data,cur_rec,cur_motif(2),area([1,3]));
 end
 
 theta = NaN(1,nboot); %each row is a comparison with a subspace
@@ -781,7 +677,6 @@ function B = loadCoef(data,cur_rec,cur_motif,area_name)
     
     B = data{cur_rec}(cur_motif).rrr_B{idx};
 end
-
 
 
 function [s,sig] = CompareActivity(data,cur_rec,cur_motif,area,verbose)
@@ -981,10 +876,7 @@ function x = StatCompareToBaselin(data,cur_rec,cur_motif,area_name)
     x = area_val{strcmp(area_label,area_name)};
 
     %to compare with baseline activity
-%     x = normalizeToBaseline(x,[1:2],'meansubtract');
-    
-    %normalize to baseline
-    x = normalizeToBaseline(x,[1:2],'mean');
+    x = normalizeToBaseline(x,[1:2],'meansubtract');
 
 end
 
@@ -996,10 +888,10 @@ function x = loadFunc(data,cur_rec,cur_motif,area_name,flag)
     x = area_val{strcmp(area_label,area_name)};
 
     %normalize to baseline
-    x = normalizeToBaseline(x,[1:2],'mean');
+%     x = normalizeToBaseline(x,[1:2],'mean');
     
     %to compare with baseline activity
-%     x = normalizeToBaseline(x,[1:2],'meansubtract');
+    x = normalizeToBaseline(x,[1:2],'meansubtract');
 
     %use post stimulus
     x = x(:,3:end,:);

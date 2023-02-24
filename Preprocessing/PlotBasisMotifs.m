@@ -1,11 +1,19 @@
 function PlotBasisMotifs(savedir,cur_mouse)
 %Camden 2022
 if nargin <2; cur_mouse=[]; end
-
-if isempty(cur_mouse)
-    W_basis = load('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\MotifDiscovery\Mouse_basis_motifs.mat','W_basis');   
+%Vanessa added pathing
+if all(getenv('username') == 'roser')
+    if isempty(cur_mouse)
+        W_basis = load('\\cup\buschman\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\MotifDiscovery\Mouse_basis_motifs.mat','W_basis');   
+    else
+        W_basis = load(['\\cup\buschman\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\MotifDiscovery\','Mousepermouse_basis_motifs',num2str(cur_mouse),'.mat'],'W_basis');   
+    end
 else
-    W_basis = load(['Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\MotifDiscovery\','Mousepermouse_basis_motifs',num2str(cur_mouse),'.mat'],'W_basis');   
+    if isempty(cur_mouse)
+        W_basis = load('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\MotifDiscovery\Mouse_basis_motifs.mat','W_basis');   
+    else
+        W_basis = load(['Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\MotifDiscovery\','Mousepermouse_basis_motifs',num2str(cur_mouse),'.mat'],'W_basis');   
+    end
 end
 W_basis = W_basis.W_basis;
 fp = fig_params_cortdynamics;
@@ -24,7 +32,11 @@ for i = 1:size(W_basis,2)
     figure;
     cvals = [0,prctile(temp(:),cmax(i))];
     for j = 1:size(temp,3)
-        PlotMesoFrame(temp(:,:,j),'caxis',cvals,'caxis_flag',1);
+        if all(getenv('username') == 'roser')
+            PlotMesoFrame_VR(temp(:,:,j),'caxis',cvals,'caxis_flag',1);
+        else
+            PlotMesoFrame(temp(:,:,j),'caxis',cvals,'caxis_flag',1);
+        end
         title(sprintf('motif %d | %d',i,j));
 %         pause()
         if isempty(cur_mouse)

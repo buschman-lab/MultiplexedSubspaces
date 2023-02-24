@@ -25,7 +25,7 @@ muaflag = 1;
 %loop through each motif
 for cur_rec = 1:6
     for cur_m = 1:15
-        for ccaflag = 5:6 %[0,2,3,4]
+        for ccaflag = [0,3] %5:6 %[0,2,3,4]
         if ccaflag==0
             t=1080;
         else
@@ -40,6 +40,15 @@ for cur_rec = 1:6
         ssh2_command(s_conn,...
         ['cd /jukebox/buschman/Projects/Cortical\ Dynamics/Cortical\ Neuropixel\ Widefield\ Dynamics/DynamicScripts/ ;',... %cd to directory
         sprintf('sbatch %s',script_name)]);  
+    
+        script_name = WriteBashScript(parameter_class,sprintf('%d',1),'CommunicationSubspace_MotifTriggered_meansubtract',{cur_m,cur_rec,muaflag,ccaflag},...
+            {'%d','%d','%d','%d'},...
+            'sbatch_time',t,'sbatch_memory',24,...
+            'sbatch_path',"/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis/CommunicationSubspace/");
+
+        ssh2_command(s_conn,...
+        ['cd /jukebox/buschman/Projects/Cortical\ Dynamics/Cortical\ Neuropixel\ Widefield\ Dynamics/DynamicScripts/ ;',... %cd to directory
+        sprintf('sbatch %s',script_name)]);      
         end
     end
 end
@@ -74,9 +83,35 @@ for i = 1:numel(fn)
     sprintf('sbatch %s',script_name)]);      
 end
 
+%% to run the behavioral analysis
+for cur_m = 1:14 
+    for cur_a = 1:8
+        script_name = WriteBashScript(parameter_class,sprintf('%d',1),'BehavioralNetworks_v2',{'$SLURM_ARRAY_TASK_ID',cur_m,cur_a},...
+            {'%s','%d','%d'},...
+            'sbatch_time',5,'sbatch_memory',12,'sbatch_array','1-6',...
+            'sbatch_path',"/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis/BehavioralAnalysisFunctions/");
+
+        ssh2_command(s_conn,...
+        ['cd /jukebox/buschman/Projects/Cortical\ Dynamics/Cortical\ Neuropixel\ Widefield\ Dynamics/DynamicScripts/ ;',... %cd to directory
+        sprintf('sbatch %s',script_name)]);                    
+    end
+end
+        
+
 %close out connection
 ssh2_close(s_conn);
 clear username password s_conn
 
 
 end %function end
+
+
+
+
+
+
+
+
+
+
+

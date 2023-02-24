@@ -27,6 +27,7 @@ v = VideoReader(FaceCam);
 ref_img = read(v,t(1));
 
 roi_names = {'face','whiskpad','nose','shoulder'};
+% roi_names = {'whiskpad','nose','shoulder'};
 %select the rois. 
 roi = cellfun(@(x) SelectROI(ref_img,x), roi_names,'UniformOutput',0);
    
@@ -34,7 +35,7 @@ roi = cellfun(@(x) SelectROI(ref_img,x), roi_names,'UniformOutput',0);
 figure; imagesc(ref_img); 
 cellfun(@(x) rectangle('Position',x.position,'EdgeColor',x.color,'FaceColor',[x.color 0.2],'LineWidth',2),roi,'UniformOutput',0);
 axis off
-saveCurFigs(get(groot, 'Children'),{'-dpng'},[rec_name,'_ROI'],savedir,0); close all
+saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},[rec_name,'_ROI'],savedir,0); close all
 
 %break frames into multiple 5 min blocks 
 %5 min = ~6000 frames

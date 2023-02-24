@@ -2,7 +2,12 @@ function PlotExampleEphys(cur_rec,tp)
 fp = fig_params_cortdynamics;
 %camden macdowell
 if nargin <3; tp = [100,100+(60*15*1)]; end
-[area_val,area_label] = GetExampleSpikingData(cur_rec,1);
+%Vanessa added pathing
+if all(getenv('username') == 'roser')
+    [area_val,area_label] = GetExampleSpikingData_VR(cur_rec,1);
+else
+    [area_val,area_label] = GetExampleSpikingData(cur_rec,1);
+end
 
 %plot by area so you can mix and rearrange later
 x = cat(1,area_val{:});

@@ -63,7 +63,7 @@ yall = yall/sum(yall);
 yall = smoothdata(yall,'gaussian',5);
 
 %fraction with <10% overlap
-numel(find(ovrlap(:)<.01))/numel(ovrlap(:))
+numel(find(ovrlap(:)<.1))/numel(ovrlap(:))
 
 figure; hold on; 
 histogram(ovrlap(:),edges,'Normalization','probability','FaceAlpha',0.25,'FaceColor',[0.5 0.5 0.5],'EdgeAlpha',0.25)

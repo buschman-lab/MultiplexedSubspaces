@@ -1,7 +1,6 @@
 function data = LoadSubspaceData(flag)
 fp = fig_params_cortdynamics;
 
-
 data = cell(1,6);
 switch flag
     case 'in_grouped'
@@ -15,6 +14,50 @@ switch flag
             [fn,~] = GrabFiles([rec_name '\w*RRR_muaflag1_GROUPEDmotif\d*.mat'],0,{folder}); 
             data{cur_rec} = cellfun(@(x) load(x,'cvl_ridge','cvl_rrr','inactive_idx','area_label','area_val','paired_areas','rrr_V','rrr_B','grouping','motif','st_depth'),fn);
         end
+    case 'in_grouped_full_mean'
+        if ispc
+            folder = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\CommunicationSubspace_meansubtract_full';
+        else
+            folder = '/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/Analysis/CommunicationSubspace_meansubtract_full';
+        end
+        for cur_rec = 1:6
+            rec_name = LoadDataDirectories(cur_rec);
+            [fn,~] = GrabFiles([rec_name '\w*RRR_muaflag1_GROUPEDmotif\d*.mat'],0,{folder}); 
+            data{cur_rec} = cellfun(@(x) load(x,'cvl_ridge','cvl_rrr','inactive_idx','area_label','area_val','paired_areas','rrr_V','rrr_B','grouping','motif','st_depth'),fn);
+        end          
+    case 'paired_full_mean'
+        if ispc
+            folder = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\CommunicationSubspace_meansubtract_full';
+        else
+            folder = '/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/Analysis/CommunicationSubspace_meansubtract_full';
+        end
+        for cur_rec = 1:6
+            rec_name = LoadDataDirectories(cur_rec);
+            [fn,~] = GrabFiles([rec_name '\w*RRR_muaflag1_motif\d*.mat'],0,{folder}); 
+            data{cur_rec} = cellfun(@(x) load(x,'cvl_ridge','cvl_rrr','inactive_idx','area_label','area_val','paired_areas','rrr_V','rrr_B','motif','st_depth'),fn);
+        end   
+    case 'in_grouped_full'
+        if ispc
+            folder = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\CommunicationSubspace_AllUnits';
+        else
+            folder = '/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/Analysis/CommunicationSubspace_AllUnits';
+        end
+        for cur_rec = 1:6
+            rec_name = LoadDataDirectories(cur_rec);
+            [fn,~] = GrabFiles([rec_name '\w*RRR_muaflag1_GROUPEDmotif\d*.mat'],0,{folder}); 
+            data{cur_rec} = cellfun(@(x) load(x,'cvl_ridge','cvl_rrr','inactive_idx','area_label','area_val','paired_areas','rrr_V','rrr_B','grouping','motif','st_depth'),fn);
+        end  
+    case 'paired_full'
+        if ispc
+            folder = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\CommunicationSubspace_AllUnits';
+        else
+            folder = '/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/Analysis/CommunicationSubspace_AllUnits';
+        end
+        for cur_rec = 1:6
+            rec_name = LoadDataDirectories(cur_rec);
+            [fn,~] = GrabFiles([rec_name '\w*RRR_muaflag1_motif\d*.mat'],0,{folder}); 
+            data{cur_rec} = cellfun(@(x) load(x,'cvl_ridge','cvl_rrr','inactive_idx','area_label','area_val','paired_areas','rrr_V','rrr_B','motif','st_depth'),fn);
+        end          
     case 'in_grouped_lag'
         folder = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\CommunicationSubspace_Lagged';
         for cur_rec = 1:6

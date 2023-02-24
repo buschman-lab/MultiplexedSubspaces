@@ -1,11 +1,11 @@
-function fH=PlotMesoFrame(frame,varargin)
+function fH=PlotMesoFrame_VR(frame,varargin)
 %camden macdowell - timeless
 %frame is a 68 x 68 pixel frame
 %Set options
 %Define options
 opts.BregmaX = 1.97; %conversion ratio for finding location to plot bregma
 opts.BregmaY = 2.27; %conversion ratio for finding locatio to plot bremga
-opts.MaskDir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\GithubRepo\Widefield_Imaging_Analysis\Preprocessing\brainoutline_small.mat'; %the mask used for figure plotting
+opts.MaskDir = '\\cup\buschman\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\GithubRepo\Widefield_Imaging_Analysis\Preprocessing\brainoutline_small.mat'; %the mask used for figure plotting
 opts.caxis = [0 95]; %percentile of maximum intensity
 opts.caxis_flag = 0; %flag to make caxis a value not a percentile
 %Process optional inputs
@@ -16,7 +16,7 @@ mask = load(opts.MaskDir);
 mask = imresize(mask.brainoutline,size(frame));
 
 %this is temporary additional mask to match the position of the 2022 data
-temp = load('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging\mask_posterioredge.mat');
+temp = load('\\cup\buschman\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\PreprocessedImaging\mask_posterioredge.mat');
 mask = mask-temp.mask; mask(mask<0)=0;
 
 %break mask into l and r hemisphere

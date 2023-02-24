@@ -3,8 +3,12 @@ fp = fig_params_cortdynamics;
 %camden macdowell
 if nargin <2; tp = [100,100+(60*15*1)]; end
 
-[rec_name,ImgPath,ImgProbeLoc,~,motif_fits] = LoadDataDirectories(cur_rec);
-
+%VANESSA added to fix pathing please feel free to delete later
+if all(getenv('username') == 'roser')
+    [rec_name,ImgPath,ImgProbeLoc,~,motif_fits] = LoadDataDirectories_VR(cur_rec);
+else
+    [rec_name,ImgPath,ImgProbeLoc,~,motif_fits] = LoadDataDirectories(cur_rec);
+end
 %load the deconvolve dff form the probe insertion sites
 [dff_probe,offset,dff_contra] = LoadInsertionSiteDFF(ImgPath,ImgProbeLoc);%probe offset is a few pixel offset in the probe insertion location used for deconvolution to adjust for the fact that the probes are inserted at an angle so the first recorded cell bodies are m/l and a/p shifted from the exact probe insertion site at the surface. 
 

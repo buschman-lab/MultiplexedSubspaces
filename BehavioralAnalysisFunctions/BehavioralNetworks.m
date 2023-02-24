@@ -31,7 +31,7 @@ data = load(fn);
 
 % Load imaging data
 [me, ~,~,~,~,~] = AnalyzeBehavior(cur_rec,0);
-x = abs(circshift(me(2:end,:),8));
+x = abs(circshift(me(2:end,:),8)); %to correct for offset
 % x=abs(circshift(me,8));
 trig_me = ParseByOnset(x',[],data.motif_onset,data.win,cur_motif);
 trig_me = RemoveEdgeTrials({trig_me});

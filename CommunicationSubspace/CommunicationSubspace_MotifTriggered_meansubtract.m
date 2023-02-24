@@ -12,13 +12,13 @@ if ispc
     addpath(genpath('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\GithubRepo\Widefield_Imaging_Analysis'));
     addpath(genpath('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\GithubRepo\GenUtils'));
     addpath(genpath('Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\GithubRepo\Ephys'));
-    savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\CommunicationSubspace_meansubtract\';
+    savedir = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\CommunicationSubspace_meansubtract_full\';
 else
     addpath(genpath('/jukebox/buschman/Rodent Data/Wide Field Microscopy/fpCNMF'));
     addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Widefield_Imaging_Analysis'));
     addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/GenUtils'));
     addpath(genpath('/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/GithubRepo/Ephys'));
-    savedir = '/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/Analysis/CommunicationSubspace_meansubtract/';
+    savedir = '/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/Analysis/CommunicationSubspace_meansubtract_full/';
 end
 tic
 win=[-2 11]; %hardcoded write now. 
@@ -53,7 +53,7 @@ end
 [area_val, area_label] = ParseByArea(cat(1,trig_st{:}),neu_area,'general');
 
 %remove neurons that fire less than 0.5spike/sec on average across trials
-[~, inactive_idx] = RemoveInactiveNeurons(area_val, 0.25/7.5);
+% [~, inactive_idx] = RemoveInactiveNeurons(area_val, 0.25/7.5);
 
 %remove the rare edge case where a motif begins at the start (no baseline)
 area_val = RemoveEdgeTrials(area_val);

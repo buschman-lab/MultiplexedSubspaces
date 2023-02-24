@@ -37,7 +37,7 @@ function [features, Observed, Shuffled, TrainAUC] = SVMClassifier_Binary(Data,cv
 
 %% Set optional paramters
 opts.verbose = 0;  %how chatty should we be? 
-opts.holdout = 0.25; %fraction hold out data for validation
+opts.holdout = 0.2; %fraction hold out data for validation
 opts.nshuf = 1000; %Number of shuffles for shuffle test
 opts.featureselect  = 'none'; %Options: 'none', 'anova': 
 opts.features = [];

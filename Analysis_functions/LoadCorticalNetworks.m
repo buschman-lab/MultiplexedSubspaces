@@ -1,7 +1,11 @@
 function data_all = LoadCorticalNetworks(reverseFlag)
 %Camden 
 
-folder = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\CorticalNetworks';
+if ispc,
+    folder = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\CorticalNetworks';
+else
+    folder = '/jukebox/buschman/Projects/Cortical Dynamics/Cortical Neuropixel Widefield Dynamics/Analysis/CorticalNetworks';
+end
 
 %load by recording, adjust for missing areas, shift motif numbers
 data_all = cell(1,6);

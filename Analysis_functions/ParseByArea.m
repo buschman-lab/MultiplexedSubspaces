@@ -13,8 +13,8 @@ switch type
         temp(ismember(temp,{'RSPagl','RSPd'}))={'RSP'}; %group RSP
         temp(ismember(temp,{'VISp','VISpm','VISa','VISam'}))={'VIS'}; %group VIS
         temp(ismember(temp,{'SSp','SSp-un','SSp-n','SSp-m','SSp-tr','SSp-ul','SSp-ll'}))={'SS'}; %group Sensory (keep bfd separate)
-        temp(ismember(temp,{'MED','EPI','ILM','LAT','mfbse','MTN'}))={'THAL'}; %group Thalamo (keep bfd separate)
-        temp(ismember(temp,{'CA','DG','ILM','LAT'}))={'HIPP'}; %group Hippo (keep bfd separate)
+        temp(ismember(temp,{'MED','EPI','ILM','LAT','mfbse','MTN'}))={'THAL'}; %group Thalamo 
+        temp(ismember(temp,{'CA','DG'}))={'HIPP'}; %group Hippo 
         temp(ismember(temp,{'ACAd','PL','ILA','ORBm'}))={'PRE'}; %group Front (keep MOs separate)
     otherwise
         error('unknown level of anatomical detail');

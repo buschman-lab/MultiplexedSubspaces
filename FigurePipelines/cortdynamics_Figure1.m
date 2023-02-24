@@ -88,7 +88,8 @@ saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},'ExampleMotifOnsets',savedi
 
 
 %% Load subspace data
-data = LoadSubspaceData('in_grouped');
+% data = LoadSubspaceData('in_grouped');
+data = LoadSubspaceData('in_grouped_full_mean');
 dataout = LoadSubspaceData('out_grouped');
 
 %% ridge regression figures
@@ -98,6 +99,31 @@ if ~exist(savedir,'dir'); mkdir(savedir); end
 RidgeRegressionExampleFigures(data,'VIS',[5,3])
 RidgeRegressionCombinedFigures(data)
 saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},'RegressionExample_IN',savedir,0); close all
+
+
+%% get the average 
+[r,~] = LoadVariable(data,'rel_performance',[]);
+%5 dimensions in visual 
+x = squeeze(r(:,:,8,5));
+p = nanmean(x(:));
+pci = bootci(1000,@nanmean,x(:));
+
+%10 dimension in visual 
+x = squeeze(r(:,:,8,10));
+p = nanmean(x(:));
+pci = bootci(1000,@nanmean,x(:));
+
+%5 dimensions across everything
+x = squeeze(r(:,:,:,5));
+p = nanmean(x(:));
+pci = bootci(1000,@nanmean,x(:));
+
+%10 dimensions across everything
+x = squeeze(r(:,:,:,10));
+p = nanmean(x(:));
+pci = bootci(1000,@nanmean,x(:));
+
+
 %load the shuffled models | THIS WILL TAKE DAYS, reccomend to do on spock. 
 % [fn,~] = GrabFiles('\w*shuf\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\RidgePermutations'});
 % temp = [];
@@ -117,7 +143,12 @@ RidgeRegressionExampleFigures(dataout,'VIS',[5,3])
 RidgeRegressionCombinedFigures(dataout)
 saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},'RegressionExample_OUT',savedir,0); close all
 
-
+%% Get the explained variance of each motif
+[fn,~] = GrabFiles('\w*.mat',0,{'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\BasisMotifFits'}); 
+data = cellfun(@(x) load(x,'stats_refit'),fn);
+x = arrayfun(@(n) data(n).stats_refit.pev,1:numel(data));
+nanmean(x)
+bootci(1000,@nanmean,x)
 
 %next to add: 
 %plot showing the correlation between data in and data out... explain in
@@ -126,6 +157,14 @@ saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},'RegressionExample_OUT',sav
 %plot showing the decodability in average |trial-to-trial activity| across all neurons between each pair of motifs.  
 %the permutation tests
 %by end of next week | knock out figure 2 and have explored 3
+
+
+%% Beta weight fits
+folder = 'Z:\Projects\Cortical Dynamics\Cortical Neuropixel Widefield Dynamics\Analysis\CrossValidationSimilarity\';
+[fn,~] = GrabFiles('\w*.mat',0,{folder}); 
+
+
+
 
 
 %%

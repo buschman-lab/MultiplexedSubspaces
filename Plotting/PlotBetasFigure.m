@@ -53,11 +53,11 @@ end
 % saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('NeuronContributions_Prediction%s_dim%d',targ_area,cur_d),savedir,0); close all
 
 %% Get the fraction of top beta weights contributed by each area across motifs and recordings
-preload data
+% preload data
 [~, area_all] = LoadVariable(data,'rrr_beta','VIS',1); %load betas
 ent = [];
-for cur_d = 1:3
-    for cur_area = 1:numel(area_all)
+for cur_d = 7
+    for cur_area = 8%1:numel(area_all)
         targ_area= area_all{cur_area};
         B = cell(6,14);
         AArea = cell(6,14);
@@ -168,10 +168,101 @@ for cur_d = 1:3
 
 end
 
-%
+%%
 set(gca,'ylim',[0 50],'ytick',[0,25,50])
 saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},sprintf('AreaContributions_Prediction%s_dim%d',targ_area,cur_d),savedir,0); close all
 save([savedir,filesep,sprintf('AreaContributions_Prediction%s_dim%d',targ_area,cur_d)],'stats','n');
+
+
+%% Collect the AUCs and count how many are greater than 0.5
+[~, area_all] = LoadVariable(data,'rrr_beta','VIS',1); %load betas
+auccount = NaN(10,8);
+aucbootcount = NaN(10,8,1000);
+for cur_d = 1:10
+    for cur_area = 1:numel(area_all)
+        targ_area= area_all{cur_area};
+        B = cell(6,14);
+        AArea = cell(6,14);
+        AreaLabel = cell(6,14);
+
+        for cur_rec = 1:6
+            for cur_m = 1:14        
+                [B{cur_rec,cur_m},AArea{cur_rec,cur_m},AreaLabel{cur_rec,cur_m}] = loadVisBeta(data,cur_d,cur_rec,cur_m,targ_area);
+            end
+        end
+        
+        %sweep fractions
+        idx = 0:0.1:1;
+        x = NaN(7,numel(idx));
+%         y = NaN(84,7,numel(idx));
+        xboot = NaN(7,1000,11);
+        for i = 1:numel(idx)
+            [~,~,stats,y(i)] = SubspaceUniformity(B,AArea,AreaLabel,data,targ_area,idx(i),1);
+            x(:,i) = stats.mean;
+            xboot(:,:,i) = stats.xboot';   
+%             y(1:size(temp,1),:,i)=temp;
+        end
+  
+        %plot the AUC in a small panel
+        %mean auc
+        xx = x/100;
+        auc = NaN(1,size(x,1));
+        aucboot = NaN(1000,size(x,1));
+%         y = reshape(y,84*7,size(y,3));
+%         yy = y/100;
+%         aucindi = NaN(1,84*7);
+        
+        for i = 1:size(x,1)
+            auc(i) = trapz(xx(i,:)/numel(xx(i,:)));  
+            temp = squeeze(xboot(i,:,:));
+            temp = arrayfun(@(n) trapz((temp(n,:)/100)/numel(temp(n,:))),1:size(temp,1),'UniformOutput',1);
+            aucboot(:,i) = temp;            
+        end
+%         for i = 1:size(y,1)
+%             aucindi(i) = trapz(yy(i,:)/numel(yy(i,:)));            
+%         end        
+                     
+        auccount(cur_d,cur_area) = sum(round(auc,2)>=0.50); %round since we also care if equal and sig digits matters here        
+        aucbootcount(cur_d,cur_area,:) = sum(round(aucboot,2)>=0.50,2); %round since we also care if equal and sig digits matters here
+    end
+
+end
+%%
+%hierarchical bootstrap | this is actually the most appropriate way since
+%the variable we are strapping is the initial averaging across datasets
+d = [1,2;3,4;5,6;7,8;9,10];
+x = NaN(1000,size(d,1));
+y = NaN(1000,size(d,1));
+for i = 1:size(d,1)
+   [stats,x(:,i),y(:,i)]= hierboot(d(i,:),aucbootcount,@nanmean);   
+end
+x = x*100; 
+y = y*100;
+xci = cat(1,prctile(x,2.5),prctile(x,97.5));
+yci = cat(1,prctile(y,2.5),prctile(y,97.5));
+x = nanmean(x);
+y = nanmean(y);
+figure; hold on; 
+errorbar(1:numel(x),x,x-xci(1,:),xci(2,:)-x,'linestyle','-','marker','o',...
+    'MarkerEdgeColor','k','MarkerFaceColor','k','markersize',2,'linewidth',1.5,'color','k','capsize',10)  
+ylim([0 100])
+ylabel('% Integrators')
+yyaxis right
+errorbar(1:numel(y),y,y-yci(1,:),yci(2,:)-y,'linestyle','-','marker','o',...
+    'MarkerEdgeColor',[0.8 0.1 0.1],'MarkerFaceColor',[0.8 0.1 0.1],'markersize',2,'linewidth',1.5,'color',[0.8 0.1 0.1],'capsize',10)  
+set(gca,'YColor','k')
+fp.FormatAxes(gca); box on; grid off
+fp.FigureSizing(gcf,[3 3 4 4],[10 10 12 10]) 
+xlim([0.5 numel(x)+0.5])
+ylim([0 100])
+set(gca,'xtick',1:numel(x));
+xlabel('dimensions');
+ylabel('% Channels')
+legend('Int','Chan','Location','east')
+
+%%
+saveCurFigs(get(groot, 'Children'),{'-dpng','-dsvg'},'SubspaceIntegrationChannels',savedir,0); close all
+
 
 %% Plot the correlation between 
 % do two examples. One, Everything predicting MOs or VIS another everything predicting PRE or RSP and compare the
@@ -577,6 +668,7 @@ end
 
 
 function [b,area,area_label] = loadVisBeta(data,cur_d,cur_rec,cur_m,targ_area)
+
 % if cur_d>1 %load the dimension of D1 as a starting point
 %     [bdim, ~] = LoadVariable(data,'rrr_beta','VIS',1); %load betas
 %     bdim = (squeeze(bdim(cur_rec,cur_m,:)));
@@ -590,6 +682,7 @@ area = squeeze(area(cur_m,:));
 idx = isnan(area);
 area(idx)=[];
 b(idx)=[];
+
 % if cur_d >1
 %     bdim(idx)=[];
 %     [~,reord] = sort(bdim,'descend');
@@ -639,6 +732,40 @@ x = reshape(x,[size(x,1),size(x,2)*size(x,3)])';
 end
 
 
+function [stats,int,chan] = hierboot(d,aucbootcount,tempfunc)
+stats = [];
+if numel(d)>1
+    y = aucbootcount(d,:,:);
+    x = arrayfun(@(n) tempfunc(sum(y(:,:,n)>1)/numel(d)),1:1000,'UniformOutput',1);
+    stats.ci(1) = prctile(x,2.5);
+    stats.ci(2) = prctile(x,97.5);
+    stats.int = tempfunc(x);
+    int = x;
+
+    y = aucbootcount(d,:,:);
+    x = arrayfun(@(n) tempfunc(sum(y(:,:,n)<=1)/numel(d)),1:1000,'UniformOutput',1);
+    stats.chanci(1) = prctile(x,2.5);
+    stats.chanci(2) = prctile(x,97.5);
+    stats.chan = tempfunc(x);
+    chan = x;
+else
+    y = aucbootcount(d,:,:);
+    x = arrayfun(@(n) tempfunc(sum(y(:,:,n)>1)/size(y,2)),1:1000,'UniformOutput',1);
+    stats.ci(1) = prctile(x,2.5);
+    stats.ci(2) = prctile(x,97.5);
+    stats.int = tempfunc(x);
+    int = x;
+
+    y = aucbootcount(d,:,:);
+    x = arrayfun(@(n) nanmean(sum(y(:,:,n)<=1)/size(y,2)),1:1000,'UniformOutput',1);
+    stats.chanci(1) = prctile(x,2.5);
+    stats.chanci(2) = prctile(x,97.5);
+    stats.chan = tempfunc(x);
+    chan = x;
+end
+stats.d = d;
+
+end
 
 % 
 % %plot boxplot
