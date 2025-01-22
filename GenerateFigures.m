@@ -46,14 +46,14 @@ Figure4c(ovrlap)
 %% Figure 5
 
 %5a
-load('Figure5.mat');
-Figure5(ovr_data, clust_list);
+load('Figure5A.mat');
+Figure5(clust_colmap,clust_size,k,sorted_sim_mat)
 
 %% Figure 6
 
 %6A 
-load('Figure6A.mat')
-Figure6a(data) 
+load('Figure6a.mat')
+Figure6a(y) 
 
 %6B (example hexagon plot creation)
 load('Figure6B.mat');
